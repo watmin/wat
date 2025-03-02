@@ -4,7 +4,10 @@ require_relative "wat/version"
 
 class Wat
   CORE = {
-    add: proc { |x, y| x + y }
+    add: proc { |x, y| x + y },
+    sub: proc { |x, y| x - y },  # New: subtraction
+    mul: proc { |x, y| x * y },  # New: multiplication
+    eq: proc { |x, y| x == y }   # New: equality
   }
 
   def initialize
