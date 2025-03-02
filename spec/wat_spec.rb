@@ -11,30 +11,39 @@ RSpec.describe Wat do
         expect(wat.eval("(add 1 2)")).to eq(3)
       end
 
-      it "evaluates (sub 5 3) to 2" do  # New
+      it "evaluates (sub 5 3) to 2" do
         expect(wat.eval("(sub 5 3)")).to eq(2)
       end
 
-      it "evaluates (mul 4 3) to 12" do  # New
+      it "evaluates (mul 4 3) to 12" do
         expect(wat.eval("(mul 4 3)")).to eq(12)
       end
 
-      it "evaluates (eq 3 3) to true" do  # New
+      it "evaluates (eq 3 3) to true" do
         expect(wat.eval("(eq 3 3)")).to eq(true)
       end
 
-      it "evaluates (eq 3 4) to false" do  # New
+      it "evaluates (eq 3 4) to false" do
         expect(wat.eval("(eq 3 4)")).to eq(false)
       end
     end
 
-    context "with nested arithmetic" do  # Renamed from "addition" to "arithmetic"
+    context "with nested arithmetic" do
       it "evaluates (add (add 1 2) 3) to 6" do
         expect(wat.eval("(add (add 1 2) 3)")).to eq(6)
       end
 
-      it "evaluates (mul (sub 5 2) 3) to 9" do  # New
+      it "evaluates (mul (sub 5 2) 3) to 9" do
         expect(wat.eval("(mul (sub 5 2) 3)")).to eq(9)
+      end
+    end
+
+    context "with type errors" do  # New
+      it "raises an error when eq compares non-integers" do
+        # We'll simulate a bad type later; for now, eq only takes ints
+        # Placeholder for when we add strings or other types
+        pending "Non-integer types not yet supported"
+        expect { wat.eval("(eq 1 foo)") }.to raise_error("Type error: expected :int, got ??? in eq")
       end
     end
 
