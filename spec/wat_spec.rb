@@ -40,17 +40,20 @@ RSpec.describe Wat do
     end
 
     context "with user-defined functions" do
-      it "defines and evaluates (defn foo x y (add x y))" do  # Untyped
-        program = "(defn foo x y (add x y)) (foo 2 3)"
+      it "defines and evaluates (defn foo [x : Int] [y : Int] : Int (add x y))" do
+        program = "(defn foo [x : Int] [y : Int] : Int (add x y)) (foo 2 3)"
         expect(wat.eval(program)).to eq(5)
       end
 
       it "handles nested calls with defn" do
-        program = "(defn foo x y (add x y)) (foo (foo 1 2) 3)"
+        program = "(defn foo [x : Int] [y : Int] : Int (add x y)) (foo (foo 1 2) 3)"
         expect(wat.eval(program)).to eq(6)
       end
 
-      # Skip typed tests for now
+      it "raises type error for mismatched return type" do
+        program = "(defn foo [x : Int] [y : Int] : Bool (add x y))"
+        expect { wat.eval(program) }.to raise_error("Type error: expected :bool, got :int in foo")
+      end
     end
 
     context "with type errors" do

@@ -3,6 +3,8 @@
 require_relative "wat/version"
 
 class Wat
+  TYPE_ALIASES = { Int: :int, Bool: :bool, String: :string }
+
   CORE = {
     add: { fn: proc { |x, y| x + y }, type: [:fn, [:int, :int], :int] },
     sub: { fn: proc { |x, y| x - y }, type: [:fn, [:int, :int], :int] },
@@ -18,15 +20,15 @@ class Wat
   def eval(program)
     ast = parse(program)
     puts "AST: #{ast.inspect}"
-    ast.each { |exp| type_check(exp) }  # Multi-form
+    ast.each { |exp| type_check(exp) }
     ast.map { |exp| evaluate(exp) }.last
   end
 
   private
 
   def parse(str)
-    tokens = str.gsub(/[()]/, ' \0 ').split.map(&:strip)
-    puts "Tokens: #{tokens.inspect}"  # Debug
+    tokens = str.gsub(/[\[\]()]/, ' \0 ').split.map(&:strip)
+    puts "Tokens: #{tokens.inspect}"
     read_expressions(tokens)
   end
 
@@ -39,9 +41,39 @@ class Wat
       exp = read_expressions(tokens, [], depth + 1)
       acc << exp
       read_expressions(tokens, acc, depth)
+    when '['
+      param = []
+      while tokens[0] != ']'
+        sub_token = tokens.shift
+        case sub_token
+        when ':'
+          type = tokens.shift.to_sym
+          param << sub_token << type  # Add :int to [x]
+        else
+          param << (integer?(sub_token) ? sub_token.to_i : sub_token.to_sym)
+        end
+      end
+      raise "Syntax error: expected ]" unless tokens[0] == ']'
+      tokens.shift  # Consume ']'
+      if param.length == 3 && param[1] == ':'  # [x : Int]
+        acc << [param[0], param[2]]  # [x, :int]
+      else
+        raise "Syntax error: invalid param format, expected [name : Type]"
+      end
+      read_expressions(tokens, acc, depth)
     when ')'
       raise "Syntax error: unexpected closing parenthesis" if depth == 0
       acc
+    when ']'
+      raise "Syntax error: unexpected closing bracket" if depth == 0
+      acc
+    when ':'
+      if depth > 0 && acc[0] == :defn && tokens[0] =~ /^[A-Z]/  # Return type
+        acc << tokens.shift.to_sym  # :Int
+      else
+        raise "Syntax error: stray colon"
+      end
+      read_expressions(tokens, acc, depth)
     else
       acc << (integer?(token) ? token.to_i : token.to_sym)
       read_expressions(tokens, acc, depth)
@@ -56,19 +88,24 @@ class Wat
     puts "Type checking: #{exp.inspect}, Locals: #{locals.inspect}"
     return :int if exp.is_a?(Integer)
     if exp.is_a?(Symbol)
-      return locals[exp] if locals.key?(exp)
-      return env[exp] if env.key?(exp)
+      type = locals[exp] || env[exp]
+      return TYPE_ALIASES[type] || type if type  # Alias :Int to :int, etc.
       raise "Unknown variable or function: #{exp}"
     end
     case exp[0]
     when :defn
       name = exp[1]
-      body_idx = exp.index { |x| x.is_a?(Array) }  # Find body (first sub-expression)
-      params = exp[2...body_idx]  # All args before body
+      body_idx = exp.index { |x| x.is_a?(Array) && x.length != 2 } || exp.length - 1
+      param_end = exp[2...(body_idx - 1)].select { |x| x.is_a?(Array) && x.length == 2 }.length + 2
+      params = exp[2...param_end]
+      ret_type = TYPE_ALIASES[exp[param_end]] || exp[param_end]  # Normalize :Int to :int
       body = exp[body_idx]
-      param_types = params.map { :int }  # Untyped: assume Int
-      fn_type = [:fn, param_types, type_check(body, env, params.map { |p| [p, :int] }.to_h)]
+      param_types = params.map { |p| TYPE_ALIASES[p[1]] || p[1] }  # Normalize :Int to :int
+      fn_type = [:fn, param_types, TYPE_ALIASES[ret_type] || ret_type]
       env[name] = fn_type
+      locals = params.map { |p| [p[0], TYPE_ALIASES[p[1]] || p[1]] }.to_h  # {x: :int, y: :int}
+      body_type = type_check(body, env, locals)
+      raise "Type error: expected :#{ret_type}, got :#{body_type} in #{name}" unless body_type == ret_type
       :nil
     else
       fn_name, *args = exp
@@ -95,13 +132,14 @@ class Wat
     case exp[0]
     when :defn
       name = exp[1]
-      body_idx = exp.index { |x| x.is_a?(Array) }  # Find body
-      params = exp[2...body_idx]  # Split params correctly
+      body_idx = exp.index { |x| x.is_a?(Array) && x.length != 2 } || exp.length - 1
+      param_end = exp[2...(body_idx - 1)].select { |x| x.is_a?(Array) && x.length == 2 }.length + 2
+      params = exp[2...param_end]
       body = exp[body_idx]
-      puts "Defn: name=#{name}, params=#{params.inspect}, body=#{body.inspect}"  # Debug
+      puts "Defn: name=#{name}, params=#{params.inspect}, body=#{body.inspect}"
       @env[name] = proc { |*args|
-        new_locals = params.zip(args).to_h  # { x: 2, y: 3 }
-        puts "Calling #{name} with args=#{args.inspect}, new_locals=#{new_locals.inspect}"  # Debug
+        new_locals = params.map { |p| p[0] }.zip(args).to_h  # {x: 2, y: 3}
+        puts "Calling #{name} with args=#{args.inspect}, new_locals=#{new_locals.inspect}"
         evaluate(body, env.merge(new_locals))
       }
       nil
