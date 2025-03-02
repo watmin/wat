@@ -12,4 +12,10 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  # Enable focus filtering
+  config.filter_run_when_matching :focus
+
+  # Optional: If no focused tests are found, run all tests
+  config.run_all_when_everything_filtered = true
 end

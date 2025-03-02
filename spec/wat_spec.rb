@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'pry'
 require "spec_helper"
 
 RSpec.describe Wat do
@@ -38,10 +39,22 @@ RSpec.describe Wat do
       end
     end
 
-    context "with type errors" do  # New
+    context "with user-defined functions" do
+      it "defines and evaluates (defn foo x y (add x y))" do  # Untyped
+        program = "(defn foo x y (add x y)) (foo 2 3)"
+        expect(wat.eval(program)).to eq(5)
+      end
+
+      it "handles nested calls with defn" do
+        program = "(defn foo x y (add x y)) (foo (foo 1 2) 3)"
+        expect(wat.eval(program)).to eq(6)
+      end
+
+      # Skip typed tests for now
+    end
+
+    context "with type errors" do
       it "raises an error when eq compares non-integers" do
-        # We'll simulate a bad type later; for now, eq only takes ints
-        # Placeholder for when we add strings or other types
         pending "Non-integer types not yet supported"
         expect { wat.eval("(eq 1 foo)") }.to raise_error("Type error: expected :int, got ??? in eq")
       end
