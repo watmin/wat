@@ -27,7 +27,34 @@ class Wat
   private
 
   def parse(str)
-    tokens = str.gsub(/[\[\]()]/, ' \0 ').split.map(&:strip)
+    tokens = []
+    buffer = String.new  # Mutable string
+    in_quotes = false
+    str.chars.each do |c|
+      if c == '"'
+        if in_quotes
+          buffer << c  # Closing quote
+          tokens << buffer
+          buffer = String.new  # Reset to new mutable string
+        else
+          buffer << c if buffer.empty?  # Opening quote
+        end
+        in_quotes = !in_quotes
+      elsif in_quotes
+        buffer << c
+      elsif c =~ /[\[\]()]/  # Brackets
+        tokens << buffer unless buffer.empty?
+        tokens << c
+        buffer = String.new
+      elsif c =~ /\s/  # Whitespace
+        tokens << buffer unless buffer.empty?
+        buffer = String.new
+      else
+        buffer << c
+      end
+    end
+    tokens << buffer unless buffer.empty?
+    tokens.reject(&:empty?)
     puts "Tokens: #{tokens.inspect}"
     read_expressions(tokens)
   end

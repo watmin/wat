@@ -60,6 +60,10 @@ RSpec.describe Wat do
       it "raises an error when eq compares non-integers" do
         expect { wat.eval('(eq 1 "foo")') }.to raise_error("Type error: expected int, got string in eq")
       end
+
+      it "raises an error when eq compares strings with spaces and random chars", focus: true do
+        expect { wat.eval('(eq "foo bar! 123" "qux")') }.to raise_error("Type error: expected int, got string in eq")
+      end
     end
 
     context "with unknown functions" do
