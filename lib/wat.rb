@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+def reload
+  load(File.join(__dir__, 'wat.rb'))
+end
+
 require_relative "wat/version"
 
 class Wat
