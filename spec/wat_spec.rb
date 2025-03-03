@@ -58,8 +58,7 @@ RSpec.describe Wat do
 
     context "with type errors" do
       it "raises an error when eq compares non-integers" do
-        pending "Non-integer types not yet supported"
-        expect { wat.eval("(eq 1 foo)") }.to raise_error("Type error: expected :int, got ??? in eq")
+        expect { wat.eval('(eq 1 "foo")') }.to raise_error("Type error: expected int, got string in eq")
       end
     end
 

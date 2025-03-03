@@ -36,6 +36,7 @@ class Wat
     raise "Syntax error: unclosed parenthesis" if tokens.empty? && depth > 0
     return acc if tokens.empty? && depth == 0
     token = tokens.shift
+    # binding.pry  # Breakpoint 1: Check token parsing
     case token
     when '('
       exp = read_expressions(tokens, [], depth + 1)
@@ -48,15 +49,15 @@ class Wat
         case sub_token
         when ':'
           type = tokens.shift.to_sym
-          param << sub_token << type  # Add :int to [x]
+          param << sub_token << type
         else
           param << (integer?(sub_token) ? sub_token.to_i : sub_token.to_sym)
         end
       end
       raise "Syntax error: expected ]" unless tokens[0] == ']'
-      tokens.shift  # Consume ']'
+      tokens.shift
       if param.length == 3 && param[1] == ':'  # [x : Int]
-        acc << [param[0], param[2]]  # [x, :int]
+        acc << [param[0], param[2]]
       else
         raise "Syntax error: invalid param format, expected [name : Type]"
       end
@@ -68,14 +69,19 @@ class Wat
       raise "Syntax error: unexpected closing bracket" if depth == 0
       acc
     when ':'
-      if depth > 0 && acc[0] == :defn && tokens[0] =~ /^[A-Z]/  # Return type
-        acc << tokens.shift.to_sym  # :Int
+      if depth > 0 && acc[0] == :defn && tokens[0] =~ /^[A-Z]/
+        acc << tokens.shift.to_sym
       else
         raise "Syntax error: stray colon"
       end
       read_expressions(tokens, acc, depth)
     else
-      acc << (integer?(token) ? token.to_i : token.to_sym)
+      # Handle quoted strings as string values
+      if token.start_with?('"') && token.end_with?('"')
+        acc << token[1..-2]  # Strip quotes, keep as string
+      else
+        acc << (integer?(token) ? token.to_i : token.to_sym)
+      end
       read_expressions(tokens, acc, depth)
     end
   end
@@ -87,9 +93,11 @@ class Wat
   def type_check(exp, env = @type_env, locals = {})
     puts "Type checking: #{exp.inspect}, Locals: #{locals.inspect}"
     return :int if exp.is_a?(Integer)
+    return :string if exp.is_a?(String)  # String literals
+    # binding.pry  # Breakpoint 2: Check type resolution
     if exp.is_a?(Symbol)
       type = locals[exp] || env[exp]
-      return TYPE_ALIASES[type] || type if type  # Alias :Int to :int, etc.
+      return TYPE_ALIASES[type] || type if type
       raise "Unknown variable or function: #{exp}"
     end
     case exp[0]
@@ -124,6 +132,8 @@ class Wat
   def evaluate(exp, env = @env)
     puts "Evaluating: #{exp.inspect}, Env: #{env.inspect}"
     return exp if exp.is_a?(Integer)
+    return exp if exp.is_a?(String)  # Return string literals
+    # binding.pry  # Breakpoint 3: Check value resolution
     if exp.is_a?(Symbol)
       return env[exp] if env.key?(exp) && !env[exp].is_a?(Proc)
       return env[exp].call if env.key?(exp)
