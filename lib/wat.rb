@@ -9,7 +9,7 @@ class Wat
     add: { fn: proc { |x, y| x + y }, type: [:fn, [:int, :int], :int] },
     sub: { fn: proc { |x, y| x - y }, type: [:fn, [:int, :int], :int] },
     mul: { fn: proc { |x, y| x * y }, type: [:fn, [:int, :int], :int] },
-    eq:  { fn: proc { |x, y| x == y }, type: [:fn, [:int, :int], :bool] }
+    eq:  { fn: proc { |x, y| x == y }, type: proc { |arg_types| [:fn, arg_types, :bool] if arg_types.uniq.length == 1 } }
   }
 
   def initialize
@@ -152,13 +152,21 @@ class Wat
       then_type
     else
       fn_name, *args = exp
+      # binding.pry  # Breakpoint: Check fn_name and args types
       fn_type = env[fn_name] || raise("Unknown function: #{fn_name}")
-      return_type = fn_type[-1]
-      arg_types = fn_type[1]
-      args.each_with_index do |arg, i|
-        arg_type = type_check(arg, env, locals)
-        expected = arg_types[i]
-        raise "Type error: expected #{expected}, got #{arg_type} in #{fn_name}" unless arg_type == expected
+      arg_types = args.map { |arg| type_check(arg, env, locals) }
+      if fn_type.is_a?(Proc)
+        resolved_type = fn_type.call(arg_types)
+        raise "Type error: #{fn_name} args must match, got #{arg_types}" unless resolved_type
+        return_type = resolved_type[-1]
+      else
+        return_type = fn_type[-1]
+        expected_arg_types = fn_type[1]
+        args.each_with_index do |arg, i|
+          arg_type = arg_types[i]
+          expected = expected_arg_types[i]
+          raise "Type error: expected :#{expected}, got :#{arg_type} in #{fn_name}" unless arg_type == expected
+        end
       end
       return_type
     end

@@ -57,12 +57,12 @@ RSpec.describe Wat do
     end
 
     context "with type errors" do
-      it "raises an error when eq compares non-integers" do
-        expect { wat.eval('(eq 1 "foo")') }.to raise_error("Type error: expected int, got string in eq")
+      it "raises an error when eq compares mismatched types" do
+        expect { wat.eval('(eq 1 "foo")') }.to raise_error("Type error: eq args must match, got [:int, :string]")
       end
 
-      it "raises an error when eq compares strings with spaces and random chars" do
-        expect { wat.eval('(eq "foo bar! 123" "qux")') }.to raise_error("Type error: expected int, got string in eq")
+      it "evaluates eq correctly when comparing strings with spaces and random chars" do
+        expect(wat.eval('(eq "foo bar! 123" "qux")')).to eq(false)
       end
     end
 
@@ -85,6 +85,20 @@ RSpec.describe Wat do
 
       it "evaluates if conditionals correctly with false condition" do
         expect(wat.eval('(if (eq 1 0) 2 3)')).to eq(3)
+      end
+    end
+
+    context "with polymorphic equality" do
+      it "evaluates eq correctly for matching strings" do
+        expect(wat.eval('(eq "foo" "foo")')).to eq(true)
+      end
+
+      it "evaluates eq correctly for non-matching integers" do
+        expect(wat.eval('(eq 1 2)')).to eq(false)
+      end
+
+      it "raises type error for mismatched types" do
+        expect { wat.eval('(eq 1 "foo")') }.to raise_error("Type error: eq args must match, got [:int, :string]")
       end
     end
   end
