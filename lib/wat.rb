@@ -142,6 +142,14 @@ class Wat
       body_type = type_check(body, env, locals)
       raise "Type error: expected :#{ret_type}, got :#{body_type} in #{name}" unless body_type == ret_type
       :nil
+    when :if
+      _, cond, then_branch, else_branch = exp
+      cond_type = type_check(cond, env, locals)
+      raise "Type error: if condition must be :bool, got :#{cond_type}" unless cond_type == :bool
+      then_type = type_check(then_branch, env, locals)
+      else_type = type_check(else_branch, env, locals)
+      raise "Type error: if branches must match, got :#{then_type} and :#{else_type}" unless then_type == else_type
+      then_type
     else
       fn_name, *args = exp
       fn_type = env[fn_name] || raise("Unknown function: #{fn_name}")
@@ -180,6 +188,14 @@ class Wat
         evaluate(body, env.merge(new_locals))
       }
       nil
+    when :if
+      _, cond, then_branch, else_branch = exp
+      cond_value = evaluate(cond, env)
+      if cond_value
+        evaluate(then_branch, env)
+      else
+        evaluate(else_branch, env)
+      end
     else
       fn_name, *args = exp
       fn = env[fn_name] || raise("Unknown function: #{fn_name}")

@@ -77,5 +77,11 @@ RSpec.describe Wat do
         expect { wat.eval("(add 1") }.to raise_error("Syntax error: unclosed parenthesis")
       end
     end
+
+    context "with conditionals" do
+      it "evaluates if conditionals correctly" do
+        expect(wat.eval('(if (eq 1 1) 2 3)')).to eq(2)
+      end
+    end
   end
 end
