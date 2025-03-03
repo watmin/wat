@@ -82,6 +82,10 @@ RSpec.describe Wat do
       it "evaluates if conditionals correctly" do
         expect(wat.eval('(if (eq 1 1) 2 3)')).to eq(2)
       end
+
+      it "evaluates if conditionals correctly with false condition" do
+        expect(wat.eval('(if (eq 1 0) 2 3)')).to eq(3)
+      end
     end
   end
 end
