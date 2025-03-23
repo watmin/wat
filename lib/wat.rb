@@ -18,6 +18,8 @@ module Wat # rubocop:disable Metrics/ModuleLength
                        Integer Float Boolean].freeze
   LISTABLE_TYPES = %i[Noun Time Verb Integer Float].freeze
   NUMERIC_TYPES = %i[Integer Float].freeze
+  VALID_TRAITS = %i[Relatable RelatableVerb Adverbial Timeable
+                    StringValued Numeric Assertable Listable Mappable Describable].freeze
 
   def self.evaluate(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     sexp = if input.is_a?(String)
@@ -172,6 +174,23 @@ module Wat # rubocop:disable Metrics/ModuleLength
     end
   end
 
+  def self.evaluate_add(sexp, env = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+    raise "Expected 'add'" unless sexp[0] == :add
+
+    args = sexp[1..].map { |sub_sexp| eval_expr(sub_sexp, env) }
+    return Entity.new(:Error, 'insufficient arguments for add', {}) if args.empty?
+
+    args.each do |arg|
+      unless arg.is_a?(Entity) && NUMERIC_TYPES.include?(arg.type)
+        return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
+      end
+    end
+
+    sum = args.map(&:value).reduce(:+)
+    type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
+    Entity.new(type, sum, {})
+  end
+
   def self.evaluate_let(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
     raise "Expected 'let'" unless sexp[0] == :let
 
@@ -227,20 +246,21 @@ module Wat # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def self.evaluate_add(sexp, env = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-    raise "Expected 'add'" unless sexp[0] == :add
+  def self.evaluate_impl(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+    return Entity.new(:Error, "expected 'impl' as first argument", {}) unless sexp[0] == :impl
 
-    args = sexp[1..].map { |sub_sexp| eval_expr(sub_sexp, env) }
-    return Entity.new(:Error, 'insufficient arguments for add', {}) if args.empty?
-
-    args.each do |arg|
-      unless arg.is_a?(Entity) && NUMERIC_TYPES.include?(arg.type)
-        return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
-      end
+    unless sexp.length == 4 && sexp[2] == :for
+      return Entity.new(:Error, 'invalid impl syntax: expected (impl Trait for Type)', {})
     end
 
-    sum = args.map(&:value).reduce(:+)
-    type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
-    Entity.new(type, sum, {})
+    trait = sexp[1]
+    type = sexp[3]
+
+    return Entity.new(:Error, "invalid trait: #{trait}", {}) unless VALID_TRAITS.include?(trait)
+    return Entity.new(:Error, "invalid type: #{type}", {}) unless VALID_TYPES.include?(type)
+
+    env[:traits][type] ||= []
+    env[:traits][type] << trait unless env[:traits][type].include?(trait) # Avoid duplicates
+    Entity.new(:Boolean, true, {})
   end
 end

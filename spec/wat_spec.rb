@@ -226,4 +226,35 @@ RSpec.describe Wat do
       expect(result).to be_nil
     end
   end
+
+  describe 'impl' do
+    it 'defines a trait for a type in a let scope' do
+      input = '(let ((x be (impl Relatable for Noun))) x)'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Boolean)
+      expect(result.value).to eq(true)
+    end
+
+    it 'errors on invalid trait' do
+      input = '(impl Foo for Noun)'
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid trait: Foo')
+    end
+
+    it 'errors on invalid type' do
+      input = '(impl Relatable for Foo)'
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid type: Foo')
+    end
+
+    it 'errors on invalid syntax' do
+      input = '(impl Relatable Noun)'
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('impl Trait for Type')
+    end
+  end
 end
