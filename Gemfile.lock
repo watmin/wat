@@ -11,6 +11,10 @@ GEM
     diff-lcs (1.6.0)
     io-console (0.8.0)
     json (2.10.1)
+    kramdown (2.5.1)
+      rexml (>= 3.3.9)
+    kramdown-parser-gfm (1.1.0)
+      kramdown (~> 2.0)
     language_server-protocol (3.17.0.4)
     lint_roller (1.1.0)
     method_source (1.1.0)
@@ -27,6 +31,7 @@ GEM
     regexp_parser (2.10.0)
     reline (0.6.0)
       io-console (~> 0.5)
+    rexml (3.4.1)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -63,6 +68,8 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  kramdown (~> 2.5)
+  kramdown-parser-gfm (~> 1.1)
   pry (~> 0.15)
   rake (~> 13.0)
   reline (~> 0.6)

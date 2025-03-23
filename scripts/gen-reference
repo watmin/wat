@@ -1,0 +1,5 @@
+#!/bin/bash
+
+scripts=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
+
+ruby $scripts/gen_reference.rb

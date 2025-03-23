@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+  <style>
+    body { margin: 0; padding: 0; background-color: #1a1a1a; }
+    .markdown-body {
+      box-sizing: border-box;
+      min-width: 200px;
+      max-width: 980px;
+      margin-left: 300px;
+      margin-right: 300px;
+      padding: 45px;
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+    .markdown-body pre, .markdown-body code { background: #333333; color: #ffffff; }
+    .markdown-body a { color: #58a6ff; }
+  </style>
+</head>
+<body>
+  <article class="markdown-body">
+    <p>References:</p>
+<ul>
+  <li>https://x.com/i/grok/share/bMePYcq88mgJsVsQ7JN68UZOu</li>
+</ul>
+
+<hr />
+
+<h1 id="wat-a-pure-strongly-typed-english-like-lisp">Wat: A Pure, Strongly Typed, English-Like Lisp</h1>
+
+<p>Wat is a domain-specific language (DSL) designed to blend Lisp’s functional purity and homoiconicity with English-like sentence expressivity. It is purely functional—no I/O operations are permitted—ensuring all computations are side-effect-free. With a minimal core of 28 primitives, a rich userland built via <code>(lambda ...)</code>, and a strong type system enforced by traits, Wat balances simplicity, power, and usability.</p>
+
+<p>This documentation is crafted for implementation, providing precise syntax, semantics, type rules, and examples for every component. It assumes a Ruby-based s-expression parser as a reference (per earlier discussions), but remains agnostic to the host language’s I/O capabilities, focusing solely on pure computation.</p>
+
+<hr />
+
+<h2 id="core-concepts">Core Concepts</h2>
+
+<ul>
+  <li><strong>S-Expressions</strong>: All constructs are parenthesized, prefix-notation expressions (e.g., <code>(add 3 2)</code> rather than <code>3 + 2</code>).</li>
+  <li><strong>Purity</strong>: No I/O—computations produce values or assert facts within a closed system.</li>
+  <li><strong>Strong Typing</strong>: Types (e.g., <code>Noun</code>, <code>Integer</code>) and traits (e.g., <code>Numeric</code>, <code>Assertable</code>) enforce semantic correctness at parse time.</li>
+  <li><strong>Homoiconicity</strong>: Code is data, manipulable via <code>(list ...)</code> and <code>(quote ...)</code>.</li>
+  <li><strong>User Experience</strong>: Optional maps (e.g., <code>(entity Noun "dog")</code>) and SVO-ordered <code>(Statement ...)</code> eliminate boilerplate and align with English readability.</li>
+</ul>
+
+<hr />
+
+<h2 id="core-primitives-28">Core Primitives (28)</h2>
+
+<p>These are the built-in s-expressions forming Wat’s foundation. Each is pure, producing a value or asserting a fact without side effects.</p>
+
+<h3 id="1-entity-type-value-map-expr">1. <code>(entity Type value [map-expr])</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Creates a typed entity, the atomic building block of Wat.</li>
+  <li><strong>Syntax</strong>:
+    <ul>
+      <li><code>(entity Type value)</code> – Minimal form, defaults to <code>(map)</code> for optional args.</li>
+      <li><code>(entity Type value (map :key1 val1 :key2 val2 ...))</code> – Explicit map.</li>
+      <li><code>(entity Type value :key1 val1 :key2 val2 ...)</code> – Shorthand, rewrites to <code>(map ...)</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>Type</code>: Required—One of <code>Noun</code>, <code>Verb</code>, <code>Time</code>, <code>Adverb</code>, <code>String</code>, <code>Integer</code>, <code>Float</code>, <code>Boolean</code>, <code>Pronoun</code>, <code>Preposition</code>, <code>Adjective</code>, <code>Error</code>.</li>
+      <li><code>value</code>: Required—Matches <code>Type</code>:
+        <ul>
+          <li><code>Noun</code>, <code>Verb</code>, <code>Time</code>, <code>Adverb</code>, <code>String</code>, <code>Preposition</code>, <code>Adjective</code>, <code>Error</code>: String (e.g., <code>"dog"</code>, <code>"chases"</code>, <code>"division by zero"</code>).</li>
+          <li><code>Integer</code>: Unquoted integer (e.g., <code>3</code>, <code>-5</code>).</li>
+          <li><code>Float</code>: Unquoted float (e.g., <code>2.5</code>, <code>-3.14</code>).</li>
+          <li><code>Boolean</code>: <code>true</code> or <code>false</code>.</li>
+          <li><code>Pronoun</code>: String (e.g., <code>"it"</code>).</li>
+        </ul>
+      </li>
+      <li><code>map-expr</code>: Optional—<code>(map :key1 val1 ...)</code> with:
+        <ul>
+          <li><code>:role</code>: <code>Subject</code> or <code>Object</code> (defaults to <code>nil</code> if omitted).</li>
+          <li><code>:adjective</code>: <code>(entity Adjective ...)</code> (defaults to <code>nil</code> if omitted).</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns an entity object with <code>Type</code>, <code>value</code>, and optional attributes (<code>role</code>, <code>adjective</code>) stored in a map (default <code>(map)</code>).</li>
+  <li><strong>Type Rules</strong>:
+    <ul>
+      <li><code>value</code> must match <code>Type</code>’s expected format.</li>
+      <li><code>:role</code> must be <code>Subject</code> or <code>Object</code> if present.</li>
+      <li><code>:adjective</code> must be an <code>Adjective</code> entity.</li>
+    </ul>
+  </li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(entity Noun "dog" :role Subject)</code> – A “dog” entity with subject role.</li>
+      <li><code>(entity Verb "chases")</code> – A “chases” verb, no role or adjective (implicit <code>(map)</code>).</li>
+      <li><code>(entity Integer 5)</code> – The number 5.</li>
+      <li><code>(entity Boolean true)</code> – The boolean <code>true</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Parser should rewrite <code>(entity Type value)</code> to <code>(entity Type value (map))</code>.</li>
+      <li>Store as a struct: <code>{type: Type, value: value, attrs: {role: val, adjective: val}}</code>.</li>
+      <li>Validate <code>value</code> against <code>Type</code> at parse time (e.g., <code>"dog"</code> for <code>Noun</code>, not <code>3</code>).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="2-relate-verb-subject-object-map-expr">2. <code>(relate verb subject object [map-expr])</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Internal constructor for <code>(Statement ...)</code>, builds an SVO relationship with optional modifiers in a map.</li>
+  <li><strong>Syntax</strong>:
+    <ul>
+      <li><code>(relate verb subject object)</code> – Minimal form, defaults to <code>(map)</code> for optional args.</li>
+      <li><code>(relate verb subject object (map :key1 val1 :key2 val2 ...))</code> – Explicit map.</li>
+      <li><code>(relate verb subject object :key1 val1 :key2 val2 ...)</code> – Shorthand, rewrites to <code>(map ...)</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>verb</code>: <code>(entity Verb ...)</code> – Required, the action or state.</li>
+      <li><code>subject</code>: <code>(entity Noun ... :role Subject)</code> or <code>(list ...)</code> of such – Required, the actor.</li>
+      <li><code>object</code>: <code>(entity Noun ... :role Object)</code> or <code>(entity Pronoun ...)</code> – Required, the acted-upon.</li>
+      <li><code>map-expr</code>: Optional—<code>(map :adverb val :time val :number val)</code> with:
+        <ul>
+          <li><code>:adverb</code>: <code>(entity Adverb ...)</code> – Optional, modifies the verb (defaults to <code>nil</code>).</li>
+          <li><code>:time</code>: <code>(entity Time ...)</code> – Optional, specifies when (defaults to <code>nil</code>).</li>
+          <li><code>:number</code>: <code>(entity Integer/Float ...)</code> or unquoted number – Optional, specifies frequency (defaults to <code>nil</code>).</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Constructs a relation object used by <code>(Statement ...)</code>, combining required SVO elements with optional modifiers. Not typically user-facing—<code>(Statement ...)</code> wraps it with SVO order.</li>
+  <li><strong>Type Rules</strong>:
+    <ul>
+      <li><code>verb</code>: Must implement <code>RelatableVerb</code>.</li>
+      <li><code>subject</code>: Must implement <code>Relatable</code> with <code>:role Subject</code>.</li>
+      <li><code>object</code>: Must implement <code>Relatable</code> with <code>:role Object</code>.</li>
+      <li><code>:adverb</code>: Must implement <code>Adverbial</code> if present, or omitted (<code>nil</code>).</li>
+      <li><code>:time</code>: Must implement <code>Timeable</code> if present, or omitted (<code>nil</code>).</li>
+      <li><code>:number</code>: Must implement <code>Numeric</code> if present, or omitted (<code>nil</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(relate chases dog toy)</code> – Internal form of “dog chases toy” (implicit <code>(map)</code>).</li>
+      <li><code>(relate chases dog toy :adverb quickly :time t-0 :number 5)</code> – Internal form of “dog quickly chases toy 5 times at t0”.</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Parser rewrites <code>(relate verb subject object)</code> to <code>(relate verb subject object (map))</code>.</li>
+      <li>Returns a <code>Relate</code> object: <code>{verb: v, subject: s, object: o, attrs: {adverb: a, time: t, number: n}}</code>.</li>
+      <li>Type check all slots at parse time—<code>(Statement ...)</code> delegates to this, reordering to VSO internally.</li>
+      <li>Pure—no side effects, just constructs a data structure.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="3-assert-expr">3. <code>(assert expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Declares an <code>Assertable</code> expression as a fact within the system.</li>
+  <li><strong>Syntax</strong>: <code>(assert expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr</code>: Required—Must implement <code>Assertable</code> (e.g., <code>(Statement ...)</code>, <code>(entity Boolean ...)</code>, <code>(gt 5 3)</code>). Unevaluated s-expressions (e.g., from <code>(quote ...)</code>) are not <code>Assertable</code> unless explicitly evaluated.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Evaluates <code>expr</code> to a truth value (<code>true</code> or <code>false</code>); if <code>true</code>, succeeds silently; if <code>false</code>, fails (implementation-dependent—e.g., exception or flag).</li>
+  <li><strong>Type Rule</strong>: <code>expr</code> must be <code>Assertable</code>.</li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(assert (Statement dog chases toy))</code> – “Dog chases toy.”</li>
+      <li><code>(assert true)</code> – “It is true.”</li>
+      <li><code>(assert (gt 5 3))</code> – “5 is greater than 3.”</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Evaluate <code>expr</code> to a <code>Boolean</code>—fail if not <code>true</code> or if <code>expr</code> isn’t <code>Assertable</code> (e.g., <code>(assert (quote (add 1 2)))</code> → <code>(entity Error "not assertable")</code>).</li>
+      <li>No I/O—failure could set an internal state or throw a pure exception (caught by <code>(try ...)</code>).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="4-at-time-stmt">4. <code>(at time stmt)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Scopes a statement to occur at a specific time.</li>
+  <li><strong>Syntax</strong>: <code>(at time stmt)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>time</code>: <code>(entity Time ...)</code> – Required.</li>
+      <li><code>stmt</code>: <code>(Statement ...)</code> or similar – Required.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns an <code>Assertable</code> expression asserting <code>stmt</code> happens at <code>time</code>.</li>
+  <li><strong>Type Rules</strong>:
+    <ul>
+      <li><code>time</code>: <code>Timeable</code>.</li>
+      <li><code>stmt</code>: <code>Assertable</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Example</strong>: <code>(at t-0 (Statement dog chases toy))</code> – “At t0, the dog chases the toy.”</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Returns a structure: <code>{type: :at, time: t, stmt: s}</code>.</li>
+      <li>Evaluates to <code>true</code> if <code>stmt</code> holds at <code>time</code> (implementation defines time logic).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="5-let-label-be-value--body-">5. <code>(let ((label be value) ...) body ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Creates a lexical scope for bindings and local traits.</li>
+  <li><strong>Syntax</strong>: <code>(let ((label be value) ...) body ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>(label be value)</code>: Binding pairs—<code>label</code> is a lower-kebab-case symbol (e.g., <code>dog</code>, <code>t-0</code>), <code>value</code> is any expression.</li>
+      <li><code>body</code>: Zero or more expressions evaluated in the scope.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Binds each <code>label</code> to its <code>value</code> in a new scope; evaluates <code>body</code> sequentially, returning the last result.</li>
+  <li><strong>Type Rule</strong>: No restrictions—type checking occurs in <code>body</code>.</li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(let ((x be 5)) (add x 3))</code> – Returns <code>(entity Integer 8)</code>.</li>
+      <li><code>(let ((dog be (entity Noun "dog" :role Subject))) (Statement dog chases toy))</code></li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Push a new environment with bindings: <code>{label: value}</code>.</li>
+      <li>Support local <code>(impl ...)</code> traits in <code>body</code>—pop on exit.</li>
+      <li>Return last <code>body</code> expression’s value or <code>nil</code> if empty.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="6-lambda-arg-as-type--returns-returntype-body">6. <code>(lambda ((arg as Type) ...) returns ReturnType body)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Defines a pure function for abstraction.</li>
+  <li><strong>Syntax</strong>: <code>(lambda ((arg as Type) ...) returns ReturnType body)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>(arg as Type)</code>: Parameters with types (e.g., <code>(x as Integer)</code>, <code>(stmt as Statement)</code>).</li>
+      <li><code>returns ReturnType</code>: Expected return type (e.g., <code>Numeric</code>, <code>Statement</code>, <code>Boolean</code>).</li>
+      <li><code>body</code>: One expression (multi-line via nesting, e.g., <code>(let (...) ...)</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Creates a closure capturing the current scope; applies <code>body</code> when called with matching arguments.</li>
+  <li><strong>Type Rules</strong>:
+    <ul>
+      <li><code>arg</code>: Must match <code>Type</code> when called.</li>
+      <li><code>body</code>: Must produce <code>ReturnType</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Example</strong>: <code>(lambda ((x as Integer)) returns Integer (add x 1))</code> – Adds 1 to an integer.</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Store as <code>{params: [(arg, Type)], return: ReturnType, body: expr, env: current-env}</code>.</li>
+      <li>Type check <code>body</code> against <code>ReturnType</code> at definition; args at call time.</li>
+      <li>Pure—no side effects, captures scope immutably.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="7-join-str1-str2-">7. <code>(join str1 str2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Concatenates strings into a single string.</li>
+  <li><strong>Syntax</strong>: <code>(join str1 str2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>str1</code>, <code>str2</code>, …: <code>(entity String ...)</code> or string literals (e.g., <code>"dog"</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns a new <code>(entity String ...)</code> with concatenated values.</li>
+  <li><strong>Type Rule</strong>: All args must be <code>StringValued</code>.</li>
+  <li><strong>Example</strong>: <code>(join "t-0" " to " "t-1")</code> → <code>(entity String "t-0 to t-1")</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Extract <code>value</code> from each <code>(entity String ...)</code> or use literal strings.</li>
+      <li>Concatenate into a new <code>(entity String result)</code>—pure, no mutation.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="8-not-expr">8. <code>(not expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Negates an <code>Assertable</code> expression.</li>
+  <li><strong>Syntax</strong>: <code>(not expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr</code>: Required—Must be <code>Assertable</code> (e.g., <code>(entity Boolean ...)</code>, <code>(Statement ...)</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns <code>(entity Boolean true)</code> if <code>expr</code> is <code>false</code>, <code>(entity Boolean false)</code> if <code>expr</code> is <code>true</code>.</li>
+  <li><strong>Type Rule</strong>: <code>expr</code> must be <code>Assertable</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(not (gt 3 5))</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Evaluate <code>expr</code> to a <code>Boolean</code>, invert it—pure logic operation.</li>
+      <li>Return <code>(entity Boolean result)</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="9-and-expr1-expr2">9. <code>(and expr1 expr2)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Conjoins two <code>Assertable</code> expressions.</li>
+  <li><strong>Syntax</strong>: <code>(and expr1 expr2)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr1</code>, <code>expr2</code>: Required—Must be <code>Assertable</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns <code>(entity Boolean true)</code> if both <code>expr1</code> and <code>expr2</code> are <code>true</code>, <code>(entity Boolean false)</code> otherwise.</li>
+  <li><strong>Type Rule</strong>: Both args must be <code>Assertable</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(and (gt 5 3) (lt 3 5))</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Short-circuit: If <code>expr1</code> is <code>false</code>, skip <code>expr2</code>.</li>
+      <li>Pure—computes a <code>Boolean</code>, no side effects.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="10-ask-expr">10. <code>(ask expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Queries the truth of an <code>Assertable</code> expression.</li>
+  <li><strong>Syntax</strong>: <code>(ask expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr</code>: Required—Must be <code>Assertable</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns <code>(entity Boolean true)</code> or <code>(entity Boolean false)</code> by evaluating <code>expr</code>’s truth in the system’s context (e.g., logical rules or assertions), not merely comparing its value.</li>
+  <li><strong>Type Rule</strong>: <code>expr</code> must be <code>Assertable</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(ask (Statement dog chases toy))</code> – “Does the dog chase the toy?” → <code>(entity Boolean true/false)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Evaluate <code>expr</code> to a <code>Boolean</code>—pure, no I/O (e.g., internal truth table or context).</li>
+      <li>Distinct from <code>(eq expr true)</code>—<code>(ask ...)</code> evaluates broader <code>Assertable</code> forms, not just <code>Boolean</code> equality.</li>
+      <li>Return <code>(entity Boolean result)</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="11-if-condition-then-expr-else-expr">11. <code>(if condition then expr else expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Conditional execution within a pure context.</li>
+  <li><strong>Syntax</strong>: <code>(if condition then expr else expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>condition</code>: Required—Must be <code>Assertable</code>.</li>
+      <li><code>then expr</code>: Required—Expression if <code>condition</code> is <code>true</code>.</li>
+      <li><code>else expr</code>: Required—Expression if <code>condition</code> is <code>false</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Evaluates <code>condition</code>; returns <code>then expr</code> if <code>true</code>, <code>else expr</code> if <code>false</code>.</li>
+  <li><strong>Type Rule</strong>: <code>condition</code> must be <code>Assertable</code>; <code>then</code> and <code>else</code> must match return type.</li>
+  <li><strong>Example</strong>: <code>(if (gt 5 3) then (entity Integer 5) else (entity Integer 3))</code> → <code>(entity Integer 5)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Evaluate <code>condition</code> to <code>Boolean</code>, then one branch—pure, lazy evaluation of unused branch.</li>
+      <li>Type check <code>then</code> and <code>else</code> for consistency at parse time.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="12-list-expr1-expr2-">12. <code>(list expr1 expr2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Creates a list of expressions.</li>
+  <li><strong>Syntax</strong>: <code>(list expr1 expr2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr1</code>, <code>expr2</code>, …: Zero or more expressions, must share a compatible trait (e.g., <code>Listable</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns a list object containing all arguments.</li>
+  <li><strong>Type Rule</strong>: All elements must be <code>Listable</code> (e.g., <code>Noun</code>, <code>Integer</code>, <code>Time</code>).</li>
+  <li><strong>Example</strong>: <code>(list dog cat)</code> – List of subjects.</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Return <code>{type: :list, elements: [expr1, expr2, ...]}</code>.</li>
+      <li>Type check elements for <code>Listable</code> compatibility at parse time—fail on mismatch.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="13-add-num1-num2-">13. <code>(add num1 num2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Adds <code>Numeric</code> values.</li>
+  <li><strong>Syntax</strong>: <code>(add num1 num2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>num1</code>, <code>num2</code>, …: <code>(entity Integer/Float ...)</code> or unquoted numbers.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns the sum as an <code>(entity Integer ...)</code> or <code>(entity Float ...)</code> if any arg is <code>Float</code>.</li>
+  <li><strong>Type Rule</strong>: All args must be <code>Numeric</code>; returns <code>Numeric</code>.</li>
+  <li><strong>Example</strong>: <code>(add 3 2.5)</code> → <code>(entity Float 5.5)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Extract <code>value</code> from each <code>(entity Integer/Float ...)</code> or use unquoted numbers.</li>
+      <li>Sum values, promote to <code>Float</code> if any arg is <code>Float</code>—pure arithmetic.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="14-mul-num1-num2-">14. <code>(mul num1 num2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Multiplies <code>Numeric</code> values.</li>
+  <li><strong>Syntax</strong>: <code>(mul num1 num2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>num1</code>, <code>num2</code>, …: <code>(entity Integer/Float ...)</code> or unquoted numbers.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns the product as an <code>(entity Integer ...)</code> or <code>(entity Float ...)</code> if any arg is <code>Float</code>.</li>
+  <li><strong>Type Rule</strong>: All args must be <code>Numeric</code>; returns <code>Numeric</code>.</li>
+  <li><strong>Example</strong>: <code>(mul 3 2.5)</code> → <code>(entity Float 7.5)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Multiply <code>value</code> fields, promote to <code>Float</code> if needed—pure.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="15-gt-num1-num2">15. <code>(gt num1 num2)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Checks if <code>num1</code> is greater than <code>num2</code>.</li>
+  <li><strong>Syntax</strong>: <code>(gt num1 num2)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>num1</code>, <code>num2</code>: <code>(entity Integer/Float ...)</code> or unquoted numbers.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns <code>(entity Boolean true)</code> if <code>num1 &gt; num2</code>, <code>(entity Boolean false)</code> otherwise.</li>
+  <li><strong>Type Rule</strong>: Both args must be <code>Numeric</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(gt 5 3)</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Compare <code>value</code> fields—pure comparison.</li>
+      <li>Return <code>(entity Boolean result)</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="16-lt-num1-num2">16. <code>(lt num1 num2)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Checks if <code>num1</code> is less than <code>num2</code>.</li>
+  <li><strong>Syntax</strong>: <code>(lt num1 num2)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>num1</code>, <code>num2</code>: <code>(entity Integer/Float ...)</code> or unquoted numbers.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns <code>(entity Boolean true)</code> if <code>num1 &lt; num2</code>, <code>(entity Boolean false)</code> otherwise.</li>
+  <li><strong>Type Rule</strong>: Both args must be <code>Numeric</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(lt 3 5)</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Compare <code>value</code> fields—pure.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="17-eq-expr1-expr2">17. <code>(eq expr1 expr2)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Checks equality between two expressions.</li>
+  <li><strong>Syntax</strong>: <code>(eq expr1 expr2)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr1</code>, <code>expr2</code>: <code>(entity Integer/Float/String ...)</code> or unquoted numbers/strings.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns <code>(entity Boolean true)</code> if <code>expr1</code> equals <code>expr2</code>, <code>(entity Boolean false)</code> otherwise.</li>
+  <li><strong>Type Rule</strong>: Both args must be <code>Numeric</code> or <code>StringValued</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(eq 5 5)</code> → <code>(entity Boolean true)</code>, <code>(eq "dog" "dog")</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Compare <code>value</code> fields—type mismatch fails (e.g., <code>(eq 5 "5")</code> → <code>(entity Boolean false)</code>).</li>
+      <li>Return <code>(entity Boolean result)</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="18-sub-num1-num2-">18. <code>(sub num1 num2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Subtracts <code>Numeric</code> values.</li>
+  <li><strong>Syntax</strong>: <code>(sub num1 num2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>num1</code>, <code>num2</code>, …: <code>(entity Integer/Float ...)</code> or unquoted numbers.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Subtracts left-to-right, returns <code>(entity Integer ...)</code> or <code>(entity Float ...)</code> if any arg is <code>Float</code>.</li>
+  <li><strong>Type Rule</strong>: All args must be <code>Numeric</code>; returns <code>Numeric</code>.</li>
+  <li><strong>Example</strong>: <code>(sub 5 2)</code> → <code>(entity Integer 3)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Subtract <code>value</code> fields sequentially—pure.</li>
+      <li>Fail on insufficient args (e.g., <code>(sub 5)</code> → <code>(entity Error "insufficient arguments")</code>).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="19-div-num1-num2-">19. <code>(div num1 num2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Divides <code>Numeric</code> values.</li>
+  <li><strong>Syntax</strong>: <code>(div num1 num2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>num1</code>, <code>num2</code>, …: <code>(entity Integer/Float ...)</code> or unquoted numbers.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Divides left-to-right, returns <code>(entity Float ...)</code> (or fails if divisor is 0—see <code>(try ...)</code>).</li>
+  <li><strong>Type Rule</strong>: All args must be <code>Numeric</code>; returns <code>Numeric</code>.</li>
+  <li><strong>Example</strong>: <code>(div 10 2)</code> → <code>(entity Float 5)</code></li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Divide <code>value</code> fields—<code>(try ...)</code> catches division by zero (e.g., <code>(div 5 0)</code> → <code>(entity Error "division by zero")</code>).</li>
+      <li>Pure—fails cleanly.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="20-every-subject-stmt">20. <code>(every subject stmt)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Asserts a statement holds for all instances of a subject.</li>
+  <li><strong>Syntax</strong>: <code>(every subject stmt)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>subject</code>: <code>(entity Noun ... :role Subject)</code> or similar – Required.</li>
+      <li><code>stmt</code>: <code>(Statement ...)</code> with <code>subject</code> referenced (e.g., via <code>(entity Pronoun "it")</code>) – Required.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns an <code>Assertable</code> expression—<code>(entity Boolean true)</code> if <code>stmt</code> holds universally for <code>subject</code>.</li>
+  <li><strong>Type Rule</strong>: <code>subject</code> must be <code>Relatable</code>, <code>stmt</code> must be <code>Assertable</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(every dog (Statement it chases toy))</code> – “Every dog chases the toy.”</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Evaluate <code>stmt</code> for all <code>subject</code> instances—implementation defines “all” (e.g., abstract domain or list).</li>
+      <li>Return <code>(entity Boolean result)</code>—pure.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="21-some-subject-stmt">21. <code>(some subject stmt)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Asserts a statement holds for at least one instance of a subject.</li>
+  <li><strong>Syntax</strong>: <code>(some subject stmt)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>subject</code>: <code>(entity Noun ... :role Subject)</code> or similar – Required.</li>
+      <li><code>stmt</code>: <code>(Statement ...)</code> with <code>subject</code> referenced – Required.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns an <code>Assertable</code> expression—<code>(entity Boolean true)</code> if <code>stmt</code> holds for some <code>subject</code>.</li>
+  <li><strong>Type Rule</strong>: <code>subject</code> must be <code>Relatable</code>, <code>stmt</code> must be <code>Assertable</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(some dog (Statement it chases toy))</code> – “Some dog chases the toy.”</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Evaluate <code>stmt</code> for at least one <code>subject</code>—pure logic.</li>
+      <li>Return <code>(entity Boolean result)</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="22-map-key1-val1-key2-val2-">22. <code>(map :key1 val1 :key2 val2 ...)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Creates a key/value map for optional arguments in <code>(entity ...)</code>, <code>(Statement ...)</code>, and <code>(relate ...)</code>.</li>
+  <li><strong>Syntax</strong>: <code>(map :key1 val1 :key2 val2 ...)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>:key1</code>, <code>:key2</code>, …: Keywords (e.g., <code>:role</code>, <code>:adverb</code>, <code>:time</code>).</li>
+      <li><code>val1</code>, <code>val2</code>, …: Values matching key semantics (e.g., <code>Subject</code>, <code>(entity Adverb ...)</code>, <code>(entity Time ...)</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns a <code>Map</code> object storing key/value pairs.</li>
+  <li><strong>Type Rule</strong>: Must be <code>Mappable</code>; keys depend on context (<code>:role</code>, <code>:adjective</code> for <code>(entity ...)</code>, <code>:adverb</code> for <code>(Statement ...)</code>, <code>:adverb</code>, <code>:time</code>, <code>:number</code> for <code>(relate ...)</code>).</li>
+  <li><strong>Example</strong>: <code>(map :adverb quickly :time t-0)</code> – Modifier map for <code>(relate ...)</code> or <code>(Statement ...)</code>.</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Return <code>{type: :map, pairs: {:key1: val1, :key2: val2}}</code>.</li>
+      <li>Validate keys/values per context at parse time (e.g., <code>:time</code> must be <code>Timeable</code>).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="23-times-number-stmt">23. <code>(times number stmt)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Specifies the frequency of a statement.</li>
+  <li><strong>Syntax</strong>: <code>(times number stmt)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>number</code>: <code>(entity Integer/Float ...)</code> or unquoted number – Required.</li>
+      <li><code>stmt</code>: <code>(Statement ...)</code> or similar – Required.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns an <code>Assertable</code> expression asserting <code>stmt</code> occurs <code>number</code> times.</li>
+  <li><strong>Type Rule</strong>: <code>number</code> must be <code>Numeric</code>, <code>stmt</code> must be <code>Assertable</code>; returns <code>Boolean</code>.</li>
+  <li><strong>Example</strong>: <code>(times 3 (Statement dog chases toy))</code> – “Dog chases toy 3 times.”</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Return <code>{type: :times, number: n, stmt: s}</code>—evaluate <code>stmt</code> with frequency.</li>
+      <li>Pure—frequency is a logical assertion.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="24-that-subject-stmt">24. <code>(that subject stmt)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Binds a subject to a relative clause, returning the modified subject.</li>
+  <li><strong>Syntax</strong>: <code>(that subject stmt)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>subject</code>: <code>(entity Noun ... :role Subject)</code> or similar – Required.</li>
+      <li><code>stmt</code>: <code>(Statement ...)</code> with <code>subject</code> referenced (e.g., via <code>(entity Pronoun "it")</code>) – Required.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Returns a <code>Relatable</code> entity representing <code>subject</code> qualified by <code>stmt</code>.</li>
+  <li><strong>Type Rule</strong>: <code>subject</code> must be <code>Relatable</code>, <code>stmt</code> must be <code>Assertable</code>; returns <code>Relatable</code>.</li>
+  <li><strong>Example</strong>: <code>(Statement dog is (that dog (Statement it chases toy)) :adverb big)</code> – “The dog that chases the toy is big.”</li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Return <code>{type: :that, subject: s, stmt: st}</code>—links <code>subject</code> to <code>stmt</code> for evaluation.</li>
+      <li>Pure—modifies <code>subject</code> conceptually, no side effects.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="25-try-expr-catch-error-var-rescue-expr">25. <code>(try expr catch (error-var) rescue-expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Attempts an expression, providing a fallback if it fails.</li>
+  <li><strong>Syntax</strong>: <code>(try expr catch (error-var) rescue-expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr</code>: Any expression – Required.</li>
+      <li><code>error-var</code>: Symbol (e.g., <code>e</code>) – Binds the error in <code>rescue-expr</code>.</li>
+      <li><code>rescue-expr</code>: Fallback expression – Required, must match <code>expr</code>’s return type.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Evaluates <code>expr</code>; if successful, returns its result; if it fails (e.g., <code>(div 5 0)</code>), evaluates <code>rescue-expr</code> with <code>error-var</code> bound to an <code>(entity Error "message")</code>.</li>
+  <li><strong>Type Rule</strong>: <code>expr</code> and <code>rescue-expr</code> must share a return type (e.g., <code>Numeric</code>, <code>Boolean</code>).</li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(try (div 5 0) catch (e) (entity Boolean false))</code> – Returns <code>(entity Boolean false)</code> on failure.</li>
+      <li><code>(try (add 3 2) catch (e) (entity Integer 0))</code> – Returns <code>(entity Integer 5)</code> (success).</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li>Wrap <code>expr</code> in an error trap; on failure, bind <code>error-var</code> to <code>(entity Error "reason")</code>.</li>
+      <li>Type check <code>expr</code> and <code>rescue-expr</code> for consistency—pure, no I/O.</li>
+      <li>Failures (e.g., <code>(div 5 0)</code>) produce <code>(entity Error "division by zero")</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="26-comment-s-expr">26. <code>(comment s-expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Provides a way to include an unevaluated s-expression as a comment or hint for other developers, enhancing code readability and reuse without affecting execution.</li>
+  <li><strong>Syntax</strong>: <code>(comment s-expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>s-expr</code>: Required—Any valid s-expression (e.g., a <code>(list ...)</code>, <code>(Statement ...)</code>, or literal). Can be a single expression or a list of expressions (e.g., <code>(comment (list (add 1 2) (mul 3 4)))</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: A no-op at runtime—purely structural, ignored by the evaluator. The <code>s-expr</code> is preserved in the parsed structure for documentation or tooling (e.g., pretty-printers, IDEs) but has no computational effect.</li>
+  <li><strong>Type Rule</strong>: None—<code>s-expr</code> is not type-checked beyond basic syntax validity, as it’s never evaluated.</li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(comment (Statement dog chases toy))</code> – Hints at a reusable “dog chases toy” statement.</li>
+      <li><code>(comment (list (add 1 2) (mul 3 4)))</code> – Suggests a sequence of math ops for reuse.</li>
+      <li><code>(let ((x be 5)) (comment (add x 10)) (mul x 2))</code> – Notes an alternative computation, returns <code>(entity Integer 10)</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li><strong>Parser</strong>: Parse as <code>[:comment, s-expr]</code>—store <code>s-expr</code> verbatim without evaluation. Allow nested lists (e.g., <code>[:comment, [:list, [:add, 1, 2], [:mul, 3, 4]]]</code>).</li>
+      <li><strong>Evaluator</strong>: Skip entirely—return no value or propagate the next expression’s result in a sequence (e.g., <code>(comment ...) (mul x 2)</code> → <code>(entity Integer 10)</code>).</li>
+      <li><strong>Purity</strong>: No effect—perfectly pure, just a marker for humans.</li>
+      <li><strong>Tooling</strong>: Could be extracted by a linter or doc generator (e.g., “Hints: <code>(Statement dog chases toy)</code>”).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="27-inner-monologue-some-string-s-expr">27. <code>(inner-monologue "some-string" [s-expr])</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Attaches a human-readable “thought string” to an optional s-expression, providing guidance or intent for the next reader, akin to an inline note or mental aside, without impacting execution.</li>
+  <li><strong>Syntax</strong>:
+    <ul>
+      <li><code>(inner-monologue "some-string")</code> – Minimal form with just a string.</li>
+      <li><code>(inner-monologue "some-string" s-expr)</code> – Full form with a string and expression.</li>
+    </ul>
+  </li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>"some-string"</code>: Required—A string literal (e.g., <code>"Calculate the total here"</code>) in <code>(entity String ...)</code> form, conveying intent or instructions.</li>
+      <li><code>s-expr</code>: Optional—Any valid s-expression (e.g., <code>(add 1 2)</code>), providing context or an example tied to the thought. Defaults to no expression if omitted.</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: A no-op at runtime—purely structural, ignored by the evaluator. Both the string and optional <code>s-expr</code> are preserved in the parsed structure for documentation purposes but do not affect computation.</li>
+  <li><strong>Type Rule</strong>:
+    <ul>
+      <li><code>"some-string"</code>: Must be <code>(entity String ...)</code> or a string literal (parser converts to <code>(entity String "text")</code>).</li>
+      <li><code>s-expr</code>: No type check—unevaluated, can be anything syntactically valid.</li>
+    </ul>
+  </li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(inner-monologue "Start with the base count")</code> – Simple note.</li>
+      <li><code>(inner-monologue "Add 3 to the count here" (add count 3))</code> – Guidance with an example.</li>
+      <li><code>(let ((count be 5)) (inner-monologue "Double the count" (mul count 2)) (add count 1))</code> – Notes an alternative, returns <code>(entity Integer 6)</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li><strong>Parser</strong>:
+        <ul>
+          <li>Parse as <code>[:inner-monologue, "some-string"]</code> or <code>[:inner-monologue, "some-string", s-expr]</code>.</li>
+          <li>Convert <code>"some-string"</code> to <code>[:entity, :String, "some-string"]</code> internally.</li>
+          <li>Store <code>s-expr</code> verbatim if present (e.g., <code>[:inner-monologue, "Add here", [:add, :count, 3]]</code>).</li>
+        </ul>
+      </li>
+      <li><strong>Evaluator</strong>: Skip—return no value or propagate the next expression’s result in a sequence (e.g., <code>(inner-monologue ...) (add count 1)</code> → <code>(entity Integer 6)</code>).</li>
+      <li><strong>Purity</strong>: No effect—purely for human consumption.</li>
+      <li><strong>Tooling</strong>: Extractable by doc tools (e.g., “Thought: ‘Double the count’ with <code>(mul count 2)</code>”).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="28-quote-expr">28. <code>(quote expr)</code></h3>
+<ul>
+  <li><strong>Purpose</strong>: Returns the input expression unevaluated as a quoted s-expression, preserving it as data for manipulation or reuse, supporting Wat’s homoiconicity.</li>
+  <li><strong>Syntax</strong>: <code>(quote expr)</code></li>
+  <li><strong>Arguments</strong>:
+    <ul>
+      <li><code>expr</code>: Required—Any valid s-expression (e.g., a literal like <code>5</code>, a list like <code>(add 1 2)</code>, or a complex form like <code>(Statement dog chases toy)</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Semantics</strong>: Prevents evaluation of <code>expr</code>, returning it as a quoted form (an unevaluated s-expression) that can be bound, passed, or manipulated as data. Unlike <code>(comment ...)</code> or <code>(inner-monologue ...)</code>, which are no-ops, <code>(quote ...)</code> produces a usable result.</li>
+  <li><strong>Type Rule</strong>: None—<code>expr</code> is not evaluated, so no type checking applies beyond syntactic validity.</li>
+  <li><strong>Examples</strong>:
+    <ul>
+      <li><code>(quote (add 1 2))</code> – Returns the s-expression <code>(add 1 2)</code> unevaluated, not <code>(entity Integer 3)</code>.</li>
+      <li><code>(quote (Statement dog chases toy))</code> – Returns <code>(Statement dog chases toy)</code> as data, not a computed assertion.</li>
+      <li><code>(let ((quoted be (quote (mul 3 4)))) quoted)</code> – Binds <code>(mul 3 4)</code> as a value, returns <code>(mul 3 4)</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Implementation Notes</strong>:
+    <ul>
+      <li><strong>Parser</strong>: Parse as <code>[:quote, s-expr]</code>—store <code>s-expr</code> verbatim without evaluating (e.g., <code>[:quote, [:add, 1, 2]]</code>).</li>
+      <li><strong>Evaluator</strong>: Return <code>s-expr</code> as-is—no computation, just pass the parsed form (e.g., <code>(add 1 2)</code> as a list structure).</li>
+      <li><strong>Purity</strong>: Pure—no side effects, simply returns the unevaluated input.</li>
+      <li><strong>Storage</strong>: Represent as the raw s-expression (e.g., <code>(add 1 2)</code>), not a wrapped object, for direct use in <code>(list ...)</code> or bindings.</li>
+      <li><strong>Tooling</strong>: Can be inspected or pretty-printed (e.g., “Quoted: <code>(Statement dog chases toy)</code>”).</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="userland-functions">Userland Functions</h2>
+
+<p>These are defined with <code>(lambda ...)</code> to extend Wat without core additions. All are pure, returning computed values.</p>
+
+<h3 id="1-or-expr1-expr2">1. <code>(or expr1 expr2)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define or as
+  (lambda ((expr1 as Assertable) (expr2 as Assertable))
+    returns Assertable
+    (not (and (not expr1) (not expr2)))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Logical disjunction via De Morgan’s law.</li>
+  <li><strong>Example</strong>: <code>(or (Statement dog chases toy) (Statement dog catches toy))</code> – “Dog chases or catches toy.”</li>
+  <li><strong>Implementation Notes</strong>: Pure—uses <code>(not ...)</code> and <code>(and ...)</code> to compute <code>(entity Boolean true/false)</code>.</li>
+</ul>
+
+<h3 id="2-before-t-1-t-2">2. <code>(before t-1 t-2)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define before as
+  (lambda ((t-1 as Time) (t-2 as Time))
+    returns Statement
+    (let
+      ((precedes be (entity Verb "precedes")))
+      (Statement t-1 precedes t-2))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Asserts <code>t-1</code> precedes <code>t-2</code>.</li>
+  <li><strong>Example</strong>: <code>(before t-0 t-1)</code> – “t0 precedes t1.”</li>
+  <li><strong>Implementation Notes</strong>: Pure—constructs a <code>(Statement ...)</code> using <code>(entity ...)</code> and <code>(Statement ...)</code>.</li>
+</ul>
+
+<h3 id="3-between-t-1-t-2">3. <code>(between t-1 t-2)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define between as
+  (lambda ((t-1 as Time) (t-2 as Time))
+    returns Time
+    (entity Time (join t-1 " to " t-2))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Creates a time range entity.</li>
+  <li><strong>Example</strong>: <code>(between t-0 t-1)</code> – “t0 to t1.”</li>
+  <li><strong>Implementation Notes</strong>: Pure—<code>(join ...)</code> computes a string, wrapped in <code>(entity Time ...)</code>.</li>
+</ul>
+
+<h3 id="4-during-event-t-1-t-2">4. <code>(during event t-1 t-2)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define during as
+  (lambda ((event as Statement) (t-1 as Time) (t-2 as Time))
+    returns Statement
+    (let
+      ((occurs-during be (entity Verb "occurs-during")))
+      (Statement event occurs-during (between t-1 t-2)))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Asserts an event occurs during a time range.</li>
+  <li><strong>Example</strong>: <code>(during (Statement dog chases toy) t-0 t-1)</code> – “Dog chases toy during t0 to t1.”</li>
+  <li><strong>Implementation Notes</strong>: Pure—builds a <code>(Statement ...)</code> with <code>(between ...)</code>.</li>
+</ul>
+
+<h3 id="5-mod-x-y">5. <code>(mod x y)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define mod as
+  (lambda ((x as Numeric) (y as Numeric))
+    returns Numeric
+    (sub x (mul y (div x y)))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Computes the modulo (remainder).</li>
+  <li><strong>Example</strong>: <code>(mod 5 2)</code> → <code>(entity Integer 1)</code></li>
+  <li><strong>Implementation Notes</strong>: Pure—uses <code>(sub ...)</code>, <code>(mul ...)</code>, <code>(div ...)</code> for arithmetic.</li>
+</ul>
+
+<h3 id="6-pow-base-exp">6. <code>(pow base exp)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define pow as
+  (lambda ((base as Numeric) (exp as Integer))
+    returns Numeric
+    (if (eq exp 1)
+      then base
+      else (mul base (pow base (sub exp 1))))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Computes exponentiation.</li>
+  <li><strong>Example</strong>: <code>(pow 2 3)</code> → <code>(entity Integer 8)</code></li>
+  <li><strong>Implementation Notes</strong>: Pure—recursive <code>(mul ...)</code> and <code>(sub ...)</code>.</li>
+</ul>
+
+<h3 id="7-ge-x-y">7. <code>(ge x y)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define ge as
+  (lambda ((x as Numeric) (y as Numeric))
+    returns Assertable
+    (not (lt x y))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Greater than or equal to.</li>
+  <li><strong>Example</strong>: <code>(ge 5 3)</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>: Pure—<code>(not ...)</code> and <code>(lt ...)</code>.</li>
+</ul>
+
+<h3 id="8-le-x-y">8. <code>(le x y)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define le as
+  (lambda ((x as Numeric) (y as Numeric))
+    returns Assertable
+    (not (gt x y))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Less than or equal to.</li>
+  <li><strong>Example</strong>: <code>(le 3 5)</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>: Pure—<code>(not ...)</code> and <code>(gt ...)</code>.</li>
+</ul>
+
+<h3 id="9-ne-x-y">9. <code>(ne x y)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define ne as
+  (lambda ((x as Numeric) (y as Numeric))
+    returns Assertable
+    (not (eq x y))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Not equal to.</li>
+  <li><strong>Example</strong>: <code>(ne 5 3)</code> → <code>(entity Boolean true)</code></li>
+  <li><strong>Implementation Notes</strong>: Pure—<code>(not ...)</code> and <code>(eq ...)</code>.</li>
+</ul>
+
+<h3 id="10-passive-obj-verb-subj">10. <code>(passive obj verb subj)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define passive as
+  (lambda ((obj as Object) (verb as Verb) (subj as Subject))
+    returns Statement
+    (let
+      ((is be (entity Verb "is")))
+      (Statement obj is (Statement subj verb obj)))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Constructs passive voice statements with SVO order.</li>
+  <li><strong>Example</strong>: <code>(passive toy chases dog)</code> – “The toy is chased by the dog.”</li>
+  <li><strong>Implementation Notes</strong>: Pure—nested <code>(Statement ...)</code> construction, flipped for SVO.</li>
+</ul>
+
+<h3 id="11-after-t1-stmt">11. <code>(after t1 stmt)</code></h3>
+<ul>
+  <li><strong>Definition</strong>:</li>
+</ul>
+
+<pre><code>(define after as
+  (lambda ((t1 as Time) (stmt as Statement))
+    returns Statement
+    (let
+      ((precedes be (entity Verb "precedes")))
+      (Statement stmt precedes t1))))
+</code></pre>
+
+<ul>
+  <li><strong>Purpose</strong>: Asserts a statement occurs after a time.</li>
+  <li><strong>Example</strong>: <code>(after t-0 (Statement dog chases toy))</code> – “After t0, the dog chases the toy.”</li>
+  <li><strong>Implementation Notes</strong>: Pure—uses <code>(Statement ...)</code> and <code>(entity ...)</code> via <code>(before ...)</code> inversion.</li>
+</ul>
+
+<hr />
+
+<h2 id="trait-implementations">Trait Implementations</h2>
+
+<p>Global <code>(impl ...)</code> declarations define type capabilities, enforced at parse time:</p>
+
+<ol>
+  <li><code>(impl Relatable for Noun)</code> – Usable as <code>subject</code> or <code>object</code> in <code>(Statement ...)</code>.</li>
+  <li><code>(impl Relatable for Time)</code> – Usable in time-related statements.</li>
+  <li><code>(impl Relatable for Pronoun)</code> – Usable as <code>object</code> (e.g., “it”).</li>
+  <li><code>(impl RelatableVerb for Verb)</code> – Usable as <code>verb</code> in <code>(Statement ...)</code>.</li>
+  <li><code>(impl Adverbial for Adverb)</code> – Usable as <code>:adverb</code> in <code>(Statement ...)</code> map.</li>
+  <li><code>(impl StringValued for Noun)</code> – Has a string <code>value</code>.</li>
+  <li><code>(impl StringValued for Verb)</code> – Has a string <code>value</code>.</li>
+  <li><code>(impl StringValued for Time)</code> – Has a string <code>value</code>.</li>
+  <li><code>(impl StringValued for Adverb)</code> – Has a string <code>value</code>.</li>
+  <li><code>(impl StringValued for String)</code> – Is a string.</li>
+  <li><code>(impl Numeric for Integer)</code> – Usable in math ops.</li>
+  <li><code>(impl Numeric for Float)</code> – Usable in math ops.</li>
+  <li><code>(impl Assertable for Boolean)</code> – Usable in <code>(assert ...)</code>, <code>(if ...)</code>.</li>
+  <li><code>(impl Assertable for Statement)</code> – Usable in <code>(assert ...)</code>, <code>(if ...)</code>.</li>
+  <li><code>(impl Assertable for Relate)</code> – Internal <code>(Statement ...)</code> form.</li>
+  <li><code>(impl Timeable for Time)</code> – Usable in <code>(at ...)</code>.</li>
+  <li><code>(impl Listable for Noun)</code> – Usable in <code>(list ...)</code>.</li>
+  <li><code>(impl Listable for Time)</code> – Usable in <code>(list ...)</code>.</li>
+  <li><code>(impl Listable for Verb)</code> – Usable in <code>(list ...)</code>.</li>
+  <li><code>(impl Listable for Integer)</code> – Usable in <code>(list ...)</code>.</li>
+  <li><code>(impl Listable for Float)</code> – Usable in <code>(list ...)</code>.</li>
+  <li><code>(impl Mappable for Map)</code> – Usable in <code>(entity ...)</code> and <code>(Statement ...)</code> maps.</li>
+  <li><code>(impl Describable for Noun)</code> – Can take <code>:adjective</code> in <code>(entity ...)</code>.</li>
+</ol>
+
+<hr />
+
+<h2 id="sugar-constructs">Sugar Constructs</h2>
+
+<p>Parser-level rewrites for concise syntax, all pure:</p>
+
+<ol>
+  <li><code>(Verb value)</code> → <code>(entity Verb value)</code>
+    <ul>
+      <li>Example: <code>(Verb "chases")</code> → <code>(entity Verb "chases")</code></li>
+    </ul>
+  </li>
+  <li><code>(Subject value [adjective])</code> → <code>(entity Noun value :role Subject [:adjective adjective])</code>
+    <ul>
+      <li>Example: <code>(Subject "dog" (entity Adjective "big"))</code> → <code>(entity Noun "dog" :role Subject :adjective (entity Adjective "big"))</code></li>
+    </ul>
+  </li>
+  <li><code>(Object value [adjective])</code> → <code>(entity Noun value :role Object [:adjective adjective])</code>
+    <ul>
+      <li>Example: <code>(Object "toy")</code> → <code>(entity Noun "toy" :role Object)</code></li>
+    </ul>
+  </li>
+  <li><code>(Time value)</code> → <code>(entity Time value)</code>
+    <ul>
+      <li>Example: <code>(Time "t0")</code> → <code>(entity Time "t0")</code></li>
+    </ul>
+  </li>
+  <li><code>(Adverb value)</code> → <code>(entity Adverb value)</code>
+    <ul>
+      <li>Example: <code>(Adverb "quickly")</code> → <code>(entity Adverb "quickly")</code></li>
+    </ul>
+  </li>
+  <li><code>(Adjective value)</code> → <code>(entity Adjective value)</code>
+    <ul>
+      <li>Example: <code>(Adjective "big")</code> → <code>(entity Adjective "big")</code></li>
+    </ul>
+  </li>
+  <li><code>(Statement subject verb object)</code> → <code>(Statement subject verb object (map))</code>
+    <ul>
+      <li>Example: <code>(Statement dog chases toy)</code> → <code>(Statement dog chases toy (map))</code></li>
+    </ul>
+  </li>
+  <li><code>(Statement subject verb object :key1 val1 ...)</code> → <code>(Statement subject verb object (map :key1 val1 ...))</code>
+    <ul>
+      <li>Example: <code>(Statement dog chases toy :adverb quickly)</code> → <code>(Statement dog chases toy (map :adverb quickly))</code></li>
+    </ul>
+  </li>
+  <li><code>true</code> → <code>(entity Boolean true)</code>
+    <ul>
+      <li>Example: <code>true</code> → <code>(entity Boolean true)</code></li>
+    </ul>
+  </li>
+  <li><code>false</code> → <code>(entity Boolean false)</code>
+    <ul>
+      <li>Example: <code>false</code> → <code>(entity Boolean false)</code></li>
+    </ul>
+  </li>
+  <li><code>n</code> (e.g., <code>3</code>, <code>-5</code>) → <code>(entity Integer n)</code>
+    <ul>
+      <li>Example: <code>3</code> → <code>(entity Integer 3)</code></li>
+    </ul>
+  </li>
+  <li><code>n.m</code> (e.g., <code>2.5</code>, <code>-3.14</code>) → <code>(entity Float n.m)</code>
+    <ul>
+      <li>Example: <code>2.5</code> → <code>(entity Float 2.5)</code></li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h2 id="types">Types</h2>
+
+<ul>
+  <li><strong>Base Types</strong>:</li>
+  <li><code>Noun</code>: <code>(entity Noun "dog")</code> – Represents entities like people, places, things.</li>
+  <li><code>Verb</code>: <code>(entity Verb "chases")</code> – Represents actions or states.</li>
+  <li><code>Time</code>: <code>(entity Time "t0")</code> – Represents time points.</li>
+  <li><code>Adverb</code>: <code>(entity Adverb "quickly")</code> – Modifies verbs.</li>
+  <li><code>String</code>: <code>(entity String "text")</code> – Raw text data.</li>
+  <li><code>Integer</code>: <code>(entity Integer 5)</code> – Whole numbers.</li>
+  <li><code>Float</code>: <code>(entity Float 2.5)</code> – Decimal numbers.</li>
+  <li><code>Boolean</code>: <code>(entity Boolean true)</code> – Truth values (<code>true</code>, <code>false</code>).</li>
+  <li><code>Pronoun</code>: <code>(entity Pronoun "it")</code> – References entities (e.g., “it”).</li>
+  <li><code>Preposition</code>: <code>(entity Preposition "on")</code> – Spatial or relational modifiers.</li>
+  <li><code>Adjective</code>: <code>(entity Adjective "big")</code> – Describes nouns.</li>
+  <li><code>Error</code>: <code>(entity Error "division by zero")</code> – Represents computation failures.</li>
+</ul>
+
+<p><strong>Structural Types</strong>:</p>
+<ul>
+  <li><code>Subject</code>: <code>(entity Noun ... :role Subject)</code> – Subject role wrapper.</li>
+  <li><code>Object</code>: <code>(entity Noun ... :role Object)</code> – Object role wrapper.</li>
+  <li><code>Statement</code>: <code>(Statement subject verb object ...)</code> – SVO sentence structure.</li>
+  <li><code>Relate</code>: <code>(relate verb subject object ...)</code> – Internal SVO form.</li>
+  <li><code>Map</code>: <code>(map :key1 val1 ...)</code> – Key/value attribute container.</li>
+</ul>
+
+<hr />
+
+<h2 id="traits">Traits</h2>
+
+<p><code>Relatable</code>: Can be <code>subject</code> or <code>object</code> in <code>(Statement ...)</code>.</p>
+<ul>
+  <li>Implemented by: <code>Noun</code>, <code>Time</code>, <code>Pronoun</code>.</li>
+</ul>
+
+<p><code>RelatableVerb</code>: Can be <code>verb</code> in <code>(Statement ...)</code>.</p>
+<ul>
+  <li>Implemented by: <code>Verb</code>.</li>
+</ul>
+
+<p><code>Adverbial</code>: Can be <code>:adverb</code> in <code>(Statement ...)</code> map.</p>
+<ul>
+  <li>Implemented by: <code>Adverb</code>.</li>
+</ul>
+
+<p><code>Timeable</code>: Can be <code>time</code> in <code>(at ...)</code>.</p>
+<ul>
+  <li>Implemented by: <code>Time</code>.</li>
+</ul>
+
+<p><code>StringValued</code>: Has a string <code>value</code>.</p>
+<ul>
+  <li>Implemented by: <code>Noun</code>, <code>Verb</code>, <code>Time</code>, <code>Adverb</code>, <code>String</code>.</li>
+</ul>
+
+<p><code>Numeric</code>: Usable in <code>(add ...)</code>, <code>(mul ...)</code>, etc.</p>
+<ul>
+  <li>Implemented by: <code>Integer</code>, <code>Float</code>.</li>
+</ul>
+
+<p><code>Assertable</code>: Usable in <code>(assert ...)</code>, <code>(not ...)</code>, <code>(if ...)</code>, etc.</p>
+<ul>
+  <li>Implemented by: <code>Boolean</code>, <code>Statement</code>, <code>Relate</code>.</li>
+</ul>
+
+<p><code>Listable</code>: Can be an element in <code>(list ...)</code>.</p>
+<ul>
+  <li>
+    <p>Implemented by: <code>Noun</code>, <code>Time</code>, <code>Verb</code>, <code>Integer</code>, <code>Float</code>.</p>
+  </li>
+  <li>
+    <p><code>Mappable</code>: Can be decomposed in <code>(entity ...)</code> or <code>(Statement ...)</code> maps.<br />
+Implemented by: <code>Map</code>.</p>
+  </li>
+</ul>
+
+<p><code>Describable</code>: Can take an <code>:adjective</code> in <code>(entity ...)</code>.</p>
+<ul>
+  <li>Implemented by: <code>Noun</code>.</li>
+</ul>
+
+<hr />
+
+<h2 id="full-example">Full Example</h2>
+<pre><code>(let
+  (
+    (dog be (entity Noun "dog" :role Subject :adjective (entity Adjective "big")))
+    (toy be (entity Noun "toy" :role Object))
+    (it be (entity Pronoun "it" :role Object))
+    (chases be (entity Verb "chases"))
+    (catches be (entity Verb "catches"))
+    (is be (entity Verb "is"))
+    (rests be (entity Verb "rests"))
+    (quickly be (entity Adverb "quickly"))
+    (big be (entity Adverb "big"))
+    (t-0 be (entity Time "t0"))
+    (t-1 be (entity Time "t1"))
+    (count be (entity Integer 5))
+    (zero be (entity Integer 0))
+    (or be (define or as (lambda ((e1 as Assertable) (e2 as Assertable)) returns Assertable (not (and (not e1) (not e2))))))
+    (action be (quote (Statement dog chases toy)))
+  )
+  (comment (Statement dog chases toy))  ; Hint: Reusable "dog chases toy" statement
+  (inner-monologue "Attempt division, handle zero case" (div count zero))  ; Thought with example
+  (assert (Statement dog chases toy :adverb quickly))  ; "The big dog quickly chases the toy"
+  (assert (at t-0 (times count (Statement dog chases toy))))  ; "At t0, the big dog chases the toy 5 times"
+  (assert (every dog (Statement it chases toy)))  ; "Every big dog chases the toy"
+  (assert (or (Statement dog chases toy) (Statement dog catches toy)))  ; "The big dog chases or catches the toy"
+  (assert (try (div count zero) catch (e) (entity Boolean false)))  ; "If 5 / 0 fails, assert false"
+  (assert (Statement dog is (that dog (Statement it chases toy)) :adverb big))  ; "The big dog that chases the toy is big"
+  (assert (after t-0 (Statement dog chases toy)))  ; "After t0, the dog chases the toy"
+  (assert (before t-0 t-1))  ; "t0 precedes t1"
+  (if (gt count 3)
+    then (assert (times count (Statement dog chases toy)))
+    else (assert (Statement dog rests toy)))
+  (assert action)  ; Asserts the quoted form—implementation-specific, likely needs (ask action)
+)
+</code></pre>
+<hr />
+
+<h2 id="implementation-notes">Implementation Notes</h2>
+
+<h3 id="parser">Parser</h3>
+<ul>
+  <li><strong>S-Expression Format</strong>: Parse into Ruby arrays (e.g., <code>[:entity, :Noun, "dog", [:map, :role, :Subject]]</code>).</li>
+  <li><strong>Sugar Rewriting</strong>:
+    <ul>
+      <li><code>(entity Noun "dog")</code> → <code>[:entity, :Noun, "dog", [:map]]</code>.</li>
+      <li><code>(Statement dog chases toy)</code> → <code>[:Statement, :dog, :chases, :toy, [:map]]</code>.</li>
+      <li><code>(relate chases dog toy)</code> → <code>[:relate, :chases, :dog, :toy, [:map]]</code>.</li>
+      <li><code>(comment (add 1 2))</code> → <code>[:comment, [:add, 1, 2]]</code>.</li>
+      <li><code>(inner-monologue "note" (add 3 4))</code> → <code>[:inner-monologue, [:entity, :String, "note"], [:add, 3, 4]]</code>.</li>
+      <li><code>(quote (add 1 2))</code> → <code>[:quote, [:add, 1, 2]]</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Type Checking</strong>: Validate <code>Type</code>, <code>value</code>, and map keys at parse time—raise errors for mismatches (e.g., <code>(entity Noun 5)</code> fails).</li>
+</ul>
+
+<h3 id="evaluator">Evaluator</h3>
+<ul>
+  <li><strong>Environment</strong>: Stack of <code>{bindings: {label: value}, traits: {Type: [Trait]}}</code>.</li>
+  <li><strong>Execution</strong>:
+    <ul>
+      <li><code>(entity ...)</code>: Construct <code>{type: Type, value: v, attrs: map}</code>.</li>
+      <li><code>(relate ...)</code>: Construct <code>{verb: v, subject: s, object: o, attrs: map}</code>—used by <code>(Statement ...)</code>.</li>
+      <li><code>(Statement ...)</code>: Delegate to <code>(relate verb subject object [map-expr])</code>—reorder SVO to VSO internally.</li>
+      <li><code>(try ...)</code>: Wrap <code>expr</code> in an exception trap; return <code>rescue-expr</code> on failure with <code>error-var</code> bound.</li>
+      <li><code>(assert ...)</code>: Evaluate to <code>Boolean</code>, fail if <code>false</code> or not <code>Assertable</code> (e.g., <code>(assert (quote ...))</code> → <code>(entity Error "not assertable")</code>).</li>
+      <li><code>(comment ...)</code>: Skip—store in AST, no evaluation.</li>
+      <li><code>(inner-monologue ...)</code>: Skip—store string and optional <code>s-expr</code> in AST, no evaluation.</li>
+      <li><code>(quote ...)</code>: Return <code>expr</code> unevaluated—pure, no computation.</li>
+    </ul>
+  </li>
+  <li><strong>Purity</strong>: No I/O—errors return <code>(entity Error ...)</code> objects, computations stay internal.</li>
+</ul>
+
+<h3 id="error-handling">Error Handling</h3>
+<ul>
+  <li><strong>Failures</strong>: <code>(div 5 0)</code> → <code>(entity Error "division by zero")</code>.</li>
+  <li><strong>Propagation</strong>: <code>(try ...)</code> catches and binds errors—purely functional.</li>
+  <li><strong>Validation</strong>: Type mismatches (e.g., <code>(add "dog" 3)</code>) → <code>(entity Error "type mismatch")</code>.</li>
+</ul>
+
+  </article>
+</body>
+</html>

@@ -34,6 +34,8 @@ Gem::Specification.new do |spec|
   # Uncomment to register a new dependency of your gem
   # spec.add_dependency "example-gem", "~> 1.0"
 
+  spec.add_development_dependency "kramdown", "~> 2.5"
+  spec.add_development_dependency "kramdown-parser-gfm", "~> 1.1"
   spec.add_development_dependency "pry", "~> 0.15"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "reline", "~> 0.6"
