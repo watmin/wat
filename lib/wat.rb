@@ -6,7 +6,9 @@ end
 
 require_relative 'wat/version'
 
-module Wat # rubocop:disable Metrics/ModuleLength
+class Wat # rubocop:disable Metrics/ClassLength
+  attr_reader :env
+
   Entity = Struct.new(:type, :value, :attrs)
 
   VALID_TYPES = %i[Noun Verb Time Adverb String Integer Float Boolean
@@ -21,7 +23,11 @@ module Wat # rubocop:disable Metrics/ModuleLength
   VALID_TRAITS = %i[Relatable RelatableVerb Adverbial Timeable
                     StringValued Numeric Assertable Listable Mappable Describable].freeze
 
-  def self.evaluate(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  def initialize
+    @env = { bindings: {}, traits: {} }
+  end
+
+  def evaluate(input, env = @env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     sexp = if input.is_a?(String)
              parse(tokenize(input))
            else
@@ -34,7 +40,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
         role = type
         type = :Noun
         attrs = [:map, :role, role]
-        sexp[2..].each_slice(2) { |k, v| attrs << k << evaluate(v) } unless sexp[2..].empty?
+        sexp[2..].each_slice(2) { |k, v| attrs << k << evaluate(v, env) } unless sexp[2..].empty?
       else
         attrs = sexp[2] || [:map]
       end
@@ -43,14 +49,16 @@ module Wat # rubocop:disable Metrics/ModuleLength
     case sexp[0]
     when :entity then evaluate_entity(sexp)
     when :list then evaluate_list(sexp)
-    when :add then evaluate_add(sexp)
-    when :let then evaluate_let(sexp, { bindings: {}, traits: {} })
-    when :impl then evaluate_impl(sexp, { bindings: {}, traits: {} })
+    when :add then evaluate_add(sexp, env)
+    when :let then evaluate_let(sexp, env)
+    when :impl then evaluate_impl(sexp, env)
     else raise "Unknown function: #{sexp[0]}"
     end
   end
 
-  def self.tokenize(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  private
+
+  def tokenize(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     tokens = []
     buffer = String.new
     in_quotes = false
@@ -79,7 +87,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
     tokens
   end
 
-  def self.parse(tokens) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  def parse(tokens) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     raise "Expected '('" unless tokens[0] == '('
 
     result = []
@@ -124,12 +132,13 @@ module Wat # rubocop:disable Metrics/ModuleLength
     result
   end
 
-  def self.evaluate_entity(sexp) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
-    raise "Expected 'entity'" unless sexp[0] == :entity
+  def evaluate_entity(sexp) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+    return Entity.new(:Error, "expected 'entity' as first argument", {}) unless sexp[0] == :entity
 
     type = sexp[1]
     value = sexp[2]
     map_expr = sexp[3] || [:map]
+
     return Entity.new(:Error, "invalid type: #{type}", {}) unless VALID_TYPES.include?(type)
 
     case type
@@ -142,30 +151,34 @@ module Wat # rubocop:disable Metrics/ModuleLength
     when :Boolean
       return Entity.new(:Error, "expected boolean for Boolean, got #{value}", {}) unless [true, false].include?(value)
     end
+
     attrs = {}
     if map_expr[0] == :map
       map_expr[1..].each_slice(2) do |key, val|
         if key == :adjective
           evaluated_val = evaluate(val)
           error_msg = "expected Adjective entity for :adjective, got #{evaluated_val}"
+
           unless evaluated_val.is_a?(Entity) && evaluated_val.type == :Adjective
             return Entity.new(:Error, error_msg, {})
           end
 
           attrs[key] = evaluated_val
         else
-          attrs[key] = val # Evaluated later if needed
+          attrs[key] = val
         end
       end
     end
+
     Entity.new(type, value, attrs)
   end
 
-  def self.evaluate_list(sexp)
-    raise "Expected 'list'" unless sexp[0] == :list
+  def evaluate_list(sexp)
+    return Entity.new(:Error, "expected 'list' as first argument", {}) unless sexp[0] == :list
 
     sexp[1..].map do |sub_sexp|
       result = evaluate(sub_sexp)
+
       unless result.is_a?(Entity) && LISTABLE_TYPES.include?(result.type)
         return Entity.new(:Error, "expression not Listable: #{sub_sexp}", {})
       end
@@ -174,10 +187,11 @@ module Wat # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def self.evaluate_add(sexp, env = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-    raise "Expected 'add'" unless sexp[0] == :add
+  def evaluate_add(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+    return Entity.new(:Error, "expected 'add' as first argument", {}) unless sexp[0] == :add
 
     args = sexp[1..].map { |sub_sexp| eval_expr(sub_sexp, env) }
+
     return Entity.new(:Error, 'insufficient arguments for add', {}) if args.empty?
 
     args.each do |arg|
@@ -188,36 +202,41 @@ module Wat # rubocop:disable Metrics/ModuleLength
 
     sum = args.map(&:value).reduce(:+)
     type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
+
     Entity.new(type, sum, {})
   end
 
-  def self.evaluate_let(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
-    raise "Expected 'let'" unless sexp[0] == :let
+  def deep_dup(env)
+    { bindings: env[:bindings].dup, traits: env[:traits].transform_values(&:dup) }
+  end
+
+  def evaluate_let(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+    return Entity.new(:Error, "expected 'let' as first argument", {}) unless sexp[0] == :let
 
     bindings = sexp[1]
     body = sexp[2..]
+    new_env = deep_dup(env)
 
-    new_env = { bindings: env[:bindings].dup, traits: env[:traits].dup }
     bindings.each do |binding|
-      raise "Invalid binding: #{binding}" unless binding[1] == :be && binding.length == 3
+      return Entity.new(:Error, "invalid binding: #{binding}", {}) unless binding[1] == :be && binding.length == 3
 
       label = binding[0]
-      value = eval_expr(binding[2], new_env)
-      new_env[:bindings][label] = value
+      value = evaluate(binding[2], new_env) # Evaluate nested sexps
+      new_env[label] = value
     end
 
     return nil if body.empty?
 
-    result = body.map { |expr| eval_expr(expr, new_env) }
+    result = body.map { |expr| eval_expr(expr, new_env) } # Use eval_expr for variables
     result.length == 1 ? result.first : result.last
   end
 
-  def self.eval_expr(expr, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  def eval_expr(expr, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     case expr
     when Symbol
-      raise "Unbound variable: #{expr}" unless env[:bindings].key?(expr)
+      raise "Unbound variable: #{expr}" unless env.key?(expr)
 
-      env[:bindings][expr]
+      env[expr]
     when Entity
       expr
     when Array
@@ -238,7 +257,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
         when :add then evaluate_add(expr, env)
         when :let then evaluate_let(expr, env)
         when :impl then evaluate_impl(expr, env)
-        else raise "Unknown function: #{expr[0]}"
+        else raise "Unbound variable: #{expr[0]}" # Match error message for consistency
         end
       end
     else
@@ -246,7 +265,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def self.evaluate_impl(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+  def evaluate_impl(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
     return Entity.new(:Error, "expected 'impl' as first argument", {}) unless sexp[0] == :impl
 
     unless sexp.length == 4 && sexp[2] == :for
@@ -260,7 +279,8 @@ module Wat # rubocop:disable Metrics/ModuleLength
     return Entity.new(:Error, "invalid type: #{type}", {}) unless VALID_TYPES.include?(type)
 
     env[:traits][type] ||= []
-    env[:traits][type] << trait unless env[:traits][type].include?(trait) # Avoid duplicates
+    env[:traits][type] << trait unless env[:traits][type].include?(trait)
+
     Entity.new(:Boolean, true, {})
   end
 end
