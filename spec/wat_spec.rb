@@ -467,5 +467,79 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Error)
       expect(result.value).to include('argument count mismatch')
     end
+
+    it 'errors on partial parameter spec' do
+      input = '(lambda ((x as Integer) (y)) returns Integer (add x y))'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid lambda syntax')
+    end
+
+    it 'errors on duplicate parameter names' do
+      input = '(lambda ((x as Integer) (x as Integer)) returns Integer (add x x))'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid lambda syntax')  # Or custom "duplicate parameter"
+    end
+
+    it 'handles non-coercible type with entity argument' do
+      input = <<~WAT
+        (let ((f be (lambda ((x as Noun)) returns Noun x)))
+          (f (entity Noun "dog")))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+    end
+
+    it 'coerces integer to float argument' do
+      input = <<~WAT
+        (let ((f be (lambda ((x as Float)) returns Float (add x 1))))
+          (f 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Float)
+      expect(result.value).to eq(6.0)
+    end
+
+    it 'preserves outer scope across nested let' do
+      input = <<~WAT
+        (let ((x be (entity Integer 1)))
+          (let ((f be (lambda () returns Integer x)))
+            (let ((x be (entity Integer 2)))
+              (f))))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(1)
+    end
+
+    it 'handles lambda returning lambda' do
+      input = <<~WAT
+        (let ((f be (lambda () returns Lambda  ; Change return type
+                      (lambda ((x as Integer)) returns Integer (add x 1)))))
+          ((f) 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(6)
+    end
+
+    it 'errors on self-reference without binding' do
+      input = '(lambda ((x as Integer)) returns Integer (self x))'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid lambda syntax')  # Will fail, adjust below
+    end
+
+    it 'handles nested unbound variables' do
+      input = <<~WAT
+        (let ((f be (lambda ((x as Integer)) returns Integer (add x (add y z)))))
+          (f 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('Unbound variable: y') # First error encountered
+    end
   end
 end

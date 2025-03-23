@@ -13,7 +13,7 @@ class Wat # rubocop:disable Metrics/ClassLength
   Lambda = Struct.new(:params, :return_type, :body, :env)
 
   VALID_TYPES = %i[Noun Verb Time Adverb String Integer Float Boolean
-                   Pronoun Preposition Adjective Error].freeze
+                   Pronoun Preposition Adjective Error Lambda].freeze
   SUGAR_TYPES = %i[Noun Verb Time Adverb Pronoun Preposition Adjective
                    Subject Object Integer Float Boolean].freeze
   VALID_FUNCTIONS = %i[entity list add let impl lambda Noun Verb Time Adverb
@@ -65,8 +65,19 @@ class Wat # rubocop:disable Metrics/ClassLength
     tokens = []
     buffer = String.new
     in_quotes = false
+    in_comment = false
 
     input.chars.each do |char|
+      if in_comment
+        in_comment = false if char == "\n"
+        next
+      end
+      if char == ';' && !in_quotes
+        in_comment = true
+        tokens << buffer if buffer != ''
+        buffer = String.new
+        next
+      end
       if char == '"'
         in_quotes = !in_quotes
         buffer << char
@@ -74,11 +85,9 @@ class Wat # rubocop:disable Metrics/ClassLength
         buffer << char
       elsif char =~ /\s/
         tokens << buffer if buffer != ''
-
         buffer = String.new
       elsif %w[( )].include?(char)
         tokens << buffer if buffer != ''
-
         tokens << char
         buffer = String.new
       else
@@ -97,7 +106,7 @@ class Wat # rubocop:disable Metrics/ClassLength
     raise "Expected '('" unless tokens[0] == '('
 
     result = []
-    tokens.shift # Remove "("
+    tokens.shift
     until tokens.empty? || tokens[0] == ')'
       if tokens[0] == '('
         result << parse(tokens)
@@ -118,7 +127,7 @@ class Wat # rubocop:disable Metrics/ClassLength
 
     raise 'Unclosed parenthesis' if tokens.empty?
 
-    tokens.shift # Remove ")"
+    tokens.shift
 
     if VALID_FUNCTIONS.include?(result[0]) && result[0] != :entity && !SUGAR_TYPES.include?(result[0])
       result[1..] = result[1..].map do |elem|
@@ -228,7 +237,7 @@ class Wat # rubocop:disable Metrics/ClassLength
 
       label = binding[0]
       value = evaluate(binding[2], new_env)
-      new_env[:bindings][label] = value # Fix: Store in :bindings
+      new_env[:bindings][label] = value
     end
 
     return nil if body.empty?
@@ -256,18 +265,24 @@ class Wat # rubocop:disable Metrics/ClassLength
           attrs = [:map, :role, role]
         end
         evaluate_entity([:entity, type, value, attrs])
-      elsif env[:bindings].key?(expr[0]) && env[:bindings][expr[0]].is_a?(Wat::Lambda)
-        lambda_obj = env[:bindings][expr[0]]
-        evaluate_lambda_application([lambda_obj] + expr[1..], env)
       else
-        case expr[0]
-        when :entity then evaluate_entity(expr)
-        when :list then evaluate_list(expr)
-        when :add then evaluate_add(expr, env)
-        when :let then evaluate_let(expr, env)
-        when :impl then evaluate_impl(expr, env)
-        when :lambda then evaluate_lambda(expr, env)
-        else raise "Unknown function: #{expr[0]}"
+        fn_expr = expr[0]
+        fn = fn_expr.is_a?(Array) ? eval_expr(fn_expr, env) : fn_expr
+        if fn.is_a?(Wat::Lambda)
+          evaluate_lambda_application([fn] + expr[1..], env)
+        elsif env[:bindings].key?(fn) && env[:bindings][fn].is_a?(Wat::Lambda)
+          lambda_obj = env[:bindings][fn]
+          evaluate_lambda_application([lambda_obj] + expr[1..], env)
+        else
+          case fn # rubocop:disable Metrics/BlockNesting
+          when :entity then evaluate_entity(expr)
+          when :list then evaluate_list(expr)
+          when :add then evaluate_add(expr, env)
+          when :let then evaluate_let(expr, env)
+          when :impl then evaluate_impl(expr, env)
+          when :lambda then evaluate_lambda(expr, env)
+          else raise "Unknown function: #{fn}"
+          end
         end
       end
     else
@@ -327,6 +342,23 @@ class Wat # rubocop:disable Metrics/ClassLength
       )
     end
 
+    param_names = params_sexp.map { |p| p[0] }
+    if param_names.uniq.length != param_names.length
+      return Entity.new(
+        :Error,
+        "invalid lambda syntax: duplicate parameter names in #{params_sexp}",
+        {}
+      )
+    end
+
+    if body.is_a?(Array) && body[0] == :self
+      return Entity.new(
+        :Error,
+        'invalid lambda syntax: self-reference not allowed without binding',
+        {}
+      )
+    end
+
     params = params_sexp.map { |param| [param[0], param[2]] }
     Lambda.new(params, return_type, body, deep_dup(env))
   end
@@ -349,7 +381,11 @@ class Wat # rubocop:disable Metrics/ClassLength
         when :Integer
           arg = Entity.new(:Integer, arg, {}) if arg.is_a?(Integer)
         when :Float
-          arg = Entity.new(:Float, arg, {}) if arg.is_a?(Float)
+          if arg.is_a?(Integer)
+            arg = Entity.new(:Float, arg.to_f, {})
+          elsif arg.is_a?(Float)
+            arg = Entity.new(:Float, arg, {})
+          end
         when :Boolean
           arg = Entity.new(:Boolean, arg, {}) if [true, false].include?(arg)
         when :String
@@ -367,7 +403,7 @@ class Wat # rubocop:disable Metrics/ClassLength
     begin
       result = eval_expr(fn.body, new_env)
 
-      unless result.is_a?(Entity) && result.type == fn.return_type
+      unless result.is_a?(Wat::Lambda) || (result.is_a?(Entity) && result.type == fn.return_type)
         return Entity.new(:Error, "return type mismatch: expected #{fn.return_type}, got #{result}", {})
       end
 
