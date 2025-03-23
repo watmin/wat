@@ -656,29 +656,40 @@ Global `(impl ...)` declarations define type capabilities, enforced at parse tim
 
 Parser-level rewrites for concise syntax, all pure:
 
-1. `(Verb value)` → `(entity Verb value)`
+`(Verb value)` → `(entity Verb value)`
  - Example: `(Verb "chases")` → `(entity Verb "chases")`
-2. `(Subject value [adjective])` → `(entity Noun value :role Subject [:adjective adjective])`
+
+`(Subject value [adjective])` → `(entity Noun value :role Subject [:adjective adjective])`
  - Example: `(Subject "dog" (entity Adjective "big"))` → `(entity Noun "dog" :role Subject :adjective (entity Adjective "big"))`
-3. `(Object value [adjective])` → `(entity Noun value :role Object [:adjective adjective])`
+
+`(Object value [adjective])` → `(entity Noun value :role Object [:adjective adjective])`
  - Example: `(Object "toy")` → `(entity Noun "toy" :role Object)`
-4. `(Time value)` → `(entity Time value)`
+
+`(Time value)` → `(entity Time value)`
  - Example: `(Time "t0")` → `(entity Time "t0")`
-5. `(Adverb value)` → `(entity Adverb value)`
+
+`(Adverb value)` → `(entity Adverb value)`
  - Example: `(Adverb "quickly")` → `(entity Adverb "quickly")`
-6. `(Adjective value)` → `(entity Adjective value)`
+
+`(Adjective value)` → `(entity Adjective value)`
  - Example: `(Adjective "big")` → `(entity Adjective "big")`
-7. `(Statement subject verb object)` → `(Statement subject verb object (map))`
+
+`(Statement subject verb object)` → `(Statement subject verb object (map))`
  - Example: `(Statement dog chases toy)` → `(Statement dog chases toy (map))`
-8. `(Statement subject verb object :key1 val1 ...)` → `(Statement subject verb object (map :key1 val1 ...))`
+
+`(Statement subject verb object :key1 val1 ...)` → `(Statement subject verb object (map :key1 val1 ...))`
  - Example: `(Statement dog chases toy :adverb quickly)` → `(Statement dog chases toy (map :adverb quickly))`
-9. `true` → `(entity Boolean true)`
+
+`true` → `(entity Boolean true)`
  - Example: `true` → `(entity Boolean true)`
-10. `false` → `(entity Boolean false)`
+
+`false` → `(entity Boolean false)`
   - Example: `false` → `(entity Boolean false)`
-11. `n` (e.g., `3`, `-5`) → `(entity Integer n)`
+
+`n` (e.g., `3`, `-5`) → `(entity Integer n)`
   - Example: `3` → `(entity Integer 3)`
-12. `n.m` (e.g., `2.5`, `-3.14`) → `(entity Float n.m)`
+
+`n.m` (e.g., `2.5`, `-3.14`) → `(entity Float n.m)`
   - Example: `2.5` → `(entity Float 2.5)`
 
 ---

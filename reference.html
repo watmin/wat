@@ -1001,68 +1001,65 @@
 
 <p>Parser-level rewrites for concise syntax, all pure:</p>
 
-<ol>
-  <li><code>(Verb value)</code> → <code>(entity Verb value)</code>
-    <ul>
-      <li>Example: <code>(Verb "chases")</code> → <code>(entity Verb "chases")</code></li>
-    </ul>
-  </li>
-  <li><code>(Subject value [adjective])</code> → <code>(entity Noun value :role Subject [:adjective adjective])</code>
-    <ul>
-      <li>Example: <code>(Subject "dog" (entity Adjective "big"))</code> → <code>(entity Noun "dog" :role Subject :adjective (entity Adjective "big"))</code></li>
-    </ul>
-  </li>
-  <li><code>(Object value [adjective])</code> → <code>(entity Noun value :role Object [:adjective adjective])</code>
-    <ul>
-      <li>Example: <code>(Object "toy")</code> → <code>(entity Noun "toy" :role Object)</code></li>
-    </ul>
-  </li>
-  <li><code>(Time value)</code> → <code>(entity Time value)</code>
-    <ul>
-      <li>Example: <code>(Time "t0")</code> → <code>(entity Time "t0")</code></li>
-    </ul>
-  </li>
-  <li><code>(Adverb value)</code> → <code>(entity Adverb value)</code>
-    <ul>
-      <li>Example: <code>(Adverb "quickly")</code> → <code>(entity Adverb "quickly")</code></li>
-    </ul>
-  </li>
-  <li><code>(Adjective value)</code> → <code>(entity Adjective value)</code>
-    <ul>
-      <li>Example: <code>(Adjective "big")</code> → <code>(entity Adjective "big")</code></li>
-    </ul>
-  </li>
-  <li><code>(Statement subject verb object)</code> → <code>(Statement subject verb object (map))</code>
-    <ul>
-      <li>Example: <code>(Statement dog chases toy)</code> → <code>(Statement dog chases toy (map))</code></li>
-    </ul>
-  </li>
-  <li><code>(Statement subject verb object :key1 val1 ...)</code> → <code>(Statement subject verb object (map :key1 val1 ...))</code>
-    <ul>
-      <li>Example: <code>(Statement dog chases toy :adverb quickly)</code> → <code>(Statement dog chases toy (map :adverb quickly))</code></li>
-    </ul>
-  </li>
-  <li><code>true</code> → <code>(entity Boolean true)</code>
-    <ul>
-      <li>Example: <code>true</code> → <code>(entity Boolean true)</code></li>
-    </ul>
-  </li>
-  <li><code>false</code> → <code>(entity Boolean false)</code>
-    <ul>
-      <li>Example: <code>false</code> → <code>(entity Boolean false)</code></li>
-    </ul>
-  </li>
-  <li><code>n</code> (e.g., <code>3</code>, <code>-5</code>) → <code>(entity Integer n)</code>
-    <ul>
-      <li>Example: <code>3</code> → <code>(entity Integer 3)</code></li>
-    </ul>
-  </li>
-  <li><code>n.m</code> (e.g., <code>2.5</code>, <code>-3.14</code>) → <code>(entity Float n.m)</code>
-    <ul>
-      <li>Example: <code>2.5</code> → <code>(entity Float 2.5)</code></li>
-    </ul>
-  </li>
-</ol>
+<p><code>(Verb value)</code> → <code>(entity Verb value)</code></p>
+<ul>
+  <li>Example: <code>(Verb "chases")</code> → <code>(entity Verb "chases")</code></li>
+</ul>
+
+<p><code>(Subject value [adjective])</code> → <code>(entity Noun value :role Subject [:adjective adjective])</code></p>
+<ul>
+  <li>Example: <code>(Subject "dog" (entity Adjective "big"))</code> → <code>(entity Noun "dog" :role Subject :adjective (entity Adjective "big"))</code></li>
+</ul>
+
+<p><code>(Object value [adjective])</code> → <code>(entity Noun value :role Object [:adjective adjective])</code></p>
+<ul>
+  <li>Example: <code>(Object "toy")</code> → <code>(entity Noun "toy" :role Object)</code></li>
+</ul>
+
+<p><code>(Time value)</code> → <code>(entity Time value)</code></p>
+<ul>
+  <li>Example: <code>(Time "t0")</code> → <code>(entity Time "t0")</code></li>
+</ul>
+
+<p><code>(Adverb value)</code> → <code>(entity Adverb value)</code></p>
+<ul>
+  <li>Example: <code>(Adverb "quickly")</code> → <code>(entity Adverb "quickly")</code></li>
+</ul>
+
+<p><code>(Adjective value)</code> → <code>(entity Adjective value)</code></p>
+<ul>
+  <li>Example: <code>(Adjective "big")</code> → <code>(entity Adjective "big")</code></li>
+</ul>
+
+<p><code>(Statement subject verb object)</code> → <code>(Statement subject verb object (map))</code></p>
+<ul>
+  <li>Example: <code>(Statement dog chases toy)</code> → <code>(Statement dog chases toy (map))</code></li>
+</ul>
+
+<p><code>(Statement subject verb object :key1 val1 ...)</code> → <code>(Statement subject verb object (map :key1 val1 ...))</code></p>
+<ul>
+  <li>Example: <code>(Statement dog chases toy :adverb quickly)</code> → <code>(Statement dog chases toy (map :adverb quickly))</code></li>
+</ul>
+
+<p><code>true</code> → <code>(entity Boolean true)</code></p>
+<ul>
+  <li>Example: <code>true</code> → <code>(entity Boolean true)</code></li>
+</ul>
+
+<p><code>false</code> → <code>(entity Boolean false)</code></p>
+<ul>
+  <li>Example: <code>false</code> → <code>(entity Boolean false)</code></li>
+</ul>
+
+<p><code>n</code> (e.g., <code>3</code>, <code>-5</code>) → <code>(entity Integer n)</code></p>
+<ul>
+  <li>Example: <code>3</code> → <code>(entity Integer 3)</code></li>
+</ul>
+
+<p><code>n.m</code> (e.g., <code>2.5</code>, <code>-3.14</code>) → <code>(entity Float n.m)</code></p>
+<ul>
+  <li>Example: <code>2.5</code> → <code>(entity Float 2.5)</code></li>
+</ul>
 
 <hr />
 
