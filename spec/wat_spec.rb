@@ -46,4 +46,29 @@ RSpec.describe Wat do
       expect(result.attrs).to eq({})
     end
   end
+
+  describe 'list' do
+    it 'creates a list of Integer entities' do
+      input = '(list (entity Integer 1) (entity Integer 2))'
+      result = Wat.evaluate(input)
+      expect(result).to be_an(Array)
+      expect(result.length).to eq(2)
+      expect(result[0]).to be_a(Wat::Entity)
+      expect(result[0].type).to eq(:Integer)
+      expect(result[0].value).to eq(1)
+      expect(result[0].attrs).to eq({})
+      expect(result[1]).to be_a(Wat::Entity)
+      expect(result[1].type).to eq(:Integer)
+      expect(result[1].value).to eq(2)
+      expect(result[1].attrs).to eq({})
+    end
+
+    it 'rejects non-Listable elements' do
+      input = '(list (entity Noun "dog") (list (entity Integer 1)))'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('not Listable')
+    end
+  end
 end
