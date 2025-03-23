@@ -145,5 +145,21 @@ RSpec.describe Wat do
       expect(result.value).to eq(8)
       expect(result.attrs).to eq({})
     end
+
+    it 'errors on unbound variables' do
+      input = '(let () (add x 1))'
+      expect { Wat.evaluate(input) }.to raise_error(/Unbound variable: x/)
+    end
+
+    it 'errors on invalid binding syntax' do
+      input = '(let ((x 5)) (add x 1))' # Missing 'be'
+      expect { Wat.evaluate(input) }.to raise_error(/Invalid binding/)
+    end
+
+    it 'returns nil for empty body' do
+      input = '(let ((x be (entity Integer 5))))'
+      result = Wat.evaluate(input)
+      expect(result).to be_nil
+    end
   end
 end

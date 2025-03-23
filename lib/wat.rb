@@ -165,11 +165,14 @@ module Wat # rubocop:disable Metrics/ModuleLength
   end
 
   def self.eval_expr(expr, env) # rubocop:disable Metrics/CyclomaticComplexity
-    if expr.is_a?(Symbol) && env.key?(expr)
+    case expr
+    when Symbol
+      raise "Unbound variable: #{expr}" unless env.key?(expr)
+
       env[expr]
-    elsif expr.is_a?(Entity)
-      expr  # Already evaluated, pass through
-    elsif expr.is_a?(Array)
+    when Entity
+      expr
+    when Array
       case expr[0]
       when :entity then evaluate_entity(expr)
       when :list then evaluate_list(expr)
@@ -178,7 +181,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
       else raise "Unknown function: #{expr[0]}"
       end
     else
-      expr  # Literals like numbers or strings
+      expr
     end
   end
 
