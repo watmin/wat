@@ -45,6 +45,13 @@ RSpec.describe Wat do
       expect(result.value).to eq(5)
       expect(result.attrs).to eq({})
     end
+
+    it 'supports Noun sugar' do
+      input = '(entity Noun "dog")' # Could test (Noun "dog") if we extend sugar
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+    end
   end
 
   describe 'list' do
@@ -69,6 +76,13 @@ RSpec.describe Wat do
       expect(result).to be_a(Wat::Entity)
       expect(result.type).to eq(:Error)
       expect(result.value).to include('not Listable')
+    end
+
+    it 'returns empty array for no elements' do
+      input = '(list)'
+      result = Wat.evaluate(input)
+      expect(result).to be_an(Array)
+      expect(result).to be_empty
     end
   end
 
@@ -106,6 +120,14 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Integer)
       expect(result.value).to eq(6)
       expect(result.attrs).to eq({})
+    end
+
+    it 'errors on insufficient arguments' do
+      input = '(add)'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('insufficient arguments')
     end
   end
 

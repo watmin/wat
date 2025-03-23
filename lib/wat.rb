@@ -189,6 +189,8 @@ module Wat # rubocop:disable Metrics/ModuleLength
     raise "Expected 'add'" unless sexp[0] == :add
 
     args = sexp[1..].map { |sub_sexp| eval_expr(sub_sexp, env) }
+    return Entity.new(:Error, 'insufficient arguments for add', {}) if args.empty?
+
     args.each do |arg|
       unless arg.is_a?(Entity) && NUMERIC_TYPES.include?(arg.type)
         return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
