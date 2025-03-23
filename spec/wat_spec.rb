@@ -118,6 +118,14 @@ RSpec.describe Wat do
     it 'raises on unclosed parenthesis' do
       expect { wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
     end
+
+    it 'errors on unpaired map keys in Subject sugar' do
+      input = '(Subject "dog" :adjective)'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('unpaired map key: :adjective')
+    end
   end
 
   describe 'list' do

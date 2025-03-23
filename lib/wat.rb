@@ -55,7 +55,10 @@ class Wat # rubocop:disable Metrics/ClassLength
         role = type
         type = :Noun
         attrs = [:map, :role, role]
-        sexp[2..].each_slice(2) { |k, v| attrs << k << evaluate(v, env) } unless sexp[2..].empty?
+        map_args = sexp[2..]
+        return Entity.new(:Error, "unpaired map key: :#{map_args.last}", {}) if map_args.length.odd?
+
+        map_args.each_slice(2) { |k, v| attrs << k << evaluate(v, env) }
       else
         attrs = sexp[2] || [:map]
       end
