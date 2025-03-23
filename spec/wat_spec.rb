@@ -6,6 +6,10 @@ require 'spec_helper'
 RSpec.describe Wat do
   let(:wat) { Wat.new }
 
+  it 'raises on unclosed parenthesis' do
+    expect { wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
+  end
+
   describe 'entity' do
     it 'creates a basic Noun entity' do
       input = '(entity Noun "dog")'
@@ -32,11 +36,6 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Noun)
       expect(result.value).to eq('dog')
       expect(result.attrs).to eq({ role: :Subject })
-    end
-
-    it 'rejects single-quoted strings' do
-      input = "(entity Noun 'dog')"
-      expect { wat.evaluate(input) }.to raise_error('Single quotes not allowed; use double quotes')
     end
 
     it 'creates an Integer entity' do
@@ -94,16 +93,30 @@ RSpec.describe Wat do
       result = wat.evaluate([:entity, :Noun, 'dog', [:map]])
       expect(result.type).to eq(:Noun)
       expect(result.value).to eq('dog')
-    end
-
-    it 'raises on unclosed parenthesis' do
-      expect { wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
+      expect(result.attrs).to eq({})
     end
 
     it 'creates a Verb entity' do
       result = wat.evaluate('(entity Verb "chases")')
       expect(result.type).to eq(:Verb)
       expect(result.value).to eq('chases')
+    end
+
+    it 'rejects single-quoted strings' do
+      input = "(entity Noun 'dog')"
+      expect { wat.evaluate(input) }.to raise_error('Single quotes not allowed; use double quotes')
+    end
+
+    it 'raises on unclosed parenthesis' do
+      expect { wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
+    end
+
+    it 'raises on unclosed quote' do
+      expect { wat.evaluate('(entity Noun "dog)') }.to raise_error('Unclosed quote')
+    end
+
+    it 'raises on unclosed parenthesis' do
+      expect { wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
     end
   end
 

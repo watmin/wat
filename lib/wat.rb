@@ -70,20 +70,23 @@ class Wat # rubocop:disable Metrics/ClassLength
       elsif in_quotes
         buffer << char
       elsif char =~ /\s/
-        if buffer != ''
-          tokens << buffer
-          buffer = String.new
-        end
-        # Skip standalone whitespace
+        tokens << buffer if buffer != ''
+
+        buffer = String.new
       elsif %w[( )].include?(char)
         tokens << buffer if buffer != ''
+
         tokens << char
         buffer = String.new
       else
         buffer << char
       end
     end
+
     tokens << buffer if buffer != ''
+
+    raise 'Unclosed quote' if in_quotes
+
     tokens
   end
 
