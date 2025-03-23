@@ -84,6 +84,13 @@ RSpec.describe Wat do
       expect(result).to be_an(Array)
       expect(result).to be_empty
     end
+
+    it 'returns empty array for no elements' do
+      input = '(list)'
+      result = Wat.evaluate(input)
+      expect(result).to be_an(Array)
+      expect(result).to be_empty
+    end
   end
 
   describe 'add' do
