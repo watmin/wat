@@ -108,4 +108,42 @@ RSpec.describe Wat do
       expect(result.attrs).to eq({})
     end
   end
+
+  describe 'let' do
+    it 'binds a variable and evaluates an expression' do
+      input = '(let ((x be (entity Integer 5))) (add x 3))'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(8)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'binds multiple variables and evaluates an expression' do
+      input = '(let ((x be (entity Integer 5)) (y be (entity Integer 3))) (add x y))'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(8)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'evaluates multiple body expressions, returning the last' do
+      input = '(let ((x be (entity Integer 5))) (add x 1) (add x 2))'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(7)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'binds multiple variables and evaluates an expression with sugar' do
+      input = '(let ((x be (entity Integer 5)) (y be (Integer 3))) (add x y))'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(8)
+      expect(result.attrs).to eq({})
+    end
+  end
 end

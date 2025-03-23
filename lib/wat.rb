@@ -11,7 +11,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
 
   VALID_TYPES = %i[Noun Verb Time Adverb String Integer Float Boolean
                    Pronoun Preposition Adjective Error].freeze
-  VALID_FUNCTIONS = %i[entity list add].freeze
+  VALID_FUNCTIONS = %i[entity list add let].freeze
   LISTABLE_TYPES = %i[Noun Time Verb Integer Float].freeze
   NUMERIC_TYPES = %i[Integer Float].freeze
 
@@ -25,6 +25,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
     when :entity then evaluate_entity(sexp)
     when :list then evaluate_list(sexp)
     when :add then evaluate_add(sexp)
+    when :let then evaluate_let(sexp, {})
     else raise "Unknown function: #{sexp[0]}"
     end
   end
@@ -65,7 +66,12 @@ module Wat # rubocop:disable Metrics/ModuleLength
     tokens.shift # Remove "("
     until tokens.empty? || tokens[0] == ')'
       if tokens[0] == '('
-        result << parse(tokens) # Recursively parse nested s-expression
+        nested = parse(tokens)
+        result << if nested.length == 2 && VALID_TYPES.include?(nested[0])
+                    [:entity, nested[0], nested[1]]
+                  else
+                    nested
+                  end
       else
         token = tokens.shift
         result << case token
@@ -83,8 +89,8 @@ module Wat # rubocop:disable Metrics/ModuleLength
 
     tokens.shift # Remove ")"
 
-    if result[0] != :entity # Skip if already an entity form
-      result = result.map do |elem|
+    if VALID_FUNCTIONS.include?(result[0]) && result[0] != :entity
+      result[1..] = result[1..].map do |elem|
         case elem
         when Integer then [:entity, :Integer, elem]
         when Float then [:entity, :Float, elem]
@@ -140,16 +146,51 @@ module Wat # rubocop:disable Metrics/ModuleLength
     end
   end
 
-  def self.evaluate_add(sexp) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+  def self.evaluate_let(sexp, env) # rubocop:disable Metrics/AbcSize
+    raise "Expected 'let'" unless sexp[0] == :let
+
+    bindings = sexp[1]  # Array of [label, :be, value]
+    body = sexp[2..]    # Array of expressions
+
+    new_env = env.dup
+    bindings.each do |binding|
+      raise "Invalid binding: #{binding}" unless binding[1] == :be && binding.length == 3
+
+      label = binding[0]
+      value = eval_expr(binding[2], new_env)
+      new_env[label] = value
+    end
+
+    body.map { |expr| eval_expr(expr, new_env) }.last
+  end
+
+  def self.eval_expr(expr, env) # rubocop:disable Metrics/CyclomaticComplexity
+    if expr.is_a?(Symbol) && env.key?(expr)
+      env[expr]
+    elsif expr.is_a?(Entity)
+      expr  # Already evaluated, pass through
+    elsif expr.is_a?(Array)
+      case expr[0]
+      when :entity then evaluate_entity(expr)
+      when :list then evaluate_list(expr)
+      when :add then evaluate_add(expr, env)
+      when :let then evaluate_let(expr, env)
+      else raise "Unknown function: #{expr[0]}"
+      end
+    else
+      expr  # Literals like numbers or strings
+    end
+  end
+
+  def self.evaluate_add(sexp, env = {}) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
     raise "Expected 'add'" unless sexp[0] == :add
 
-    args = sexp[1..].map { |sub_sexp| evaluate(sub_sexp) }
+    args = sexp[1..].map { |sub_sexp| eval_expr(sub_sexp, env) }
     args.each do |arg|
       unless arg.is_a?(Entity) && NUMERIC_TYPES.include?(arg.type)
         return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
       end
     end
-
     sum = args.map(&:value).reduce(:+)
     type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
     Entity.new(type, sum, {})
