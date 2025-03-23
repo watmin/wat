@@ -52,6 +52,41 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Noun)
       expect(result.value).to eq('dog')
     end
+
+    it 'creates a Boolean entity with true' do
+      input = '(entity Boolean true)'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Boolean)
+      expect(result.value).to eq(true)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'returns an Error for invalid Boolean value' do
+      input = '(entity Boolean "dog")'
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('expected boolean')
+    end
+
+    it 'supports Noun sugar' do
+      input = '(Noun "dog")'
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+      expect(result.attrs).to eq({})
+    end
+
+    it 'supports Subject sugar with adjective' do
+      input = '(Subject "dog" :adjective (Adjective "big"))'
+      result = Wat.evaluate(input)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+      expect(result.attrs[:role]).to eq(:Subject)
+      expect(result.attrs[:adjective]).to be_a(Wat::Entity)
+      expect(result.attrs[:adjective].type).to eq(:Adjective)
+      expect(result.attrs[:adjective].value).to eq('big')
+    end
   end
 
   describe 'list' do
