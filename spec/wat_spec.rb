@@ -81,5 +81,31 @@ RSpec.describe Wat do
       expect(result.value).to eq(5)
       expect(result.attrs).to eq({})
     end
+
+    it 'adds a Float and an Integer entity, promoting to Float' do
+      input = '(add (entity Float 2.5) (entity Integer 3))'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Float)
+      expect(result.value).to eq(5.5)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'rejects non-Numeric arguments' do
+      input = '(add (entity Noun "dog") 2)'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('expected Numeric')
+    end
+
+    it 'adds multiple Integer arguments' do
+      input = '(add 1 2 3)'
+      result = Wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(6)
+      expect(result.attrs).to eq({})
+    end
   end
 end

@@ -70,6 +70,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
         token = tokens.shift
         result << case token
                   when /^"/ then token[1..].delete_suffix('"')
+                  when /^\d+\.\d+$/ then token.to_f
                   when /^\d+$/ then token.to_i
                   when /^:/ then token[1..].to_sym
                   when /^'/ then raise 'Single quotes not allowed; use double quotes'
@@ -82,6 +83,16 @@ module Wat # rubocop:disable Metrics/ModuleLength
 
     tokens.shift # Remove ")"
 
+    if result[0] != :entity # Skip if already an entity form
+      result = result.map do |elem|
+        case elem
+        when Integer then [:entity, :Integer, elem]
+        when Float then [:entity, :Float, elem]
+        else elem
+        end
+      end
+    end
+
     if result[0] == :entity && result.length > 3 && !result[3].is_a?(Array)
       map_pairs = result[3..].each_slice(2).to_a
       result = result[0..2] + [[:map] + map_pairs.flatten]
@@ -89,16 +100,22 @@ module Wat # rubocop:disable Metrics/ModuleLength
     result
   end
 
-  def self.evaluate_entity(sexp) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+  def self.evaluate_entity(sexp) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
     raise "Expected 'entity'" unless sexp[0] == :entity
 
-    type, value = sexp[1..2]
+    type = sexp[1]
+    value = sexp[2]
     map_expr = sexp[3] || [:map]
+
     return Entity.new(:Error, "invalid type: #{type}", {}) unless VALID_TYPES.include?(type)
 
     case type
-    when :Noun
-      return Entity.new(:Error, "expected string for Noun, got #{value}", {}) unless value.is_a?(String)
+    when :Noun, :Verb, :Time, :Adverb, :String, :Pronoun, :Preposition, :Adjective, :Error
+      return Entity.new(:Error, "expected string for #{type}, got #{value}", {}) unless value.is_a?(String)
+    when :Integer
+      return Entity.new(:Error, "expected integer for Integer, got #{value}", {}) unless value.is_a?(Integer)
+    when :Float
+      return Entity.new(:Error, "expected float for Float, got #{value}", {}) unless value.is_a?(Float)
     end
 
     attrs = {}
@@ -132,6 +149,7 @@ module Wat # rubocop:disable Metrics/ModuleLength
         return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
       end
     end
+
     sum = args.map(&:value).reduce(:+)
     type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
     Entity.new(type, sum, {})
