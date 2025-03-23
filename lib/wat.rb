@@ -297,7 +297,7 @@ class Wat # rubocop:disable Metrics/ClassLength
   def evaluate_lambda(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
     return Entity.new(:Error, "expected 'lambda' as first argument", {}) unless sexp[0] == :lambda
 
-    unless sexp.length >= 4
+    unless sexp.length == 5
       return Entity.new(
         :Error,
         'invalid lambda syntax: expected (lambda ((arg as Type) ...) returns ReturnType body)',
@@ -318,7 +318,6 @@ class Wat # rubocop:disable Metrics/ClassLength
       )
     end
 
-    # Check that params_sexp is an array of param specs
     unless params_sexp.is_a?(Array) &&
            params_sexp.all? { |p| p.is_a?(Array) && p.length == 3 && p[1] == :as && VALID_TYPES.include?(p[2]) }
       return Entity.new(
@@ -328,10 +327,7 @@ class Wat # rubocop:disable Metrics/ClassLength
       )
     end
 
-    params = params_sexp.map do |param|
-      [param[0], param[2]] # [arg_name, Type]
-    end
-
+    params = params_sexp.map { |param| [param[0], param[2]] }
     Lambda.new(params, return_type, body, deep_dup(env))
   end
 
@@ -348,7 +344,6 @@ class Wat # rubocop:disable Metrics/ClassLength
     new_env = deep_dup(fn.env)
     fn.params.zip(args).each do |(param_name, param_type), arg_sexp|
       arg = eval_expr(arg_sexp, env)
-      # Coerce raw values into Entities if they match the expected type
       unless arg.is_a?(Entity)
         case param_type
         when :Integer
@@ -369,11 +364,16 @@ class Wat # rubocop:disable Metrics/ClassLength
       new_env[:bindings][param_name] = arg
     end
 
-    result = eval_expr(fn.body, new_env)
-    unless result.is_a?(Entity) && result.type == fn.return_type
-      return Entity.new(:Error, "return type mismatch: expected #{fn.return_type}, got #{result}", {})
-    end
+    begin
+      result = eval_expr(fn.body, new_env)
 
-    result
+      unless result.is_a?(Entity) && result.type == fn.return_type
+        return Entity.new(:Error, "return type mismatch: expected #{fn.return_type}, got #{result}", {})
+      end
+
+      result
+    rescue RuntimeError => e
+      Entity.new(:Error, e.message, {})
+    end
   end
 end

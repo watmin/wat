@@ -361,5 +361,111 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Error)
       expect(result.value).to include('invalid lambda syntax')
     end
+
+    it 'handles empty parameter list' do
+      input = <<~WAT
+        (let ((f be (lambda () returns Integer 42)))
+          (f))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(42)
+    end
+
+    it 'handles multiple parameters' do
+      input = <<~WAT
+        (let ((add-xy be (lambda ((x as Integer) (y as Integer)) returns Integer (add x y))))
+          (add-xy 3 4))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(7)
+    end
+
+    it 'errors on missing body' do
+      input = '(lambda ((x as Integer)) returns Integer)'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid lambda syntax')
+    end
+
+    it 'errors on extra args after body' do
+      input = '(lambda ((x as Integer)) returns Integer (add x 1) junk)'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid lambda syntax')
+    end
+
+    it 'handles mixed argument types' do
+      input = <<~WAT
+        (let ((add-float be (lambda ((x as Integer) (y as Float)) returns Float (add x y))))
+          (add-float 3 2.5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Float)
+      expect(result.value).to eq(5.5)
+    end
+
+    it 'errors on non-coercible argument' do
+      input = <<~WAT
+        (let ((f be (lambda ((x as Integer)) returns Integer x)))
+          (f "string"))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('type mismatch')
+    end
+
+    it 'handles nested entity argument' do
+      input = <<~WAT
+        (let ((f be (lambda ((x as Integer)) returns Integer x)))
+          (f (entity Integer 5)))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(5)
+    end
+
+    it 'captures outer scope in nested let' do
+      input = <<~WAT
+        (let ((x be (entity Integer 1)))
+          (let ((f be (lambda () returns Integer x)))
+            (f)))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(1)
+    end
+
+    it 'respects parameter shadowing over outer scope' do
+      input = <<~WAT
+        (let ((x be (entity Integer 1))
+              (f be (lambda ((x as Integer)) returns Integer x)))
+          (f 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(5)
+    end
+
+    it 'errors on unbound variable in body' do
+      input = <<~WAT
+        (let ((f be (lambda ((x as Integer)) returns Integer (add x y))))
+          (f 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('Unbound variable: y')
+    end
+
+    it 'errors on extra arguments with no-param lambda' do
+      input = <<~WAT
+        (let ((f be (lambda () returns Integer 42)))
+          (f 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('argument count mismatch')
+    end
   end
 end
