@@ -87,6 +87,22 @@ RSpec.describe Wat do
       expect(result.attrs[:adjective].type).to eq(:Adjective)
       expect(result.attrs[:adjective].value).to eq('big')
     end
+
+    it 'evaluates raw sexp input' do
+      result = Wat.evaluate([:entity, :Noun, 'dog', [:map]])
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+    end
+
+    it 'raises on unclosed parenthesis' do
+      expect { Wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
+    end
+
+    it 'creates a Verb entity' do
+      result = Wat.evaluate('(entity Verb "chases")')
+      expect(result.type).to eq(:Verb)
+      expect(result.value).to eq('chases')
+    end
   end
 
   describe 'list' do
