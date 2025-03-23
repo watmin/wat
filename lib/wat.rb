@@ -10,7 +10,11 @@ class Wat # rubocop:disable Metrics/ClassLength
   attr_reader :env
 
   Entity = Struct.new(:type, :value, :attrs)
-  Lambda = Struct.new(:params, :return_type, :body, :env)
+  Lambda = Struct.new(:params, :return_type, :body, :env, :frozen_env) do
+    def initialize(params, return_type, body, env)
+      super(params, return_type, body, env, false)
+    end
+  end
 
   VALID_TYPES = %i[Noun Verb Time Adverb String Integer Float Boolean
                    Pronoun Preposition Adjective Error Lambda].freeze
@@ -25,7 +29,17 @@ class Wat # rubocop:disable Metrics/ClassLength
                     StringValued Numeric Assertable Listable Mappable Describable].freeze
 
   def initialize
-    @env = { bindings: {}, traits: {} }
+    @env = {
+      bindings: {
+        add: :add,
+        list: :list,
+        entity: :entity,
+        let: :let,
+        impl: :impl,
+        lambda: :lambda
+      },
+      traits: {}
+    }
   end
 
   def evaluate(input, env = @env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
@@ -115,9 +129,10 @@ class Wat # rubocop:disable Metrics/ClassLength
         result << case token
                   when 'true' then true
                   when 'false' then false
+                  when 'nil' then nil
                   when /^"/ then token[1..].delete_suffix('"')
-                  when /^\d+\.\d+$/ then token.to_f
-                  when /^\d+$/ then token.to_i
+                  when /^-?\d+\.\d+$/ then token.to_f
+                  when /^-?\d+$/ then token.to_i
                   when /^:/ then token[1..].to_sym
                   when /^'/ then raise 'Single quotes not allowed; use double quotes'
                   else token.to_sym
@@ -203,29 +218,25 @@ class Wat # rubocop:disable Metrics/ClassLength
   end
 
   def evaluate_add(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
-    return Entity.new(:Error, "expected 'add' as first argument", {}) unless sexp[0] == :add
+    args = sexp[1..].map { |arg| eval_expr(arg, env) }
+    return Entity.new(:Error, 'insufficient arguments for add, expected at least one', {}) if args.empty?
 
-    args = sexp[1..].map { |sub_sexp| eval_expr(sub_sexp, env) }
-
-    return Entity.new(:Error, 'insufficient arguments for add', {}) if args.empty?
-
-    args.each do |arg|
-      unless arg.is_a?(Entity) && NUMERIC_TYPES.include?(arg.type)
-        return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
-      end
+    unless args.all? { |arg| arg.is_a?(Entity) && %i[Integer Float].include?(arg.type) }
+      return Entity.new(:Error, "expected Numeric arguments for add, got #{args}", {})
     end
 
-    sum = args.map(&:value).reduce(:+)
-    type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
-
-    Entity.new(type, sum, {})
+    result = args.reduce(0) do |sum, arg|
+      sum + (arg.type == :Float || sum.is_a?(Float) ? arg.value.to_f : arg.value)
+    end
+    type = result.is_a?(Float) ? :Float : :Integer
+    Entity.new(type, result, {})
   end
 
   def deep_dup(env)
     { bindings: env[:bindings].dup, traits: env[:traits].transform_values(&:dup) }
   end
 
-  def evaluate_let(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity
+  def evaluate_let(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
     return Entity.new(:Error, "expected 'let' as first argument", {}) unless sexp[0] == :let
 
     bindings = sexp[1]
@@ -238,6 +249,13 @@ class Wat # rubocop:disable Metrics/ClassLength
       label = binding[0]
       value = evaluate(binding[2], new_env)
       new_env[:bindings][label] = value
+    end
+
+    new_env[:bindings].each_value do |value|
+      next unless value.is_a?(Wat::Lambda) && !value.frozen_env
+
+      value.env = deep_dup(new_env)
+      value.frozen_env = true
     end
 
     return nil if body.empty?
@@ -266,13 +284,29 @@ class Wat # rubocop:disable Metrics/ClassLength
         end
         evaluate_entity([:entity, type, value, attrs])
       else
-        fn_expr = expr[0]
-        fn = fn_expr.is_a?(Array) ? eval_expr(fn_expr, env) : fn_expr
+        fn = if expr[0].is_a?(Array)
+               evaluate_lambda_application([eval_expr(expr[0][0], env)] + expr[0][1..], env)
+             else
+               eval_expr(expr[0], env)
+             end
         if fn.is_a?(Wat::Lambda)
           evaluate_lambda_application([fn] + expr[1..], env)
         elsif env[:bindings].key?(fn) && env[:bindings][fn].is_a?(Wat::Lambda)
-          lambda_obj = env[:bindings][fn]
-          evaluate_lambda_application([lambda_obj] + expr[1..], env)
+          evaluate_lambda_application([env[:bindings][fn]] + expr[1..], env)
+        elsif fn.is_a?(Entity)
+          fn
+        elsif VALID_FUNCTIONS.include?(fn)
+          case fn # rubocop:disable Metrics/BlockNesting
+          when :add then evaluate_add([fn] + expr[1..], env)
+          when :list then evaluate_list([fn] + expr[1..])
+          when :entity then evaluate_entity([fn] + expr[1..])
+          when :let then evaluate_let([fn] + expr[1..], env)
+          when :impl then evaluate_impl([fn] + expr[1..], env)
+          when :lambda then evaluate_lambda([fn] + expr[1..], env)
+          else raise "Unknown built-in function: #{fn}"
+          end
+        elsif fn.is_a?(Entity) && fn.type == :Error
+          fn
         else
           case fn # rubocop:disable Metrics/BlockNesting
           when :entity then evaluate_entity(expr)
@@ -366,16 +400,19 @@ class Wat # rubocop:disable Metrics/ClassLength
   def evaluate_lambda_application(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     fn = sexp[0]
     args = sexp[1..]
-
     return Entity.new(:Error, 'expected lambda as first argument in application', {}) unless fn.is_a?(Wat::Lambda)
-
     unless fn.params.length == args.length
       return Entity.new(:Error, "argument count mismatch: expected #{fn.params.length}, got #{args.length}", {})
     end
 
     new_env = deep_dup(fn.env)
+    new_env[:bindings] = env[:bindings].merge(new_env[:bindings]) { |_key, _old_val, new_val| new_val }
+    new_env[:traits] = env[:traits].merge(new_env[:traits]) { |_key, _old_val, new_val| new_val }
+
     fn.params.zip(args).each do |(param_name, param_type), arg_sexp|
-      arg = eval_expr(arg_sexp, env)
+      arg = eval_expr(arg_sexp, new_env)
+      return Entity.new(:Error, "nil argument not allowed for #{param_name}", {}) if arg.nil?
+
       unless arg.is_a?(Entity)
         case param_type
         when :Integer
@@ -393,7 +430,7 @@ class Wat # rubocop:disable Metrics/ClassLength
         end
       end
 
-      unless arg.is_a?(Entity) && arg.type == param_type
+      unless (param_type == :Lambda && arg.is_a?(Wat::Lambda)) || (arg.is_a?(Entity) && arg.type == param_type)
         return Entity.new(:Error, "type mismatch for #{param_name}: expected #{param_type}, got #{arg}", {})
       end
 
@@ -401,13 +438,22 @@ class Wat # rubocop:disable Metrics/ClassLength
     end
 
     begin
-      result = eval_expr(fn.body, new_env)
+      if fn.body.is_a?(Array) && fn.body[0] == :lambda
+        params = fn.body[1].map { |param| [param[0], param[2]] }
+        return_type = fn.body[3]
+        body = fn.body[4]
+        Lambda.new(params, return_type, body, deep_dup(new_env))
+      else
+        eval_env = deep_dup(new_env)
+        eval_env[:bindings].delete_if { |_k, v| v.equal?(fn) }
+        result = eval_expr(fn.body, eval_env)
 
-      unless result.is_a?(Wat::Lambda) || (result.is_a?(Entity) && result.type == fn.return_type)
-        return Entity.new(:Error, "return type mismatch: expected #{fn.return_type}, got #{result}", {})
+        unless result.is_a?(Wat::Lambda) || (result.is_a?(Entity) && result.type == fn.return_type)
+          return Entity.new(:Error, "return type mismatch: expected #{fn.return_type}, got #{result}", {})
+        end
+
+        result
       end
-
-      result
     rescue RuntimeError => e
       Entity.new(:Error, e.message, {})
     end
