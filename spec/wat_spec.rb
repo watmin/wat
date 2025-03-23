@@ -312,4 +312,54 @@ RSpec.describe Wat do
       expect(result.value).to eq('invalid impl syntax: expected (impl Trait for Type)')
     end
   end
+
+  describe 'lambda' do
+    it 'creates a simple lambda and applies it' do
+      input = '(let ((inc be (lambda ((x as Integer)) returns Integer (add x 1)))) (inc 5))'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(6)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'captures lexical scope correctly' do
+      input = <<~WAT
+        (let ((y be (entity Integer 10))
+              (add-y be (lambda ((x as Integer)) returns Integer (add x y))))
+          (add-y 5))
+      WAT
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(15)
+    end
+
+    it 'errors on argument count mismatch' do
+      input = '(let ((f be (lambda ((x as Integer)) returns Integer (add x 1)))) (f 5 3))'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('argument count mismatch')
+    end
+
+    it 'errors on argument type mismatch' do
+      input = '(let ((f be (lambda ((x as Integer)) returns Integer (add x 1)))) (f (entity Noun "dog")))'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('type mismatch')
+    end
+
+    it 'errors on return type mismatch' do
+      input = '(let ((f be (lambda ((x as Integer)) returns Boolean (add x 1)))) (f 5))'
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('return type mismatch')
+    end
+
+    it 'errors on invalid syntax' do
+      input = '(lambda (x as Integer) returns Integer (add x 1))' # Missing param parens
+      result = wat.evaluate(input)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to include('invalid lambda syntax')
+    end
+  end
 end

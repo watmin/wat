@@ -10,12 +10,13 @@ class Wat # rubocop:disable Metrics/ClassLength
   attr_reader :env
 
   Entity = Struct.new(:type, :value, :attrs)
+  Lambda = Struct.new(:params, :return_type, :body, :env)
 
   VALID_TYPES = %i[Noun Verb Time Adverb String Integer Float Boolean
                    Pronoun Preposition Adjective Error].freeze
   SUGAR_TYPES = %i[Noun Verb Time Adverb Pronoun Preposition Adjective
                    Subject Object Integer Float Boolean].freeze
-  VALID_FUNCTIONS = %i[entity list add let impl Noun Verb Time Adverb
+  VALID_FUNCTIONS = %i[entity list add let impl lambda Noun Verb Time Adverb
                        Pronoun Preposition Adjective Subject Object
                        Integer Float Boolean].freeze
   LISTABLE_TYPES = %i[Noun Time Verb Integer Float].freeze
@@ -52,7 +53,9 @@ class Wat # rubocop:disable Metrics/ClassLength
     when :add then evaluate_add(sexp, env)
     when :let then evaluate_let(sexp, env)
     when :impl then evaluate_impl(sexp, env)
-    else raise "Unknown function: #{sexp[0]}"
+    when :lambda then evaluate_lambda(sexp, env)
+    else
+      raise "Unknown function: #{sexp[0]}"
     end
   end
 
@@ -224,22 +227,22 @@ class Wat # rubocop:disable Metrics/ClassLength
       return Entity.new(:Error, "invalid binding: #{binding}", {}) unless binding[1] == :be && binding.length == 3
 
       label = binding[0]
-      value = evaluate(binding[2], new_env) # Evaluate nested sexps
-      new_env[label] = value
+      value = evaluate(binding[2], new_env)
+      new_env[:bindings][label] = value # Fix: Store in :bindings
     end
 
     return nil if body.empty?
 
-    result = body.map { |expr| eval_expr(expr, new_env) } # Use eval_expr for variables
+    result = body.map { |expr| eval_expr(expr, new_env) }
     result.length == 1 ? result.first : result.last
   end
 
   def eval_expr(expr, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     case expr
     when Symbol
-      raise "Unbound variable: #{expr}" unless env.key?(expr)
+      raise "Unbound variable: #{expr}" unless env[:bindings].key?(expr)
 
-      env[expr]
+      env[:bindings][expr]
     when Entity
       expr
     when Array
@@ -253,6 +256,9 @@ class Wat # rubocop:disable Metrics/ClassLength
           attrs = [:map, :role, role]
         end
         evaluate_entity([:entity, type, value, attrs])
+      elsif env[:bindings].key?(expr[0]) && env[:bindings][expr[0]].is_a?(Wat::Lambda)
+        lambda_obj = env[:bindings][expr[0]]
+        evaluate_lambda_application([lambda_obj] + expr[1..], env)
       else
         case expr[0]
         when :entity then evaluate_entity(expr)
@@ -260,7 +266,8 @@ class Wat # rubocop:disable Metrics/ClassLength
         when :add then evaluate_add(expr, env)
         when :let then evaluate_let(expr, env)
         when :impl then evaluate_impl(expr, env)
-        else raise "Unbound variable: #{expr[0]}" # Match error message for consistency
+        when :lambda then evaluate_lambda(expr, env)
+        else raise "Unknown function: #{expr[0]}"
         end
       end
     else
@@ -285,5 +292,88 @@ class Wat # rubocop:disable Metrics/ClassLength
     env[:traits][type] << trait unless env[:traits][type].include?(trait)
 
     Entity.new(:Boolean, true, {})
+  end
+
+  def evaluate_lambda(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength
+    return Entity.new(:Error, "expected 'lambda' as first argument", {}) unless sexp[0] == :lambda
+
+    unless sexp.length >= 4
+      return Entity.new(
+        :Error,
+        'invalid lambda syntax: expected (lambda ((arg as Type) ...) returns ReturnType body)',
+        {}
+      )
+    end
+
+    params_sexp = sexp[1]
+    return_keyword = sexp[2]
+    return_type = sexp[3]
+    body = sexp[4]
+
+    unless return_keyword == :returns && VALID_TYPES.include?(return_type)
+      return Entity.new(
+        :Error,
+        "expected 'returns' followed by valid ReturnType, got #{return_keyword} #{return_type}",
+        {}
+      )
+    end
+
+    # Check that params_sexp is an array of param specs
+    unless params_sexp.is_a?(Array) &&
+           params_sexp.all? { |p| p.is_a?(Array) && p.length == 3 && p[1] == :as && VALID_TYPES.include?(p[2]) }
+      return Entity.new(
+        :Error,
+        "invalid lambda syntax: expected parameter list ((arg as Type) ...), got #{params_sexp}",
+        {}
+      )
+    end
+
+    params = params_sexp.map do |param|
+      [param[0], param[2]] # [arg_name, Type]
+    end
+
+    Lambda.new(params, return_type, body, deep_dup(env))
+  end
+
+  def evaluate_lambda_application(sexp, env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+    fn = sexp[0]
+    args = sexp[1..]
+
+    return Entity.new(:Error, 'expected lambda as first argument in application', {}) unless fn.is_a?(Wat::Lambda)
+
+    unless fn.params.length == args.length
+      return Entity.new(:Error, "argument count mismatch: expected #{fn.params.length}, got #{args.length}", {})
+    end
+
+    new_env = deep_dup(fn.env)
+    fn.params.zip(args).each do |(param_name, param_type), arg_sexp|
+      arg = eval_expr(arg_sexp, env)
+      # Coerce raw values into Entities if they match the expected type
+      unless arg.is_a?(Entity)
+        case param_type
+        when :Integer
+          arg = Entity.new(:Integer, arg, {}) if arg.is_a?(Integer)
+        when :Float
+          arg = Entity.new(:Float, arg, {}) if arg.is_a?(Float)
+        when :Boolean
+          arg = Entity.new(:Boolean, arg, {}) if [true, false].include?(arg)
+        when :String
+          arg = Entity.new(:String, arg, {}) if arg.is_a?(String)
+        end
+      end
+
+      unless arg.is_a?(Entity) && arg.type == param_type
+        return Entity.new(:Error, "type mismatch for #{param_name}: expected #{param_type}, got #{arg}", {})
+      end
+
+      new_env[:bindings][param_name] = arg
+    end
+
+    result = eval_expr(fn.body, new_env)
+    unless result.is_a?(Entity) && result.type == fn.return_type
+      return Entity.new(:Error, "return type mismatch: expected #{fn.return_type}, got #{result}", {})
+    end
+
+    result
   end
 end
