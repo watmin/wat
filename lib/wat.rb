@@ -6,13 +6,14 @@ end
 
 require_relative 'wat/version'
 
-module Wat
+module Wat # rubocop:disable Metrics/ModuleLength
   Entity = Struct.new(:type, :value, :attrs)
 
   VALID_TYPES = %i[Noun Verb Time Adverb String Integer Float Boolean
                    Pronoun Preposition Adjective Error].freeze
-  VALID_FUNCTIONS = %i[entity list].freeze
+  VALID_FUNCTIONS = %i[entity list add].freeze
   LISTABLE_TYPES = %i[Noun Time Verb Integer Float].freeze
+  NUMERIC_TYPES = %i[Integer Float].freeze
 
   def self.evaluate(input)
     sexp = if input.is_a?(String)
@@ -23,6 +24,7 @@ module Wat
     case sexp[0]
     when :entity then evaluate_entity(sexp)
     when :list then evaluate_list(sexp)
+    when :add then evaluate_add(sexp)
     else raise "Unknown function: #{sexp[0]}"
     end
   end
@@ -119,5 +121,19 @@ module Wat
 
       result
     end
+  end
+
+  def self.evaluate_add(sexp) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+    raise "Expected 'add'" unless sexp[0] == :add
+
+    args = sexp[1..].map { |sub_sexp| evaluate(sub_sexp) }
+    args.each do |arg|
+      unless arg.is_a?(Entity) && NUMERIC_TYPES.include?(arg.type)
+        return Entity.new(:Error, "expected Numeric argument, got #{arg}", {})
+      end
+    end
+    sum = args.map(&:value).reduce(:+)
+    type = args.any? { |arg| arg.type == :Float } ? :Float : :Integer
+    Entity.new(type, sum, {})
   end
 end
