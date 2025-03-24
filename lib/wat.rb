@@ -42,43 +42,53 @@ class Wat # rubocop:disable Metrics/ClassLength
     }
   end
 
-  def evaluate(input, env = @env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  def evaluate(input, env = @env)
+    tokens = tokenize(input) if input.is_a?(String)
     sexp = if input.is_a?(String)
-             parse(tokenize(input))
+             sexps = []
+             until tokens.empty?
+               sexps << parse(tokens)
+             end
+             sexps
            else
-             input
+             [input]  # Single s-expression input
            end
-    if SUGAR_TYPES.include?(sexp[0])
-      type = sexp[0]
-      value = sexp[1]
-      if %i[Subject Object].include?(type)
-        role = type
-        type = :Noun
-        attrs = [:map, :role, role]
-        map_args = sexp[2..]
-        return Entity.new(:Error, "unpaired map key: :#{map_args.last}", {}) if map_args.length.odd?
+    return nil if sexp.empty?
 
-        map_args.each_slice(2) { |k, v| attrs << k << evaluate(v, env) }
-      else
-        attrs = sexp[2] || [:map]
+    last_result = nil
+    sexp.each do |s|
+      if SUGAR_TYPES.include?(s[0])
+        type = s[0]
+        value = s[1]
+        if %i[Subject Object].include?(type)
+          role = type
+          type = :Noun
+          attrs = [:map, :role, role]
+          map_args = s[2..]
+          return Entity.new(:Error, "unpaired map key: :#{map_args.last}", {}) if map_args.length.odd?
+          map_args.each_slice(2) { |k, v| attrs << k << evaluate(v, env) }
+        else
+          attrs = s[2] || [:map]
+        end
+        s = [:entity, type, value, attrs]
       end
-      sexp = [:entity, type, value, attrs]
+      last_result = case s[0]
+                    when :entity then evaluate_entity(s)
+                    when :list then evaluate_list(s)
+                    when :add then evaluate_add(s, env)
+                    when :let then evaluate_let(s, env)
+                    when :impl then evaluate_impl(s, env)
+                    when :lambda then evaluate_lambda(s, env)
+                    else
+                      raise "Unknown function: #{s[0]}"
+                    end
     end
-    case sexp[0]
-    when :entity then evaluate_entity(sexp)
-    when :list then evaluate_list(sexp)
-    when :add then evaluate_add(sexp, env)
-    when :let then evaluate_let(sexp, env)
-    when :impl then evaluate_impl(sexp, env)
-    when :lambda then evaluate_lambda(sexp, env)
-    else
-      raise "Unknown function: #{sexp[0]}"
-    end
+    last_result
   end
 
   private
 
-  def tokenize(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  def tokenize(input)
     tokens = []
     buffer = String.new
     in_quotes = false
@@ -86,7 +96,9 @@ class Wat # rubocop:disable Metrics/ClassLength
 
     input.chars.each do |char|
       if in_comment
-        in_comment = false if char == "\n"
+        if char == "\n"
+          in_comment = false
+        end
         next
       end
       if char == ';' && !in_quotes
@@ -113,13 +125,11 @@ class Wat # rubocop:disable Metrics/ClassLength
     end
 
     tokens << buffer if buffer != ''
-
     raise 'Unclosed quote' if in_quotes
-
     tokens
   end
 
-  def parse(tokens) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
+  def parse(tokens)
     raise "Expected '('" unless tokens[0] == '('
 
     result = []
@@ -144,7 +154,6 @@ class Wat # rubocop:disable Metrics/ClassLength
     end
 
     raise 'Unclosed parenthesis' if tokens.empty?
-
     tokens.shift
 
     if VALID_FUNCTIONS.include?(result[0]) && result[0] != :entity && !SUGAR_TYPES.include?(result[0])
