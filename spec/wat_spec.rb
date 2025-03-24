@@ -10,45 +10,6 @@ RSpec.describe Wat do
     expect { wat.evaluate('(entity Noun "dog"') }.to raise_error('Unclosed parenthesis')
   end
 
-  it 'ignores semicolon comments until newline' do
-    input = <<~WAT
-      (entity Noun "dog") ; this is a comment
-      (entity Integer 5)
-    WAT
-    result = wat.evaluate(input)
-    expect(result).to be_a(Wat::Entity)
-    expect(result.type).to eq(:Integer)
-    expect(result.value).to eq(5)
-    expect(result.attrs).to eq({})
-  end
-
-  it 'handles semicolon within quotes correctly' do
-    input = '(entity String "dog;cat") ; this is a comment'
-    result = wat.evaluate(input)
-    expect(result).to be_a(Wat::Entity)
-    expect(result.type).to eq(:String)
-    expect(result.value).to eq('dog;cat')
-    expect(result.attrs).to eq({})
-  end
-
-  it 'handles single expression correctly' do
-    input = '(entity Noun "dog")'
-    result = wat.evaluate(input)
-    expect(result).to be_a(Wat::Entity)
-    expect(result.type).to eq(:Noun)
-    expect(result.value).to eq('dog')
-    expect(result.attrs).to eq({})
-  end
-
-  it 'preserves spaces in quoted strings' do
-    input = '(entity String " ")'
-    result = wat.evaluate(input)
-    expect(result).to be_a(Wat::Entity)
-    expect(result.type).to eq(:String)
-    expect(result.value).to eq(' ')
-    expect(result.attrs).to eq({})
-  end
-
   describe 'entity' do
     it 'creates a basic Noun entity' do
       input = '(entity Noun "dog")'
@@ -164,6 +125,57 @@ RSpec.describe Wat do
       expect(result).to be_a(Wat::Entity)
       expect(result.type).to eq(:Error)
       expect(result.value).to include('unpaired map key: :adjective')
+    end
+
+    it 'ignores semicolon comments until newline' do
+      input = <<~WAT
+        (entity Noun "dog") ; this is a comment
+        (entity Integer 5)
+      WAT
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(5)
+      expect(result.attrs).to eq({})
+    end
+
+    it 'handles semicolon within quotes correctly' do
+      input = '(entity String "dog;cat") ; this is a comment'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:String)
+      expect(result.value).to eq('dog;cat')
+      expect(result.attrs).to eq({})
+    end
+
+    it 'handles single expression correctly' do
+      input = '(entity Noun "dog")'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+      expect(result.attrs).to eq({})
+    end
+
+    it 'preserves spaces in quoted strings' do
+      input = '(entity String " ")'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:String)
+      expect(result.value).to eq(' ')
+      expect(result.attrs).to eq({})
+    end
+
+    it 'wraps integers in map pairs as entities' do
+      input = '(entity Noun "dog" :count 5)'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+      expect(result.attrs[:count]).to be_a(Wat::Entity)
+      expect(result.attrs[:count].type).to eq(:Integer)
+      expect(result.attrs[:count].value).to eq(5)
+      expect(result.attrs[:count].attrs).to eq({})
     end
   end
 

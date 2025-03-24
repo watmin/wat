@@ -211,7 +211,12 @@ class Wat # rubocop:disable Metrics/ClassLength
 
           attrs[key] = evaluated_val
         else
-          attrs[key] = val
+          attrs[key] = case val
+                       when Integer then Entity.new(:Integer, val, {})
+                       when Float then Entity.new(:Float, val, {})
+                       when Array then evaluate(val, env)
+                       else val
+                       end
         end
       end
     end
