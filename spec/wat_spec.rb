@@ -198,6 +198,18 @@ RSpec.describe Wat do
       result = wat.evaluate(input)
       expect(result.value).to eq('"dog" "cat"')
     end
+
+    it 'evaluates all map attributes in an entity' do
+      input = '(entity Noun "dog" :role (entity Noun "cat" :role Subject))'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Noun)
+      expect(result.value).to eq('dog')
+      expect(result.attrs[:role]).to be_a(Wat::Entity)
+      expect(result.attrs[:role].type).to eq(:Noun)
+      expect(result.attrs[:role].value).to eq('cat')
+      expect(result.attrs[:role].attrs).to eq({ role: :Subject })
+    end
   end
 
   describe 'list' do

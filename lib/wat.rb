@@ -175,7 +175,7 @@ class Wat # rubocop:disable Metrics/ClassLength
 
     if result[0] == :entity && result.length > 3 && !result[3].is_a?(Array)
       map_pairs = result[3..].each_slice(2).to_a
-      result = result[0..2] + [[:map] + map_pairs.flatten]
+      result = result[0..2] + [[:map] + map_pairs.map { |k, v| [k, v] }.flatten(1)]
     end
 
     result
