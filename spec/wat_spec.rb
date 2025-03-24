@@ -210,6 +210,14 @@ RSpec.describe Wat do
       expect(result.attrs[:role].value).to eq('cat')
       expect(result.attrs[:role].attrs).to eq({ role: :Subject })
     end
+
+    it 'rejects invalid role values in entity map' do
+      input = '(entity Noun "dog" :role :Foo)'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Error)
+      expect(result.value).to eq('invalid role value: Foo')
+    end
   end
 
   describe 'list' do

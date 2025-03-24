@@ -211,16 +211,21 @@ class Wat # rubocop:disable Metrics/ClassLength
           unless evaluated_val.is_a?(Entity) && evaluated_val.type == :Adjective
             return Entity.new(:Error, error_msg, {})
           end
-
-          attrs[key] = evaluated_val
         else
-          attrs[key] = case val
-                       when Integer then Entity.new(:Integer, val, {})
-                       when Float then Entity.new(:Float, val, {})
-                       when Array then evaluate(val, env)
-                       else val
-                       end
+          evaluated_val = case val
+                          when Integer then Entity.new(:Integer, val, {})
+                          when Float then Entity.new(:Float, val, {})
+                          when Array then evaluate(val, env)
+                          else val
+                          end
+          if key == :role &&
+             !%i[Subject Object].include?(evaluated_val) &&
+             (!evaluated_val.is_a?(Entity) || !%i[Subject Object].include?(evaluated_val.attrs[:role]))
+            return Entity.new(:Error, "invalid role value: #{evaluated_val}", {})
+          end
         end
+
+        attrs[key] = evaluated_val
       end
     end
 
