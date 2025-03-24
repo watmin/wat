@@ -42,16 +42,14 @@ class Wat # rubocop:disable Metrics/ClassLength
     }
   end
 
-  def evaluate(input, env = @env)
+  def evaluate(input, env = @env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     tokens = tokenize(input) if input.is_a?(String)
     sexp = if input.is_a?(String)
              sexps = []
-             until tokens.empty?
-               sexps << parse(tokens)
-             end
+             sexps << parse(tokens) until tokens.empty?
              sexps
            else
-             [input]  # Single s-expression input
+             [input]
            end
     return nil if sexp.empty?
 
@@ -60,18 +58,22 @@ class Wat # rubocop:disable Metrics/ClassLength
       if SUGAR_TYPES.include?(s[0])
         type = s[0]
         value = s[1]
+
         if %i[Subject Object].include?(type)
           role = type
           type = :Noun
           attrs = [:map, :role, role]
           map_args = s[2..]
+
           return Entity.new(:Error, "unpaired map key: :#{map_args.last}", {}) if map_args.length.odd?
+
           map_args.each_slice(2) { |k, v| attrs << k << evaluate(v, env) }
         else
           attrs = s[2] || [:map]
         end
         s = [:entity, type, value, attrs]
       end
+
       last_result = case s[0]
                     when :entity then evaluate_entity(s)
                     when :list then evaluate_list(s)
@@ -83,12 +85,13 @@ class Wat # rubocop:disable Metrics/ClassLength
                       raise "Unknown function: #{s[0]}"
                     end
     end
+
     last_result
   end
 
   private
 
-  def tokenize(input)
+  def tokenize(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     tokens = []
     buffer = String.new
     in_quotes = false
@@ -96,9 +99,7 @@ class Wat # rubocop:disable Metrics/ClassLength
 
     input.chars.each do |char|
       if in_comment
-        if char == "\n"
-          in_comment = false
-        end
+        in_comment = false if char == "\n"
         next
       end
       if char == ';' && !in_quotes
@@ -125,11 +126,13 @@ class Wat # rubocop:disable Metrics/ClassLength
     end
 
     tokens << buffer if buffer != ''
+
     raise 'Unclosed quote' if in_quotes
+
     tokens
   end
 
-  def parse(tokens)
+  def parse(tokens) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     raise "Expected '('" unless tokens[0] == '('
 
     result = []
@@ -154,6 +157,7 @@ class Wat # rubocop:disable Metrics/ClassLength
     end
 
     raise 'Unclosed parenthesis' if tokens.empty?
+
     tokens.shift
 
     if VALID_FUNCTIONS.include?(result[0]) && result[0] != :entity && !SUGAR_TYPES.include?(result[0])
