@@ -177,6 +177,27 @@ RSpec.describe Wat do
       expect(result.attrs[:count].value).to eq(5)
       expect(result.attrs[:count].attrs).to eq({})
     end
+
+    it 'handles escaped quotes in strings' do
+      input = '(entity String "\"dog\"")'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:String)
+      expect(result.value).to eq('"dog"')
+      expect(result.attrs).to eq({})
+    end
+
+    it 'preserves literal backslashes' do
+      input = '(entity String "dog\\cat")'
+      result = wat.evaluate(input)
+      expect(result.value).to eq('dog\\cat')
+    end
+
+    it 'handles multiple escaped quotes' do
+      input = '(entity String "\"dog\" \"cat\"")'
+      result = wat.evaluate(input)
+      expect(result.value).to eq('"dog" "cat"')
+    end
   end
 
   describe 'list' do

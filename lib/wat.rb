@@ -93,7 +93,7 @@ class Wat # rubocop:disable Metrics/ClassLength
 
   def tokenize(input) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
     tokens = []
-    buffer = String.new
+    buffer = String.new(encoding: 'UTF-8')
     in_quotes = false
     in_comment = false
 
@@ -105,7 +105,7 @@ class Wat # rubocop:disable Metrics/ClassLength
       if char == ';' && !in_quotes
         in_comment = true
         tokens << buffer if buffer != ''
-        buffer = String.new
+        buffer = String.new(encoding: 'UTF-8')
         next
       end
       if char == '"'
@@ -115,11 +115,11 @@ class Wat # rubocop:disable Metrics/ClassLength
         buffer << char
       elsif char =~ /\s/
         tokens << buffer if buffer != ''
-        buffer = String.new
+        buffer = String.new(encoding: 'UTF-8')
       elsif %w[( )].include?(char)
         tokens << buffer if buffer != ''
         tokens << char
-        buffer = String.new
+        buffer = String.new(encoding: 'UTF-8')
       else
         buffer << char
       end
@@ -146,7 +146,10 @@ class Wat # rubocop:disable Metrics/ClassLength
                   when 'true' then true
                   when 'false' then false
                   when 'nil' then nil
-                  when /^"/ then token[1..].delete_suffix('"')
+                  when /^"/
+                    str = token[1..-2]
+                    unescaped = str.gsub(/\\(["\\])/, '\1')
+                    unescaped
                   when /^-?\d+\.\d+$/ then token.to_f
                   when /^-?\d+$/ then token.to_i
                   when /^:/ then token[1..].to_sym
