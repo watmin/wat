@@ -218,6 +218,15 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Error)
       expect(result.value).to eq('invalid role value: Foo')
     end
+
+    it 'preserves float type with single float argument in add' do
+      input = '(add (entity Float 2.5))'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Float)
+      expect(result.value).to eq(2.5)
+      expect(result.attrs).to eq({})
+    end
   end
 
   describe 'list' do
