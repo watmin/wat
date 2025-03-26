@@ -750,5 +750,19 @@ RSpec.describe Wat do
       expect(result.type).to eq(:Error)
       expect(result.value).to include('Unbound variable: x')
     end
+
+    it 'freezes nested lambda environments in let' do
+      input = <<~WAT
+        (let ((x be (entity Integer 1))
+              (outer be (lambda () returns Lambda
+                          (lambda () returns Integer x)))
+              (inner be (outer)))
+         (inner))
+      WAT
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(1)
+    end
   end
 end

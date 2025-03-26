@@ -276,7 +276,7 @@ class Wat # rubocop:disable Metrics/ClassLength
       return Entity.new(:Error, "invalid binding: #{binding}", {}) unless binding[1] == :be && binding.length == 3
 
       label = binding[0]
-      value = evaluate(binding[2], new_env)
+      value = eval_expr(binding[2], new_env)
       new_env[:bindings][label] = value
     end
 
