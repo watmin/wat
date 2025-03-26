@@ -367,6 +367,14 @@ RSpec.describe Wat do
       result = wat.evaluate(input)
       expect(result).to be_nil
     end
+
+    it 'evaluates let body sequentially and returns only the last value' do
+      input = '(let ((x be (entity Integer 5))) (add x 1) (add x 2))'
+      result = wat.evaluate(input)
+      expect(result).to be_a(Wat::Entity)
+      expect(result.type).to eq(:Integer)
+      expect(result.value).to eq(7)
+    end
   end
 
   describe 'impl' do
