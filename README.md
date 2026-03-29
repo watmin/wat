@@ -1,63 +1,49 @@
 # Wat
 
-TODO: Delete this and the text below, and describe your gem
+An s-expression language for algebraic cognition.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/wat`. To experiment with that code, run `bin/console` for an interactive prompt.
+Six primitives. Everything else composes.
 
-## Installation
-
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```scheme
+(atom "momentum")                              ; name a concept
+(bind role filler)                             ; compose two concepts
+(bundle fact1 fact2 fact3)                     ; superimpose into one thought
+(cosine thought discriminant)                  ; measure similarity
+(journal "name" 20000 500)                     ; accumulate labeled observations
+(curve journal resolved)                       ; evaluate prediction quality
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+## What Wat Is
 
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+Wat is the intermediate representation between human intuition and machine execution.
+The human generates wat programs. The machine compiles them to Rust. The Rust runs.
+The ledger records. The cycle continues.
+
+Wat IS Lisp, restricted to the algebra of hyperdimensional computing.
+
+## Structure
+
+```
+wat/
+├── core/           — the six primitives (corelib)
+├── std/            — derived forms (stdlib)
+├── mod/            — domain vocabulary modules
+└── programs/       — complete wat programs
 ```
 
-## Usage
+## See Also
 
-Launch the shell
+- `LANGUAGE.md` — formal grammar, corelib, stdlib, control forms
+- `core/primitives.wat` — the six primitives
+- `std/common.wat` — shared vocabulary
+- `std/channels.wat` — publish/subscribe communication contract
+- `programs/enterprise.wat` — the first complete wat program
 
-```bash
-bundle exec bin/console
-```
+## Origin
 
-Reload the shell
+Wat began as an English-like Lisp for natural language processing (2024).
+It evolved into an algebraic cognition language through the holon trading
+enterprise project (2026). The s-expression structure survived. The domain
+matured from language to mathematics.
 
-```ruby
-reload
-```
-
-## Development
-
-here's a prompt to perform continuation, just "curry" in your prior code to find new features to add https://x.com/i/grok/share/9rYpeRlrbSom32WLPFsNBf8xs
-
-you can run tests with `bundle exec rspec`
-
-you can get into the console with `bundle exec bin/console`
-
-----
-
-stock stuff:
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/wat. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/wat/blob/master/CODE_OF_CONDUCT.md).
-
-## License
-
-DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-
-## Code of Conduct
-
-Everyone interacting in the Wat project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/wat/blob/master/CODE_OF_CONDUCT.md).
+The architecture is the language. The language is the architecture.
