@@ -24,12 +24,18 @@ Wat IS Lisp, restricted to the algebra of hyperdimensional computing.
 ## Structure
 
 ```
-wat/
-├── core/           — the six primitives (corelib)
-├── std/            — derived forms (stdlib)
-├── mod/            — domain vocabulary modules
-└── programs/       — complete wat programs
+wat/                              ← THE LANGUAGE
+├── core/primitives.wat           — the six primitives (corelib)
+├── std/common.wat                — generic vocabulary (stdlib)
+├── std/channels.wat              — publish/subscribe contract (stdlib)
+├── examples/enterprise.wat       — example program
+├── LANGUAGE.md                   — formal grammar
+└── CONTRIBUTING.md               — wat-to-Rust implementation guide
 ```
+
+Domain vocabulary modules (trading indicators, game concepts, etc.)
+belong in the APPLICATION repo, not here. The language provides the
+algebra. Applications provide the vocabulary.
 
 ## See Also
 

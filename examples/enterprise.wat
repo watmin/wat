@@ -5,14 +5,17 @@
 ;; The Rust implementation follows this program.
 ;;
 ;; Dependencies:
-;;   (require primitives)     ; atom, bind, bundle, cosine, journal, curve
-;;   (require common)         ; stdlib: buy, sell, proven, tentative, time, zones
-;;   (require channels)       ; publish, subscribe, filter
-;;   (require mod/oscillators mod/divergence mod/crosses)        ; momentum
-;;   (require mod/segments mod/levels mod/channels)              ; structure
-;;   (require mod/flow mod/participation)                        ; volume
-;;   (require mod/temporal mod/calendar)                         ; narrative
-;;   (require mod/persistence mod/complexity mod/microstructure) ; regime
+;;   FROM WAT LANGUAGE (~/work/holon/wat/):
+;;   (require core/primitives) ; atom, bind, bundle, cosine, journal, curve
+;;   (require std/common)      ; predicates, directions, gate status
+;;   (require std/channels)    ; publish, subscribe, filter
+;;
+;;   FROM APPLICATION (~/work/holon/holon-lab-trading/wat/):
+;;   (require mod/oscillators mod/divergence mod/crosses)        ; momentum vocab
+;;   (require mod/segments mod/levels mod/channels)              ; structure vocab
+;;   (require mod/flow mod/participation)                        ; volume vocab
+;;   (require mod/temporal mod/calendar)                         ; narrative vocab
+;;   (require mod/persistence mod/complexity mod/microstructure) ; regime vocab
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 0: Encoding — candle data becomes named thoughts
