@@ -36,8 +36,9 @@ Six primitives. Everything else composes from these.
 (predict journal thought)        → Prediction ; { scores, direction, conviction, raw_cos }
 (decay journal rate)             → ()
 
-;; Evaluation
-(curve journal resolved)         → { a, b }  ; accuracy = 0.50 + a × exp(b × conviction)
+;; Evaluation — the journal evaluates itself
+(resolve journal conviction correct) → ()    ; accumulate a resolved prediction
+(curve journal)                  → { a, b }  ; accuracy = (1/N) + a × exp(b × conviction)
 ```
 
 ## Standard Library (stdlib)

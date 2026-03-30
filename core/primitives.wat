@@ -58,7 +58,13 @@
 ;; The aging function of the coalgebra.
 (decay journal rate)
 
-;; Measure journal quality at each conviction level.
+;; Record a resolved prediction for curve fitting.
+;; "I predicted with this conviction, and I was correct/wrong."
+(resolve journal conviction correct)
+
+;; Fit the conviction-accuracy curve from resolved predictions.
 ;; The evaluation function of the coalgebra.
-;; accuracy = 0.50 + a × exp(b × conviction)
-(curve journal resolved) → (a, b)
+;; accuracy = (1/N) + a × exp(b × conviction)
+;; where N = number of labels (1/N = random chance).
+;; The curve IS the proof. Monotonically increasing = real signal.
+(curve journal) → (a, b)
