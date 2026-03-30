@@ -31,18 +31,28 @@
 ;; Removing any one makes the external characterization incomplete.
 ;; Uses the algebra internally (observe bundles, predict cosines)
 ;; but the state threading is its own structure.
+;;
+;; Labels are symbols — created from strings once, used as cheap
+;; integer handles forever. Like Ruby's :buy or Clojure's :buy.
+;; N-ary: any number of labels, any domain.
 
 ;; Create a journal — the learning primitive.
-;; Contains: buy accumulator, sell accumulator, discriminant.
+;; Labels are registered after construction via (register journal name).
 (journal name dims recalib-interval) → Journal
+
+;; Register a label and get its symbol handle.
+;; Idempotent: same name → same handle. Runtime-derivable.
+(register journal name) → Label
 
 ;; Accumulate a labeled observation.
 ;; The state transition function of the coalgebra.
-(observe journal thought label weight)  ; label = Buy | Sell
+;; label is a Label symbol, not a string.
+(observe journal thought label weight)
 
 ;; Ask what the journal thinks about a thought.
+;; Returns scores for ALL labels. The consumer decides top-1/top-k/full.
 ;; The observation function of the coalgebra.
-(predict journal thought) → Prediction  ; { direction, conviction, raw-cos }
+(predict journal thought) → Prediction  ; { scores, direction, conviction, raw-cos }
 
 ;; Decay the accumulators. Older observations fade.
 ;; The aging function of the coalgebra.

@@ -29,10 +29,11 @@ Six primitives. Everything else composes from these.
 ;; Measurement
 (cosine thought discriminant)    → Float     ; [-1.0, +1.0]
 
-;; Learning
+;; Learning — journal coalgebra (opaque state, N-ary labels)
 (journal name dims recalib)      → Journal
-(observe journal thought label weight) → ()
-(predict journal thought)        → Prediction  ; { direction, conviction, raw_cos }
+(register journal name)          → Label      ; symbol handle — Copy, O(1) equality
+(observe journal thought label weight) → ()   ; label is a Label symbol
+(predict journal thought)        → Prediction ; { scores, direction, conviction, raw_cos }
 (decay journal rate)             → ()
 
 ;; Evaluation
