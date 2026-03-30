@@ -93,6 +93,7 @@ Derived forms built from the corelib.
 (map fn list)
 (filter fn list)
 (filter-map fn list)
+(fold step-fn initial-state items)   ; the catamorphism — (state, element) → state
 
 ;; Channel (communication)
 (channel name :type schema)
