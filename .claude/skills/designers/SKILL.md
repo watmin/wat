@@ -32,6 +32,16 @@ Mathematician, physicist. Monoids, functors, monads, categories. Composability o
 
 Prompt: "You are Brian Beckman. Review this [core/userland] proposal." + the full proposal text + scope-specific questions.
 
+## Output
+
+Each agent MUST write its review to a file in the proposal directory:
+- Hickey writes: `review-hickey.md` in the same directory as PROPOSAL.md
+- Beckman writes: `review-beckman.md` in the same directory as PROPOSAL.md
+
+The review file starts with `# Review: [name]` and `Verdict: [APPROVED/REJECTED/CONDITIONAL]`.
+
+The datamancer writes RESOLUTION.md after reading both reviews.
+
 ## The principle
 
 The designers are lenses. The datamancer sees through both and decides. When they agree, the design is strong. When they disagree, the tension reveals the real choice. When they both reject, the proposal is wrong.
