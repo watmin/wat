@@ -46,4 +46,6 @@ Take the datamancer's raw thoughts and structure them into a design proposal tha
 
 ## The output
 
-A structured document ready for `/designers`. The datamancer reviews and approves before the designers see it.
+Write the proposal to `docs/proposals/NNN-short-name/PROPOSAL.md` relative to the current working directory. Create the directory if needed. Number sequentially from existing proposals in that directory.
+
+The document is ready for `/designers`. The datamancer reviews and approves before the designers see it.
