@@ -15,16 +15,19 @@ wat spec (what to think)
 
 ### 1. Write the wat spec
 
-Location: `~/work/holon/wat/mod/<name>.wat`
+Location: `~/work/holon/holon-lab-trading/wat/vocab/<name>.wat`
+
+Vocabulary modules are APPLICATION concerns, not language concerns.
+They live in the trading lab repo alongside the Rust implementation.
 
 Define:
 - **Atoms**: named concepts the module introduces
-- **Facts**: what expressions the module produces
+- **Facts**: what expressions the module produces (Zone, Comparison, Scalar, Bare)
 - **Encoding rules**: which scalar encoder for each value type
 - **Zone classifications**: threshold-based categories
 
 ```scheme
-;; Example: mod/oscillators.wat
+;; Example: vocab/oscillators.wat
 
 (atom "williams-r")
 (atom "williams-overbought")   ; zone: %R < -20
@@ -37,37 +40,29 @@ Define:
 
 ### 2. Implement in Rust
 
-Location: `~/work/holon/holon-lab-trading/rust/src/vocab/<name>.rs`
+Location: `~/work/holon/holon-lab-trading/src/vocab/<name>.rs`
 
 Structure:
 ```rust
-//! mod/<name> — description
-//! Spec: ~/work/holon/wat/mod/<name>.wat
+//! vocab/<name> — description
+//! Spec: ~/work/holon/holon-lab-trading/wat/vocab/<name>.wat
 
-use crate::db::Candle;
+use crate::vocab::Fact;
 
-/// Pure computation from candle data. No holon imports needed.
-pub fn compute_indicator(candles: &[Candle]) -> Option<f64> { ... }
-
-/// All facts for this module.
-pub struct ModuleFacts {
-    pub value: Option<f64>,
-    pub zone: Option<&'static str>,
-    // ...
-}
-
-pub fn eval_module(candles: &[Candle]) -> ModuleFacts { ... }
+/// Pure computation. Returns facts, not vectors.
+/// The encoder renders facts to geometry. Modules return data.
+pub fn eval(candles: &[Candle]) -> Vec<Fact> { ... }
 ```
 
 Rules:
 - Pure functions. No state. No side effects.
-- Takes `&[Candle]` window, returns computed values.
+- Takes `&[Candle]` window, returns `Vec<Fact>`.
+- The Fact interface: modules return data, the encoder renders to geometry.
 - Zone classification at threshold boundaries.
-- The struct collects all facts for the caller to encode.
 
 ### 3. Register the module
 
-In `rust/src/vocab/mod.rs`:
+In `src/vocab/mod.rs`:
 ```rust
 pub mod oscillators;
 pub mod flow;
@@ -76,81 +71,36 @@ pub mod new_module;  // add here
 
 ### 4. Add atoms to ThoughtVocab
 
-In `rust/src/thought.rs`, find `INDICATOR_ATOMS` and `ZONE_ATOMS`:
+In `src/thought/mod.rs`, find `INDICATOR_ATOMS` and `ZONE_ATOMS`:
 ```rust
 const INDICATOR_ATOMS: &[&str] = &[
     // ... existing ...
     // vocab/new_module
     "new-atom-1", "new-atom-2",
 ];
-
-const ZONE_ATOMS: &[&str] = &[
-    // ... existing ...
-    // vocab/new_module zones
-    "new-zone-1", "new-zone-2",
-];
 ```
 
 ### 5. Wire into expert dispatch
 
-In `rust/src/thought.rs`, find the expert's exclusive section:
+In `src/thought/mod.rs`, find the expert's exclusive section:
 ```rust
 if is(&["target_expert"]) {
-    // ... existing eval methods ...
-    self.eval_new_module(candles, &mut owned_facts, &mut labels);
+    self.encode_facts(&crate::vocab::new_module::eval(candles), ...);
 }
 ```
 
-### 6. Write the eval method
-
-In `rust/src/thought.rs`, add the method to `ThoughtEncoder`:
-```rust
-fn eval_new_module(
-    &self,
-    candles: &[Candle],
-    facts: &mut Vec<Vector>,
-    labels: &mut Vec<String>,
-) {
-    use crate::vocab::new_module::eval_module;
-    let result = eval_module(candles);
-
-    // Zone facts: binary (present when in zone)
-    if let Some(zone) = result.zone {
-        let fact = Primitives::bind(self.vocab.get("at"),
-            &Primitives::bind(self.vocab.get("indicator"), self.vocab.get(zone)));
-        facts.push(fact);
-        labels.push(format!("(at indicator {})", zone));
-    }
-
-    // Scalar facts: continuous value
-    if let Some(value) = result.value {
-        let v = self.scalar_enc.encode(
-            value.clamp(0.0, 1.0),        // normalize to [0, 1]
-            ScalarMode::Linear { scale: 1.0 }  // theoretical range
-        );
-        facts.push(Primitives::bind(self.vocab.get("indicator"), &v));
-        labels.push(format!("(indicator {:.3})", value));
-    }
-}
-```
-
-### 7. Run and measure
+### 6. Run and measure
 
 ```bash
-./trader.sh test3 50000 --orchestration thought-only --flip-quantile 0.99 \
-  --dims 20000 --sizing kelly --swap-fee 0.0010 --slippage 0.0025 \
-  --asset-mode hold --name new-module-50k
+./enterprise.sh test 100000 --asset-mode hold --swap-fee 0.0010 \
+  --slippage 0.0025 --name new-module-100k
 ```
 
 Check: did the expert's gate open more often? Did direction accuracy improve?
 
-```sql
-SELECT conviction_bucket, accuracy FROM candle_log ...
-```
+### 7. Update wat spec with findings
 
-### 8. Update wat spec with findings
-
-Append to `~/work/holon/holon-lab-trading/wat/DISCOVERIES.md`.
+Append a DISCOVERY or RESOLVED section to the module's wat spec.
 
 ---
 
@@ -174,15 +124,16 @@ Never use empirical scales. Always use theoretical range.
 ## Expert Assignment
 
 Each module belongs to exactly one expert (exclusive vocabulary).
-The stdlib comparisons are shared across all experts.
+Comparisons are shared by momentum and structure only.
 
 | Expert | Modules |
 |---|---|
-| Momentum | oscillators, divergence, crosses |
-| Structure | segments, levels, channels |
-| Volume | flow, participation |
-| Narrative | temporal, calendar |
+| Momentum | oscillators, divergence, stochastic, momentum (CCI/ROC) |
+| Structure | segments, levels, ichimoku, fibonacci, keltner, timeframe |
+| Volume | flow, participation, price action |
+| Narrative | temporal, calendar, timeframe narrative |
 | Regime | persistence, complexity, microstructure |
+| Generalist | all of the above (profile "full", fixed window) |
 
 To move a module between experts: update the `is(&[...])` dispatch
-in thought.rs and the `(require ...)` in the expert's wat spec.
+in thought/mod.rs and the eval methods list in the observer's wat spec.

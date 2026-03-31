@@ -2,7 +2,7 @@
 
 An s-expression language for algebraic cognition.
 
-Six primitives. Everything else composes.
+Two algebras. Everything else composes.
 
 ```scheme
 (atom "momentum")                              ; name a concept
@@ -10,7 +10,7 @@ Six primitives. Everything else composes.
 (bundle fact1 fact2 fact3)                     ; superimpose into one thought
 (cosine thought discriminant)                  ; measure similarity
 (journal "name" 20000 500)                     ; accumulate labeled observations
-(curve journal resolved)                       ; evaluate prediction quality
+(curve journal)                                ; evaluate prediction quality
 ```
 
 ## What Wat Is
@@ -24,11 +24,15 @@ Wat IS Lisp, restricted to the algebra of hyperdimensional computing.
 ## Structure
 
 ```
-wat/                              ← THE LANGUAGE
-├── core/primitives.wat           — the six primitives (corelib)
-├── std/common.wat                — generic vocabulary (stdlib)
-├── std/channels.wat              — publish/subscribe contract (stdlib)
-├── examples/enterprise.wat       — example program
+wat/
+├── core/primitives.wat           — vector algebra + journal coalgebra
+├── std/
+│   ├── scalars.wat               — continuous value encoding (log, linear, circular)
+│   ├── vectors.wat               — derived vector operations (permute, difference, attend)
+│   ├── memory.wat                — online subspace (Template 2: reaction)
+│   ├── patterns.wat              — gate (credibility annotation)
+│   └── common.wat                — shared vocabulary (predicates, directions, lifecycle)
+├── examples/enterprise.wat       — the first complete wat program
 ├── LANGUAGE.md                   — formal grammar
 └── CONTRIBUTING.md               — wat-to-Rust implementation guide
 ```
@@ -39,11 +43,10 @@ algebra. Applications provide the vocabulary.
 
 ## See Also
 
-- `LANGUAGE.md` — formal grammar, corelib, stdlib, control forms
-- `core/primitives.wat` — the six primitives
-- `std/common.wat` — shared vocabulary
-- `std/channels.wat` — publish/subscribe communication contract
-- `programs/enterprise.wat` — the first complete wat program
+- `LANGUAGE.md` — formal grammar, core forms, stdlib, control forms
+- `core/primitives.wat` — vector algebra + journal coalgebra
+- `std/` — derived operations, scalars, memory, patterns
+- `examples/enterprise.wat` — the first complete wat program
 
 ## Origin
 

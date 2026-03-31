@@ -38,7 +38,7 @@ Two algebras. Everything else composes from these.
 
 ;; Evaluation — the journal evaluates itself
 (resolve journal conviction correct) → ()    ; accumulate a resolved prediction
-(curve journal)                  → { a, b }  ; accuracy = (1/N) + a × exp(b × conviction)
+(curve journal)                  → (a, b)    ; accuracy = (1/N) + a × exp(b × conviction)
 ```
 
 ## Standard Library (stdlib)
