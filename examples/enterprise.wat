@@ -106,7 +106,7 @@
 ;; ═══════════════════════════════════════════════════════════════════
 
 (define (encode-expert-opinion expert prediction)
-  "Composes opinion → gate with a noise floor check.
+  "Noise floor filter, then opinion projection, then credibility gate.
    Returns nothing if below the noise floor — silence, not noise."
   (when (>= (abs (:raw-cosine prediction)) noise-floor)
     (gate (opinion prediction (:expert-atom expert))
@@ -139,7 +139,7 @@
              (context-facts
                (bundle
                  (bind (atom "market-volatility") (encode-log (atr candle)))
-                 (bind (atom "discriminant-strength")     (encode-log (discriminant-strength generalist)))
+                 (bind (atom "discriminant-strength")     (encode-log (discriminant-strength generalist-prediction)))
                  (bind (atom "hour-of-day")       (encode-circular (hour candle) 24.0))
                  (bind (atom "day-of-week")       (encode-circular (day candle) 7.0))))
 
@@ -270,16 +270,16 @@
   ;; 1. Experts encode and predict (LAYER 1)
   (let* ((expert-preds (map (lambda (e) (e candle vector-manager candle-idx))
                             (:experts state)))
-         (gen-pred     ((:generalist state) candle vector-manager candle-idx))
+         (generalist-pred     ((:generalist state) candle vector-manager candle-idx))
 
          ;; 2. Manager reads expert opinions (LAYER 2)
-         (mgr-pred     ((:manager state) expert-preds gen-pred candle))
+         (manager-pred     ((:manager state) expert-preds generalist-pred candle))
 
          ;; 3. Risk assesses portfolio health (LAYER 3)
          (risk-mult    ((:risk state) (:treasury state) (:positions state) expert-preds))
 
          ;; 4. Treasury decides and executes (LAYER 4)
-         (_            (treasury-execute (:treasury state) mgr-pred risk-mult
+         (_            (treasury-execute (:treasury state) manager-pred risk-mult
                                          (:band state) candle
                                          (:last-exit-price state) (:last-exit-atr state)))
 
