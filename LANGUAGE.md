@@ -101,7 +101,7 @@ Derived forms built from the corelib.
                           [strength : Float]
                           [dims : Int])
   : Vector
-  ...)
+  (bind base (encode-linear strength 1.0)))
 ```
 
 ## Module System

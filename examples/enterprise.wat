@@ -196,8 +196,8 @@
                                 (* k-stop last-exit-atr))))
          (should-act?    (and in-band? risk-allows? market-moved?)))
     (when should-act?
-      (let* ((sizing  (* (/ band-edge 2.0) risk-mult))  ; Kelly × risk modulation
-             (deploy-amount  (* (balance treasury "USDC") sizing)))
+      (let* ((kelly-fraction (* (/ band-edge 2.0) risk-mult))
+             (deploy-amount  (* (balance treasury "USDC") kelly-fraction)))
         (when (> deploy-amount min-deploy-amount)
           (match (direction manager-pred)
             Buy  (open-position treasury "USDC" "WBTC" deploy-amount (price candle))
@@ -227,7 +227,7 @@
 ;; LAYER 6: Learning — outcomes become knowledge
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (learn experts generalist manager candles pending threshold)
+(define (learn experts generalist manager candles pending move-threshold)
   "Event-driven learning. First threshold crossing labels direction.
    Experts learn Buy/Sell. Manager learns from price direction.
    Each expert learns at its own window, from its own vocabulary."
@@ -236,7 +236,7 @@
       (let ((price-change (/ (- current-price (entry-price pending-trade))
                              (entry-price pending-trade))))
         ;; Expert learning: did the threshold cross?
-        (when (and (no-outcome? pending-trade) (> (abs price-change) threshold))
+        (when (and (no-outcome? pending-trade) (> (abs price-change) move-threshold))
           (let ((label (if (> price-change 0) Buy Sell)))
             ;; Each expert observes with its own thought vector
             (for-each (lambda (expert vec) (observe (journal expert) vec label 1.0))
