@@ -19,7 +19,7 @@ Wat is the intermediate representation between human intuition and machine execu
 The human writes wat. The Rust implements it. The Rust runs.
 The ledger records. The cycle continues.
 
-Wat IS Lisp, restricted to the algebra of hyperdimensional computing.
+Wat IS Lisp, shaped for algebraic cognition and the programs that use it.
 
 ## Structure
 
