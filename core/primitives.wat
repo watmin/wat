@@ -47,12 +47,13 @@
 ;; Accumulate a labeled observation.
 ;; The state transition function of the coalgebra.
 ;; label is a Label symbol, not a string.
+;; weight scales the observation's influence on the accumulator.
 (observe journal thought label weight)
 
 ;; Ask what the journal thinks about a thought.
 ;; Returns scores for ALL labels. The consumer decides top-1/top-k/full.
 ;; The observation function of the coalgebra.
-(predict journal thought) → Prediction  ; { scores, direction, conviction, raw-cos }
+(predict journal thought) → Prediction  ; { scores, direction, conviction, raw-cosine }
 
 ;; Decay the accumulators. Older observations fade.
 ;; The aging function of the coalgebra.

@@ -86,11 +86,11 @@
 (define (encode-expert-opinion expert pred)
   "One expert's opinion as a named fact: bind(expert, bind(status, bind(action, magnitude))).
    Returns nothing if below the noise floor — silence, not noise."
-  (let* ((cos-val   (abs (raw-cos pred)))
-         (magnitude (encode-linear cos-val 1.0))
-         (action    (if (>= (raw-cos pred) 0) (atom "buy") (atom "sell")))
+  (let* ((cosine-magnitude (abs (raw-cosine pred)))
+         (magnitude (encode-linear cosine-magnitude 1.0))
+         (action    (if (>= (raw-cosine pred) 0) (atom "buy") (atom "sell")))
          (status    (if (gate-open? expert) (atom "proven") (atom "tentative"))))
-    (when (>= cos-val noise-floor)
+    (when (>= cosine-magnitude noise-floor)
       (bind (atom (name expert))
             (bind status (bind action magnitude))))))
 
@@ -106,7 +106,7 @@
                (filter-map encode-expert-opinion experts expert-predictions))
 
              ;; Panel shape: emergent properties
-             (proven-preds (filter (lambda (e p) (gate-open? e)) experts expert-predictions))
+             (proven-preds (filter (lambda (expert pred) (gate-open? expert)) experts expert-predictions))
              (panel-facts
                (if (>= (length proven-preds) 2)
                    (bundle
@@ -124,11 +124,11 @@
                  (bind (atom "hour-of-day")       (encode-circular (hour candle) 24.0))
                  (bind (atom "day-of-week")       (encode-circular (day candle) 7.0))))
 
-             ;; Bundle everything
-             (thought (bundle expert-facts panel-facts context-facts))
+             ;; Bundle everything into the manager's thought
+             (manager-thought (bundle expert-facts panel-facts context-facts))
 
              ;; Predict
-             (pred (predict jrnl thought)))
+             (pred (predict jrnl manager-thought)))
 
         ;; Return prediction. The fold carries it to the treasury.
         pred))))
@@ -186,11 +186,11 @@
          (should-act?    (and in-band? risk-allows? market-moved?)))
     (when should-act?
       (let* ((sizing  (* (/ band-edge 2.0) risk-mult))  ; Kelly × risk modulation
-             (deploy  (* (balance treasury "USDC") sizing)))
-        (when (> deploy 10.0)
+             (deploy-amount  (* (balance treasury "USDC") sizing)))
+        (when (> deploy-amount 10.0)
           (match (direction manager-pred)
-            Buy  (open-position treasury "USDC" "WBTC" deploy (price candle))
-            Sell (open-position treasury "WBTC" "USDC" deploy (price candle))))))))
+            Buy  (open-position treasury "USDC" "WBTC" deploy-amount (price candle))
+            Sell (open-position treasury "WBTC" "USDC" deploy-amount (price candle))))))))
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 5: Position Management — actions become outcomes

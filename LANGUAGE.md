@@ -31,7 +31,7 @@ Two algebras. Everything else composes from these.
 
 ;; Learning — journal coalgebra (opaque state, N-ary labels)
 (journal name dims refit-interval) → Journal
-(register journal name)          → Label      ; symbol handle — value-typed, O(1) equality
+(register journal name)          → Label
 (observe journal thought label weight) → ()   ; label is a Label symbol
 (predict journal thought)        → Prediction ; { scores, direction, conviction, raw_cos }
 (decay journal rate)             → ()
