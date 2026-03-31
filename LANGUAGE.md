@@ -22,8 +22,10 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Comparison:** `=`, `>`, `<`, `>=`, `<=`
 - **Logical:** `and`, `or`, `not`
 - **Sequencing:** `begin`
+- **Control:** `let`, `let*`, `define`, `if`, `when`, `match`, `lambda`
+- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`
 
-These are not wat forms — they are the substrate. Wat's contribution
+These are the substrate any Lisp provides. Wat's contribution
 is the two algebras below and the stdlib derived from them.
 
 ## Core Forms (corelib)
@@ -84,27 +86,6 @@ Derived forms built from the corelib.
 ;; The gate annotates — it does not suppress. The caller determines proof.
 ```
 
-## Control Forms
-
-```scheme
-;; Binding
-(let ((name value) ...) body)
-(let* ((name value) ...) body)   ; sequential binding
-(define (name args ...) body)    ; function definition
-
-;; Conditional
-(if test then else)
-(when test body)
-(match value (pattern body) ...)
-
-;; Iteration
-(for-each fn list)
-(map fn list)
-(filter fn list)
-(filter-map fn list)
-(fold step-fn initial-state items)   ; (state, element) → state
-```
-
 ## Type Annotations (optional)
 
 ```scheme
@@ -150,11 +131,11 @@ Derived forms built from the corelib.
 
 ;; A journal learns which thoughts predict
 (define jrnl (journal "example" 10000 500))
-(register jrnl "Buy")
-(register jrnl "Sell")
-(observe jrnl thought label 1.0)
-(predict jrnl thought)              ; → direction + conviction
-(curve jrnl)                        ; → (a, b) — the proof
+(let ((buy  (register jrnl "Buy"))     ; string → Label symbol
+      (sell (register jrnl "Sell")))
+  (observe jrnl thought buy 1.0)       ; label is a symbol, not a string
+  (predict jrnl thought)               ; → direction + conviction
+  (curve jrnl))                        ; → (amplitude, exponent) — the proof
 ```
 
 The full enterprise example is in `examples/enterprise.wat`.

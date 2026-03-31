@@ -174,6 +174,7 @@
 ;; LAYER 4: Treasury — decisions become actions
 ;; ═══════════════════════════════════════════════════════════════════
 
+;; rune:gaze(length) — last-exit-price and last-exit-atr are a pair; wat has no aggregate types
 (define (treasury-execute treasury manager-pred risk-mult band candle
                          last-exit-price last-exit-atr)
   "The root. Receives manager prediction + risk multiplier. Executes if all gates pass."
@@ -221,21 +222,22 @@
    Experts learn Buy/Sell. Manager learns from price direction.
    Each expert learns at its own window, from its own vocabulary."
   (for-each
-    (lambda (entry)
-      (let ((price-change (/ (- current-price (entry-price entry)) (entry-price entry))))
+    (lambda (pending-trade)
+      (let ((price-change (/ (- current-price (entry-price pending-trade))
+                             (entry-price pending-trade))))
         ;; Expert learning: did the threshold cross?
-        (when (and (no-outcome? entry) (> (abs price-change) threshold))
+        (when (and (no-outcome? pending-trade) (> (abs price-change) threshold))
           (let ((label (if (> price-change 0) Buy Sell)))
             ;; Each expert observes with its own thought vector
             (for-each (lambda (expert vec) (observe (journal expert) vec label 1.0))
-                      experts (expert-vecs entry))
+                      experts (expert-vecs pending-trade))
             ;; Generalist observes with full thought
-            (observe (journal generalist) (thought entry) label 1.0)))
+            (observe (journal generalist) (thought pending-trade) label 1.0)))
 
         ;; Manager learning: raw price direction from expert config
-        (when (resolved? entry)
+        (when (resolved? pending-trade)
           (let* ((direction-label (if (> price-change 0) Buy Sell))
-                 (mgr-thought     (encode-manager-thought (expert-preds entry))))
+                 (mgr-thought     (encode-manager-thought (expert-preds pending-trade))))
             (observe (journal manager) mgr-thought direction-label 1.0)))))
     pending))
 
@@ -243,6 +245,7 @@
 ;; THE HEARTBEAT — one candle at a time
 ;; ═══════════════════════════════════════════════════════════════════
 
+;; rune:gaze(length) — the fold carrier holds the enterprise; wat has no aggregate types
 (define (heartbeat candle-idx candles vector-manager
                    experts generalist manager risk treasury
                    positions exit-expert pending band ledger

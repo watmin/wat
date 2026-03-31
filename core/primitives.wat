@@ -68,4 +68,4 @@
 ;; accuracy = (1/N) + a × exp(b × conviction),  N = number of labels.
 ;; At zero conviction, accuracy = 1/N (random chance among N labels).
 ;; The curve IS the proof. Monotonically increasing = real signal.
-(curve journal) → (a, b)
+(curve journal) → (amplitude, exponent)

@@ -25,8 +25,10 @@
 (atom "beginning") (atom "ending")
 (atom "before") (atom "after") (atom "during")
 
-;; ── Lifecycle ────────────────────────────────────────────────────────
+;; ── Null ─────────────────────────────────────────────────────────────
 (atom "nothing")      ; absence of signal — the null thought
+
+;; ── Lifecycle ────────────────────────────────────────────────────────
 (atom "open")         ; something has started
 (atom "active")       ; something is in progress
 (atom "closed")       ; something has completed
