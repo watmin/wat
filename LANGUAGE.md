@@ -94,15 +94,9 @@ Derived forms built from the corelib.
 (residual subspace vector)       → Float     ; distance from learned manifold
 (threshold subspace)             → Float     ; self-calibrating boundary
 
-;; Gate (derived pattern)
-(gate opinion-vector expert-atom proven?) → Vector ; bundle(opinion, bind(expert, status))
-;; The gate annotates — it does not predict or project. Vector in, Vector out.
-
-;; Fact constructors — bridge between domain vocabulary and the algebra
-(fact/zone indicator zone)           → Vector    ; bind(at, bind(indicator, zone))
-(fact/comparison predicate a b)      → Vector    ; bind(predicate, bind(a, b))
-(fact/scalar indicator value scale)  → Vector    ; bind(indicator, encode-linear(value, scale))
-(fact/bare label)                    → Vector    ; atom(label)
+;; Derived fields — build-time declarations on product types
+(field struct-name field-name computation)
+;; Declares a computed value. Dependency order, no forward refs.
 
 ;; Statistics — pre-algebra numeric helpers
 (mean xs)                            → Float

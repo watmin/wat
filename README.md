@@ -31,10 +31,8 @@ wat/
 │   ├── scalars.wat               — continuous value encoding (log, linear, circular)
 │   ├── vectors.wat               — derived vector operations (permute, difference, attend)
 │   ├── memory.wat                — online subspace (Template 2: reaction)
-│   ├── patterns.wat              — gate (credibility annotation)
-│   ├── facts.wat                 — fact constructors (zone, comparison, scalar, bare)
 │   ├── statistics.wat            — numeric helpers (mean, variance, stddev, skewness)
-│   └── common.wat                — shared vocabulary (predicates, directions, lifecycle)
+│   └── fields.wat                — derived values on product types (field declarations)
 ├── examples/enterprise.wat       — the first complete wat program
 ├── LANGUAGE.md                   — formal grammar
 └── CONTRIBUTING.md               — wat-to-Rust implementation guide
