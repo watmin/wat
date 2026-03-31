@@ -31,7 +31,7 @@
 ;;   opinion:  Prediction × Vector → Vector  (domain-specific projection)
 ;;   gate:     Vector × Vector × Bool → Vector  (generic annotation)
 
-;; Consumers filter by reading the annotation:
-;;   Manager: (filter (lambda (msg) (cosine (bind msg (atom "credibility")) (atom "proven"))) messages)
-;;   Risk:    (identity messages)  ;; sees everything, proven and tentative
-;;   Ledger:  (identity messages)  ;; records everything
+;; Consumers filter by reading the expert's status:
+;;   Manager: reads proven experts' opinions, ignores tentative
+;;   Risk:    sees everything — proven and tentative
+;;   Ledger:  records everything

@@ -106,12 +106,12 @@
 (define (encode-expert-opinion expert prediction)
   "One expert's opinion as a named fact: bind(expert, bind(status, bind(action, magnitude))).
    Returns nothing if below the noise floor — silence, not noise."
-  (let* ((cosine-magnitude (abs (raw-cosine prediction)))
+  (let* ((cosine-magnitude (abs (:raw-cosine prediction)))
          (magnitude (encode-linear cosine-magnitude 1.0))
-         (action    (if (>= (raw-cosine prediction) 0) (atom "buy") (atom "sell")))
-         (status    (if (gate-open? expert) (atom "proven") (atom "tentative"))))
+         (action    (if (>= (:raw-cosine prediction) 0) (atom "buy") (atom "sell")))
+         (status    (if (:curve-valid expert) (atom "proven") (atom "tentative"))))
     (when (>= cosine-magnitude noise-floor)
-      (bind (atom (name expert))
+      (bind (:expert-atom expert)
             (bind status (bind action magnitude))))))
 
 (define (manager dims refit-interval)
@@ -126,7 +126,7 @@
                (filter-map encode-expert-opinion experts expert-predictions))
 
              ;; Panel shape: emergent properties
-             (proven-preds (filter (lambda (expert prediction) (gate-open? expert)) experts expert-predictions))
+             (proven-preds (filter (lambda (expert prediction) (:curve-valid expert)) experts expert-predictions))
              (panel-facts
                (if (>= (length proven-preds) 2)
                    (bundle
@@ -264,6 +264,7 @@
 ;; THE HEARTBEAT — one candle at a time
 ;; ═══════════════════════════════════════════════════════════════════
 
+;; rune:gaze(complexity) — fold threading requires let* with discarded bindings; wat has no begin-with-bindings form
 (define (heartbeat candle-idx candle vector-manager state)
   "The enterprise processes one candle. The state is one struct. The fold is one step."
 

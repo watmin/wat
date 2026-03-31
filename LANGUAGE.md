@@ -88,7 +88,7 @@ Derived forms built from the corelib.
 (threshold subspace)             → Float     ; self-calibrating boundary
 
 ;; Gate (derived pattern)
-(gate opinion-vector expert-atom proven?) → Vector ; bundle(opinion, credibility)
+(gate opinion-vector expert-atom proven?) → Vector ; bundle(opinion, bind(expert, status))
 ;; The gate annotates — it does not predict or project. Vector in, Vector out.
 ```
 
