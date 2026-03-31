@@ -37,6 +37,8 @@
 
 ;; Match dispatches on the active variant.
 ;; Exhaustive: missing an arm on a closed set is a spec violation.
+;; Wildcard `_` is forbidden on closed enums — it defeats exhaustiveness.
+;; When a variant is added, every match must be updated. That is the point.
 ;; The forge checks this. The Rust compiler enforces it.
 ;;
 ;; (match (:direction pos)
