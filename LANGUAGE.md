@@ -98,8 +98,7 @@ Derived forms built from the corelib.
 ;; Types are documentation, not enforcement.
 ;; The algebra doesn't type-check — the curve validates.
 (define (weighted-thought [base : Vector]
-                          [strength : Float]
-                          [dims : Int])
+                          [strength : Float])
   : Vector
   (bind base (encode-linear strength 1.0)))
 ```

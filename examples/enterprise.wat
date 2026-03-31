@@ -56,12 +56,12 @@
     (bundle
       (stdlib-comparisons slice)           ; shared: close vs SMA, MACD vs signal
       (match expert-profile
-        "momentum"  (bundle (oscillators slice) (divergence slice) (crosses slice))
-        "structure" (bundle (segments slice vector-manager) (levels slice) (price-channels slice))
-        "volume"    (bundle (flow slice) (participation slice))
-        "narrative" (bundle (temporal slice vector-manager) (calendar (last slice)))
-        "regime"    (bundle (persistence slice) (complexity slice) (microstructure slice))
-        "full"      (bundle-all-modules slice vector-manager)))))
+        :momentum  (bundle (oscillators slice) (divergence slice) (crosses slice))
+        :structure (bundle (segments slice vector-manager) (levels slice) (price-channels slice))
+        :volume    (bundle (flow slice) (participation slice))
+        :narrative (bundle (temporal slice vector-manager) (calendar (last slice)))
+        :regime    (bundle (persistence slice) (complexity slice) (microstructure slice))
+        :full      (bundle-all-modules slice vector-manager)))))
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 1: Experts — candle thoughts become predictions
@@ -70,9 +70,9 @@
 (define (expert name profile dims refit-interval)
   "A leaf node. Encodes candles, predicts direction, returns always."
   (let ((jrnl    (journal name dims refit-interval))
-        (sampler (window-sampler (seed-for name) 12 2016)))
+        (window-sampler (window-sampler (seed-for name) 12 2016)))
     (lambda (candles vector-manager candle-idx)
-      (let* ((thought (encode-candle candles candle-idx profile sampler vector-manager))
+      (let* ((thought (encode-candle candles candle-idx profile window-sampler vector-manager))
              (pred    (predict jrnl thought)))           ; cosine → direction + conviction
         ;; Returns annotated prediction. The gate tells the manager
         ;; whether this expert has proven edge or is still tentative.
@@ -125,7 +125,7 @@
                      (bind (atom "panel-energy")     (encode-linear (mean-conviction proven-preds) 1.0))
                      (bind (atom "panel-divergence") (encode-linear (conviction-spread proven-preds) 1.0))
                      (bind (atom "panel-coherence")  (encode-linear (pairwise-cosine proven-preds) 1.0)))
-                   (bundle)))  ; empty bundle = zero vector (identity)
+                   (bundle)))  ; identity — no panel signal
 
              ;; Context
              (context-facts
@@ -247,8 +247,8 @@
         ;; Manager learning: raw price direction from expert config
         (when (resolved? pending-trade)
           (let* ((direction-label (if (> price-change 0) Buy Sell))
-                 (mgr-thought     (encode-manager-thought (expert-preds pending-trade))))
-            (observe (journal manager) mgr-thought direction-label 1.0)))))
+                 (manager-thought     (encode-manager-thought (expert-preds pending-trade))))
+            (observe (journal manager) manager-thought direction-label 1.0)))))
     pending))
 
 ;; ═══════════════════════════════════════════════════════════════════
