@@ -18,12 +18,16 @@ comment    = ';' char* newline
 
 Wat is Lisp. It inherits standard forms from the host:
 
-- **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`
+- **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`, `max`, `min`, `round`, `clamp`, `exp`, `ln`, `signum`
 - **Comparison:** `=`, `>`, `<`, `>=`, `<=`
 - **Logical:** `and`, `or`, `not`
 - **Sequencing:** `begin`
-- **Control:** `let`, `let*`, `define`, `if`, `when`, `match`, `lambda`
-- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`
+- **Control:** `let`, `let*`, `define`, `if`, `when`, `cond`, `match`, `lambda`
+- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `count`
+- **Collections:** `list`, `len`, `nth`, `first`, `rest`, `last`, `append`, `take-last`, `empty?`, `reverse`, `sort`
+- **Maps:** `get`, `assoc`, `keys`, `dissoc`
+- **Strings:** `format`, `substring`
+- **Mutation:** `set!`, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
 
 These are the substrate any Lisp provides. Wat's contribution
 is the algebras, structural forms, and stdlib below.
