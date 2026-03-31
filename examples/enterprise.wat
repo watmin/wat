@@ -120,13 +120,13 @@
    The discriminant learns what credibility means — tentative vs
    proven — from the geometry of outcomes."
   (let ((jrnl (journal "manager" dims refit-interval)))
-    (lambda (expert-predictions generalist-prediction market-context)
+    (lambda (expert-preds generalist-prediction candle)
       (let* (;; Encode each expert's opinion with credibility annotation
              (expert-facts
-               (filter-map encode-expert-opinion experts expert-predictions))
+               (filter-map encode-expert-opinion experts expert-preds))
 
              ;; Panel shape: emergent properties
-             (proven-preds (filter (lambda (expert prediction) (:curve-valid expert)) experts expert-predictions))
+             (proven-preds (filter (lambda (expert prediction) (:curve-valid expert)) experts expert-preds))
              (panel-facts
                (if (>= (length proven-preds) 2)
                    (bundle
@@ -136,13 +136,13 @@
                      (bind (atom "panel-coherence")  (encode-linear (pairwise-cosine proven-preds) 1.0)))
                    (bundle)))  ; identity — no panel signal
 
-             ;; Context — the manager reads time and volatility, not OHLCV
+             ;; Context — the manager extracts time and volatility from the candle, not OHLCV
              (context-facts
                (bundle
-                 (bind (atom "market-volatility") (encode-log (atr market-context)))
-                 (bind (atom "disc-strength")     (encode-log (disc-strength generalist)))
-                 (bind (atom "hour-of-day")       (encode-circular (hour market-context) 24.0))
-                 (bind (atom "day-of-week")       (encode-circular (day market-context) 7.0))))
+                 (bind (atom "market-volatility") (encode-log (atr candle)))
+                 (bind (atom "discriminant-strength")     (encode-log (discriminant-strength generalist)))
+                 (bind (atom "hour-of-day")       (encode-circular (hour candle) 24.0))
+                 (bind (atom "day-of-week")       (encode-circular (day candle) 7.0))))
 
              ;; Bundle everything into the manager's thought
              (manager-thought (bundle expert-facts panel-facts context-facts))
@@ -164,23 +164,23 @@
         (accuracy-sub  (online-subspace dims 8))
         (volatility-sub (online-subspace dims 8))
         (correlation-sub (online-subspace dims 8)))
-    (lambda (treasury positions expert-predictions)
+    (lambda (treasury positions expert-preds)
       (let* ((drawdown-state   (encode-drawdown treasury))
-             (acc-state  (encode-accuracy treasury))
+             (accuracy-state  (encode-accuracy treasury))
              (vol-state  (encode-volatility treasury))
              (corr-state (encode-correlation positions))
              (healthy?   (and (< (drawdown treasury) max-healthy-drawdown)
                               (> (rolling-accuracy treasury) min-healthy-accuracy)))
-             ;; Gated updates: only learn from healthy states
+             ;; rune:gaze(complexity) — same pattern as heartbeat; gated side effects in let*
              (_          (when healthy?
                            (update drawdown-sub drawdown-state)
-                           (update accuracy-sub acc-state)
+                           (update accuracy-sub accuracy-state)
                            (update volatility-sub vol-state)
                            (update correlation-sub corr-state)))
              ;; Measure distance from healthy
              (residuals  (map residual
                            (list drawdown-sub accuracy-sub volatility-sub correlation-sub)
-                           (list drawdown-state acc-state vol-state corr-state)))
+                           (list drawdown-state accuracy-state vol-state corr-state)))
              (worst      (apply max residuals))
              (thresholds (map threshold
                            (list drawdown-sub accuracy-sub volatility-sub correlation-sub)))
@@ -274,7 +274,7 @@
          (gen-pred     ((:generalist state) candle vector-manager candle-idx))
 
          ;; 2. Manager reads expert opinions (LAYER 2)
-         (mgr-pred     ((:manager state) expert-preds gen-pred candle))  ; candle as market-context
+         (mgr-pred     ((:manager state) expert-preds gen-pred candle))
 
          ;; 3. Risk assesses portfolio health (LAYER 3)
          (risk-mult    ((:risk state) (:treasury state) (:positions state) expert-preds))
