@@ -23,7 +23,7 @@
 ;; discovers everything else from the stream.
 (define dims 20000)                  ; vector dimensionality
 (define refit-interval 500)          ; journal curve refit every N observations
-(define noise-floor-sigma 3)         ; noise floor = sigma / sqrt(dims)
+(define noise-floor (/ 3 (sqrt dims))) ; below this cosine, silence
 (define k-stop 1.5)                 ; stop loss distance (× ATR)
 (define k-trail 0.5)                ; trailing stop distance (× ATR)
 (define k-tp 3.0)                   ; take profit distance (× ATR)
@@ -37,7 +37,7 @@
 ;; LAYER 0: Encoding — candle data becomes named thoughts
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (encode-candle candles candle-idx expert-profile window-sampler vm)
+(define (encode-candle candles candle-idx expert-profile window-sampler vector-manager)
   "Each expert encodes candles through its vocabulary modules.
    The window is sampled per expert per candle — discovered, not fixed."
   (let ((window (sample window-sampler candle-idx))
@@ -46,11 +46,11 @@
       (stdlib-comparisons slice)           ; shared: close vs SMA, MACD vs signal
       (match expert-profile
         "momentum"  (bundle (oscillators slice) (divergence slice) (crosses slice))
-        "structure" (bundle (segments slice vm) (levels slice) (price-channels slice))
+        "structure" (bundle (segments slice vector-manager) (levels slice) (price-channels slice))
         "volume"    (bundle (flow slice) (participation slice))
-        "narrative" (bundle (temporal slice vm) (calendar (last slice)))
+        "narrative" (bundle (temporal slice vector-manager) (calendar (last slice)))
         "regime"    (bundle (persistence slice) (complexity slice) (microstructure slice))
-        "full"      (bundle-all-modules slice vm)))))
+        "full"      (bundle-all-modules slice vector-manager)))))
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 1: Experts — candle thoughts become predictions
@@ -60,8 +60,8 @@
   "A leaf node. Encodes candles, predicts direction, returns always."
   (let ((jrnl    (journal name dims refit-interval))
         (sampler (window-sampler (seed-for name) 12 2016)))
-    (lambda (candles vm candle-idx)
-      (let* ((thought (encode-candle candles candle-idx profile sampler vm))
+    (lambda (candles vector-manager candle-idx)
+      (let* ((thought (encode-candle candles candle-idx profile sampler vector-manager))
              (pred    (predict jrnl thought)))           ; cosine → direction + conviction
         ;; Returns annotated prediction. The gate tells the manager
         ;; whether this expert has proven edge or is still tentative.
@@ -70,14 +70,14 @@
 ;; Create the five experts + generalist
 (define experts
   (list
-    (expert "momentum"  "momentum"  20000 500)
-    (expert "structure" "structure" 20000 500)
-    (expert "volume"    "volume"    20000 500)
-    (expert "narrative" "narrative" 20000 500)
-    (expert "regime"    "regime"    20000 500)))
+    (expert "momentum"  "momentum"  dims refit-interval)
+    (expert "structure" "structure" dims refit-interval)
+    (expert "volume"    "volume"    dims refit-interval)
+    (expert "narrative" "narrative" dims refit-interval)
+    (expert "regime"    "regime"    dims refit-interval)))
 
 (define generalist
-  (expert "generalist" "full" 20000 500))
+  (expert "generalist" "full" dims refit-interval))
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 2: Manager — expert opinions become enterprise decisions
@@ -99,7 +99,7 @@
                           (status    (if (gate-open? expert) (atom "proven") (atom "tentative")))
                           (cos-val   (abs (raw-cos pred))))
                      ;; Silence below noise floor
-                     (when (>= cos-val (/ noise-floor-sigma (sqrt dims)))
+                     (when (>= cos-val noise-floor)
                        (bind (atom (name expert))
                              (bind status (bind action magnitude))))))
                  experts expert-predictions))
@@ -173,12 +173,13 @@
 ;; LAYER 4: Treasury — decisions become actions
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (treasury-execute treasury manager-pred risk-mult band positions candle)
+(define (treasury-execute treasury manager-pred risk-mult band candle
+                         last-exit-price last-exit-atr)
   "The root. Receives manager prediction + risk multiplier. Executes if all gates pass."
   (let* ((in-band?       (and (>= (conviction manager-pred) (band-low band))
                               (<  (conviction manager-pred) (band-high band))))
          (risk-allows?   (> risk-mult 0.5))
-         (market-moved?  (or (no-prior-exit?)
+         (market-moved?  (or (= last-exit-price 0)
                              (> (abs (- (price candle) last-exit-price))
                                 (* k-stop last-exit-atr))))
          (should-act?    (and in-band? risk-allows? market-moved?)))
@@ -207,7 +208,7 @@
                         ;; Exit expert observes position state at regular intervals.
                         ;; Label is Hold or Exit, resolved later by comparing P&L snapshots.
                         (when (= 0 (mod (candles-held pos) exit-observe-interval))
-                          (buffer-exit-observation exit-expert (encode-position pos candle) pos)))))))
+                          (defer-exit-observation exit-expert pos candle)))))))
     positions))
 
 ;; ═══════════════════════════════════════════════════════════════════
@@ -241,14 +242,15 @@
 ;; THE HEARTBEAT — one candle at a time
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (heartbeat candle-idx candles vm
+(define (heartbeat candle-idx candles vector-manager
                    experts generalist manager risk treasury
-                   positions exit-expert pending band ledger)
+                   positions exit-expert pending band ledger
+                   last-exit-price last-exit-atr)
   "The enterprise processes one candle. Everything flows from here."
 
   ;; 1. Experts encode and predict (LAYER 1)
-  (let* ((expert-preds (map (lambda (e) (e candles vm candle-idx)) experts))
-         (gen-pred     (generalist candles vm candle-idx))
+  (let* ((expert-preds (map (lambda (e) (e candles vector-manager candle-idx)) experts))
+         (gen-pred     (generalist candles vector-manager candle-idx))
 
          ;; 2. Manager reads expert opinions (LAYER 2)
          (mgr-pred     (manager expert-preds gen-pred (candle candle-idx)))
@@ -257,7 +259,8 @@
          (risk-mult    (risk treasury positions expert-preds))
 
          ;; 4. Treasury decides and executes (LAYER 4)
-         (_            (treasury-execute treasury mgr-pred risk-mult band positions (candle candle-idx)))
+         (_            (treasury-execute treasury mgr-pred risk-mult band
+                                         (candle candle-idx) last-exit-price last-exit-atr))
 
          ;; 5. Manage open positions (LAYER 5)
          (_            (manage-positions positions treasury exit-expert (candle candle-idx)))

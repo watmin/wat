@@ -31,7 +31,7 @@ Two algebras. Everything else composes from these.
 
 ;; Learning — journal coalgebra (opaque state, N-ary labels)
 (journal name dims refit-interval) → Journal
-(register journal name)          → Label      ; symbol handle — Copy, O(1) equality
+(register journal name)          → Label      ; symbol handle — value-typed, O(1) equality
 (observe journal thought label weight) → ()   ; label is a Label symbol
 (predict journal thought)        → Prediction ; { scores, direction, conviction, raw_cos }
 (decay journal rate)             → ()
@@ -128,18 +128,21 @@ Derived forms built from the corelib.
 - The intermediate representation between thought and execution.
 - Lisp with a purpose: algebraic cognition from named thoughts.
 
-## Example: The Heartbeat
+## Example
 
 ```scheme
-(define (heartbeat state event experts generalist manager risk treasury)
-  (let* ((candle       (event-candle event))
-         (expert-preds (map (lambda (e) (e candle)) experts))
-         (gen-pred     (generalist candle))
-         (mgr-pred     (manager expert-preds gen-pred candle))
-         (risk-mult    (risk treasury))
-         (new-state    (fold-step state mgr-pred risk-mult candle)))
-    new-state))
+;; A thought: "RSI is diverging from price during a regime shift"
+(bundle
+  (bind (atom "diverging") (bind (atom "close") (atom "rsi")))
+  (bind (atom "at") (bind (atom "dfa-alpha") (atom "anti-persistent"))))
+
+;; A journal learns which thoughts predict
+(define jrnl (journal "example" 10000 500))
+(register jrnl "Buy")
+(register jrnl "Sell")
+(observe jrnl thought label 1.0)
+(predict jrnl thought)              ; → direction + conviction
+(curve jrnl)                        ; → (a, b) — the proof
 ```
 
-Seven lines. Each is a layer. Each layer composes.
-The architecture is the language. The language is the architecture.
+The full enterprise example is in `examples/enterprise.wat`.
