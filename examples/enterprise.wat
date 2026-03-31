@@ -67,16 +67,25 @@
 ;; LAYER 1: Experts — candle thoughts become predictions
 ;; ═══════════════════════════════════════════════════════════════════
 
+;; Project: Prediction → Vector (domain-specific, lossy)
+;; Extracts direction and magnitude from a Prediction struct
+;; and binds them to an expert identity atom.
+(define (opinion prediction expert-atom)
+  (let ((direction (if (>= (:raw-cosine prediction) 0) (atom "buy") (atom "sell")))
+        (magnitude (encode-linear (abs (:raw-cosine prediction)) 1.0)))
+    (bind expert-atom (bind direction magnitude))))
+
 (define (expert name profile dims refit-interval)
   "A leaf node. Encodes candles, predicts direction, returns always."
-  (let ((jrnl    (journal name dims refit-interval))
+  (let ((jrnl        (journal name dims refit-interval))
+        (expert-atom (atom name))
         (window-sampler (window-sampler (seed-for name) 12 2016)))
     (lambda (candles vector-manager candle-idx)
-      (let* ((thought (encode-candle candles candle-idx profile window-sampler vector-manager))
-             (pred    (predict jrnl thought)))           ; cosine → direction + conviction
-        ;; Returns annotated prediction. The gate tells the manager
-        ;; whether this expert has proven edge or is still tentative.
-        (gate jrnl thought (curve-valid? jrnl))))))
+      (let* ((thought     (encode-candle candles candle-idx profile window-sampler vector-manager))
+             (prediction  (predict jrnl thought))
+             (opinion-vec (opinion prediction expert-atom)))
+        ;; Three arrows: predict → opinion → gate. Types close at every step.
+        (gate opinion-vec expert-atom (curve-valid? jrnl))))))
 
 ;; Create the five experts + generalist
 (define experts
