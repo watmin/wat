@@ -98,9 +98,9 @@ Derived forms built from the corelib.
 ```scheme
 ;; Types are documentation, not enforcement.
 ;; The algebra doesn't type-check — the curve validates.
-(define (encode-expert [expert-atom : Vector]
-                       [raw-cos : Float]
-                       [dims : Int])
+(define (weighted-thought [base : Vector]
+                          [strength : Float]
+                          [dims : Int])
   : Vector
   ...)
 ```

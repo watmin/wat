@@ -83,6 +83,17 @@
 ;; LAYER 2: Manager — expert opinions become enterprise decisions
 ;; ═══════════════════════════════════════════════════════════════════
 
+(define (encode-expert-opinion expert pred)
+  "One expert's opinion as a named fact: bind(expert, bind(status, bind(action, magnitude))).
+   Returns nothing if below the noise floor — silence, not noise."
+  (let* ((cos-val   (abs (raw-cos pred)))
+         (magnitude (encode-linear cos-val 1.0))
+         (action    (if (>= (raw-cos pred) 0) (atom "buy") (atom "sell")))
+         (status    (if (gate-open? expert) (atom "proven") (atom "tentative"))))
+    (when (>= cos-val noise-floor)
+      (bind (atom (name expert))
+            (bind status (bind action magnitude))))))
+
 (define (manager dims refit-interval)
   "The branch node. Thinks in expert opinions, not candle data.
    Encodes signed convictions with gate status annotations.
@@ -92,17 +103,7 @@
     (lambda (expert-predictions generalist-prediction candle)
       (let* (;; Encode each expert's opinion with credibility annotation
              (expert-facts
-               (filter-map
-                 (lambda (expert pred)
-                   (let* ((magnitude (encode-linear (abs (raw-cos pred)) 1.0))
-                          (action    (if (>= (raw-cos pred) 0) (atom "buy") (atom "sell")))
-                          (status    (if (gate-open? expert) (atom "proven") (atom "tentative")))
-                          (cos-val   (abs (raw-cos pred))))
-                     ;; Silence below noise floor
-                     (when (>= cos-val noise-floor)
-                       (bind (atom (name expert))
-                             (bind status (bind action magnitude))))))
-                 experts expert-predictions))
+               (filter-map encode-expert-opinion experts expert-predictions))
 
              ;; Panel shape: emergent properties
              (proven-preds (filter (lambda (e p) (gate-open? e)) experts expert-predictions))
