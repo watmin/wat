@@ -90,7 +90,7 @@ Derived forms built from the corelib.
 (map fn list)
 (filter fn list)
 (filter-map fn list)
-(fold step-fn initial-state items)   ; (state, element) → state — the enterprise IS a fold
+(fold step-fn initial-state items)   ; (state, element) → state
 ```
 
 ## Type Annotations (optional)
