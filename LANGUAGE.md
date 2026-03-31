@@ -60,10 +60,12 @@ The structural form carries them.
 (resolve journal conviction correct) → ()    ; accumulate a resolved prediction
 (curve journal)                  → (amplitude, exponent) ; accuracy = (1/N) + a × exp(b × conviction)
 
-;; Structural — product types for program state
+;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
 (:field record)                  → value     ; keyword as function — project a field
 (update record :field value)     → record    ; functional update — new record, one field changed
+(enum name variant1 variant2 ...)            ; declare a sum type — exactly one alternative
+;; match on enum must be exhaustive — every variant handled
 ```
 
 ## Standard Library (stdlib)
