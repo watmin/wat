@@ -38,7 +38,7 @@
 
 ;; Create a journal — the learning primitive.
 ;; Labels are registered after construction via (register journal name).
-(journal name dims recalib-interval) → Journal
+(journal name dims refit-interval) → Journal
 
 ;; Register a label and get its symbol handle.
 ;; Idempotent: same name → same handle. Runtime-derivable.

@@ -5,7 +5,7 @@
 
 ;; Online subspace — learns what "normal" looks like from a stream.
 ;; CCIPCA: incremental PCA without storing the full dataset.
-(online-subspace dims k) → Subspace
+(online-subspace dims n-components) → Subspace
 
 ;; Feed an observation to the subspace.
 (update subspace vector)

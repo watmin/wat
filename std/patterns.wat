@@ -1,6 +1,6 @@
 ;; ── std/patterns — derived patterns from core ───────────────────────
 ;;
-;; Patterns that compose the six primitives into higher-level concepts.
+;; Patterns that compose the primitives into higher-level concepts.
 ;; Not new algebra — named compositions.
 
 ;; Gate: annotates a prediction with credibility status.
@@ -11,12 +11,17 @@
 ;; conviction" may mean noise, or it may mean an expert about to prove
 ;; itself. The data decides. We don't engineer the policy — we name
 ;; the distinction and let the geometry discover the policy.
-(define (gate journal thought threshold)
+(define (gate journal thought proven?)
   (let ((prediction (predict journal thought))
-        (status (if (> (curve journal) threshold)
+        (status (if proven?
                     (atom "proven")
                     (atom "tentative"))))
     (bundle prediction (bind (atom "credibility") status))))
+
+;; The caller determines proof. The gate doesn't know how:
+;;   (gate expert-journal thought (curve-valid? expert))
+;; curve-valid? is application logic — observers use accuracy thresholds,
+;; the manager uses sigma-band scans. The gate is agnostic.
 
 ;; Consumers filter by reading the annotation:
 ;;   Manager: (filter (lambda (msg) (cosine (bind msg (atom "credibility")) (atom "proven"))) messages)

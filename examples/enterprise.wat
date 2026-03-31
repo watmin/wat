@@ -17,6 +17,19 @@
 ;;   (require mod/temporal mod/calendar)                         ; narrative vocab
 ;;   (require mod/persistence mod/complexity mod/microstructure) ; regime vocab
 
+;; ── Configuration (the enterprise's parameters) ────────────────────
+;;
+;; These are the inputs the datamancer provides. The enterprise
+;; discovers everything else from the stream.
+(define dims 20000)                  ; vector dimensionality
+(define refit-interval 500)          ; journal curve refit every N observations
+(define k-stop 1.5)                 ; stop loss distance (× ATR)
+(define k-trail 0.5)                ; trailing stop distance (× ATR)
+(define k-tp 3.0)                   ; take profit distance (× ATR)
+(define band-edge 0.03)             ; conviction proof band edge
+(define exit-observe-interval 6)    ; exit expert samples every N candles
+(define move-threshold 0.005)       ; minimum price move for signal
+
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 0: Encoding — candle data becomes named thoughts
 ;; ═══════════════════════════════════════════════════════════════════
@@ -40,9 +53,9 @@
 ;; LAYER 1: Experts — candle thoughts become predictions
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (expert name profile dims recalib-interval)
+(define (expert name profile dims refit-interval)
   "A leaf node. Encodes candles, predicts direction, returns always."
-  (let ((journal (journal name dims recalib-interval))
+  (let ((journal (journal name dims refit-interval))
         (sampler (window-sampler (seed-for name) 12 2016)))
     (lambda (candles vm candle-idx)
       (let* ((thought (encode-candle candles candle-idx profile sampler vm))
@@ -69,13 +82,12 @@
 ;; LAYER 2: Manager — expert opinions become enterprise decisions
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (manager dims recalib-interval)
+(define (manager dims refit-interval)
   "The branch node. Thinks in expert opinions, not candle data.
    Encodes signed convictions with gate status annotations.
    The discriminant learns what credibility means — tentative vs
    proven — from the geometry of outcomes."
-  (let ((journal (journal "manager" dims recalib-interval))
-        (scalar  (scalar-encoder dims)))
+  (let ((journal (journal "manager" dims refit-interval)))
     (lambda (expert-predictions generalist-prediction candle)
       (let* (;; Encode each expert's opinion with credibility annotation
              (expert-facts
@@ -85,11 +97,10 @@
                           (action    (if (>= (raw-cos pred) 0) (atom "buy") (atom "sell")))
                           (status    (if (gate-open? expert) (atom "proven") (atom "tentative")))
                           (cos-val   (abs (raw-cos pred))))
-                     ;; Silence below noise floor
-                     (if (< cos-val (/ 3 (sqrt dims)))
-                         nothing
-                         (bind (atom (name expert))
-                               (bind status (bind action magnitude))))))
+                     ;; Silence below noise floor (3/sqrt(dims) is the VSA noise floor)
+                     (when (>= cos-val (/ 3 (sqrt dims)))
+                       (bind (atom (name expert))
+                             (bind status (bind action magnitude))))))
                  experts expert-predictions))
 
              ;; Panel shape: emergent properties
@@ -101,7 +112,7 @@
                      (bind (atom "panel-energy")     (encode-linear (mean-conviction proven-preds) 1.0))
                      (bind (atom "panel-divergence") (encode-linear (conviction-spread proven-preds) 1.0))
                      (bind (atom "panel-coherence")  (encode-linear (pairwise-cosine proven-preds) 1.0)))
-                   nothing))
+                   (bundle)))  ; empty bundle = zero vector (identity)
 
              ;; Context
              (context-facts
@@ -191,10 +202,11 @@
         (match exit-signal
           TakeProfit  (partial-exit pos treasury candle)    ; reclaim capital, become runner
           StopLoss    (full-exit pos treasury candle)       ; close, return to treasury
-          nothing     (begin
-                        ;; Exit expert observes position state
+          _           (begin
+                        ;; Exit expert observes position state at regular intervals.
+                        ;; Label is Hold or Exit, resolved later by comparing P&L snapshots.
                         (when (= 0 (mod (candles-held pos) exit-observe-interval))
-                          (observe exit-expert (encode-position pos candle) label 1.0)))))))
+                          (buffer-exit-observation exit-expert (encode-position pos candle) pos)))))))
     positions))
 
 ;; ═══════════════════════════════════════════════════════════════════

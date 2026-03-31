@@ -30,7 +30,7 @@ Two algebras. Everything else composes from these.
 (cosine thought discriminant)    → Float     ; [-1.0, +1.0]
 
 ;; Learning — journal coalgebra (opaque state, N-ary labels)
-(journal name dims recalib)      → Journal
+(journal name dims refit-interval) → Journal
 (register journal name)          → Label      ; symbol handle — Copy, O(1) equality
 (observe journal thought label weight) → ()   ; label is a Label symbol
 (predict journal thought)        → Prediction ; { scores, direction, conviction, raw_cos }
@@ -68,8 +68,8 @@ Derived forms built from the corelib.
 (threshold subspace)             → Float     ; self-calibrating boundary
 
 ;; Gate (derived pattern)
-(gate journal threshold)         → Vector    ; bundle(prediction, credibility annotation)
-;; The gate annotates — it does not suppress. See std/patterns.wat.
+(gate journal thought proven?)   → Vector    ; bundle(prediction, credibility annotation)
+;; The gate annotates — it does not suppress. The caller determines proof.
 ```
 
 ## Control Forms
@@ -90,7 +90,7 @@ Derived forms built from the corelib.
 (map fn list)
 (filter fn list)
 (filter-map fn list)
-(fold step-fn initial-state items)   ; the catamorphism — (state, element) → state
+(fold step-fn initial-state items)   ; (state, element) → state — the enterprise IS a fold
 ```
 
 ## Type Annotations (optional)

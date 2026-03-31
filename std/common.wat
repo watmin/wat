@@ -25,7 +25,7 @@
 (atom "beginning") (atom "ending")
 (atom "before") (atom "after") (atom "during")
 
-;; ── Logical ─────────────────────────────────────────────────────────
+;; ── Lifecycle ────────────────────────────────────────────────────────
 (atom "nothing")      ; absence of signal — the null thought
 (atom "open")         ; something has started
 (atom "active")       ; something is in progress

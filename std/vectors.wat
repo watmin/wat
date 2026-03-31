@@ -24,7 +24,7 @@
 (cleanup noisy codebook) → Vector
 
 ;; Soft attention over memory.
-(attend query memory strength mode) → Vector
+(attend query memory strength mode) → Vector  ; mode: :hard | :soft
 
 ;; Mean pairwise similarity of a vector set.
 (coherence vectors) → Float
