@@ -64,7 +64,7 @@
 
 ;; Fit the conviction-accuracy curve from resolved predictions.
 ;; The evaluation function of the coalgebra.
-;; accuracy = (1/N) + a × exp(b × conviction)
-;; where N = number of labels (1/N = random chance).
+;; accuracy = (1/N) + a × exp(b × conviction),  N = number of labels.
+;; At zero conviction, accuracy = 1/N (random chance among N labels).
 ;; The curve IS the proof. Monotonically increasing = real signal.
 (curve journal) → (a, b)

@@ -1,6 +1,6 @@
 ;; ── enterprise.wat — the first wat program ─────────────────────────
 ;;
-;; The complete enterprise expressed in six primitives.
+;; The complete enterprise expressed in the wat primitives.
 ;; This is both specification and documentation.
 ;; The Rust implementation follows this program.
 ;;
@@ -8,7 +8,7 @@
 ;;   FROM WAT LANGUAGE (~/work/holon/wat/):
 ;;   (require core/primitives) ; atom, bind, bundle, cosine, journal, curve
 ;;   (require std/common)      ; predicates, directions, gate status
-;;   (require std/channels)    ; publish, subscribe, filter
+;;   (require std/patterns)    ; gate (credibility annotation)
 ;;
 ;;   FROM APPLICATION (~/work/holon/holon-lab-trading/wat/):
 ;;   (require mod/oscillators mod/divergence mod/crosses)        ; momentum vocab
@@ -41,24 +41,16 @@
 ;; ═══════════════════════════════════════════════════════════════════
 
 (define (expert name profile dims recalib-interval)
-  "A leaf node. Encodes candles, predicts direction, publishes always."
+  "A leaf node. Encodes candles, predicts direction, returns always."
   (let ((journal (journal name dims recalib-interval))
         (sampler (window-sampler (seed-for name) 12 2016)))
     (lambda (candles vm candle-idx)
-      (let* ((thought (encode-candle candles profile sampler vm))
+      (let* ((thought (encode-candle candles candle-idx profile sampler vm))
              (pred    (predict journal thought))         ; cosine → direction + conviction
              (gate    (curve-valid? journal))             ; has the curve proven edge?
              (status  (if gate (atom "proven") (atom "tentative"))))
-
-        ;; Publish: always. The channel records regardless of gate.
-        (publish (channel name)
-          { :direction  (direction pred)
-            :conviction (conviction pred)
-            :raw-cos    (raw-cos pred)
-            :thought    thought
-            :status     status })
-
-        ;; Return prediction for manager consumption
+        ;; Returns prediction + status. The fold carries it upstream.
+        ;; The ledger records everything (always, unconditionally).
         pred))))
 
 ;; Create the five experts + generalist
@@ -79,9 +71,9 @@
 
 (define (manager dims recalib-interval)
   "The branch node. Thinks in expert opinions, not candle data.
-   Subscribes to expert channels. Encodes signed convictions with
-   gate status annotations. The discriminant learns what credibility
-   means — tentative vs proven — from the geometry of outcomes."
+   Encodes signed convictions with gate status annotations.
+   The discriminant learns what credibility means — tentative vs
+   proven — from the geometry of outcomes."
   (let ((journal (journal "manager" dims recalib-interval))
         (scalar  (scalar-encoder dims)))
     (lambda (expert-predictions generalist-prediction candle)
@@ -125,12 +117,7 @@
              ;; Predict
              (pred (predict journal thought)))
 
-        ;; Publish manager decision
-        (publish (channel "manager")
-          { :direction  (direction pred)
-            :conviction (conviction pred)
-            :thought    thought })
-
+        ;; Return prediction. The fold carries it to the treasury.
         pred))))
 
 ;; ═══════════════════════════════════════════════════════════════════
@@ -138,7 +125,7 @@
 ;; ═══════════════════════════════════════════════════════════════════
 
 (define (risk-branch dims)
-  "Subscribes to ALL channels. Learns what healthy looks like.
+  "Sees everything. Learns what healthy looks like.
    Residual = distance from healthy. Modulates sizing."
   (let ((drawdown-sub  (online-subspace dims 8))
         (accuracy-sub  (online-subspace dims 8))
@@ -167,12 +154,7 @@
              (risk-mult  (if (> worst (apply max thresholds))
                              (/ (apply max thresholds) worst)
                              1.0)))
-        ;; Publish risk assessment
-        (publish (channel "risk")
-          { :multiplier risk-mult
-            :healthy?   healthy?
-            :residuals  residuals })
-
+        ;; Return risk multiplier. The fold carries it to the treasury.
         risk-mult))))
 
 ;; ═══════════════════════════════════════════════════════════════════
@@ -180,7 +162,7 @@
 ;; ═══════════════════════════════════════════════════════════════════
 
 (define (treasury-execute treasury manager-pred risk-mult band positions candle)
-  "The root. Subscribes to manager + risk. Executes if all filters pass."
+  "The root. Receives manager prediction + risk multiplier. Executes if all gates pass."
   (let* ((in-band?       (and (>= (conviction manager-pred) (band-low band))
                               (<  (conviction manager-pred) (band-high band))))
          (risk-allows?   (> risk-mult 0.5))
@@ -276,7 +258,7 @@
 ;; THE PROGRAM
 ;; ═══════════════════════════════════════════════════════════════════
 
-;; Six primitives: atom, bind, bundle, cosine, journal, curve.
+;; Two algebras: vectors (atom, bind, bundle, cosine) and journals (observe, predict, decay, resolve, curve).
 ;; Two templates: prediction (journal), reaction (subspace).
 ;; One tree: experts → manager → risk → treasury → positions → learning.
 ;; One heartbeat: every candle, the tree processes.

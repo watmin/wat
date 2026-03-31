@@ -11,8 +11,8 @@
 ;; conviction" may mean noise, or it may mean an expert about to prove
 ;; itself. The data decides. We don't engineer the policy — we name
 ;; the distinction and let the geometry discover the policy.
-(define (gate journal threshold)
-  (let ((prediction (predict journal))
+(define (gate journal thought threshold)
+  (let ((prediction (predict journal thought))
         (status (if (> (curve journal) threshold)
                     (atom "proven")
                     (atom "tentative"))))

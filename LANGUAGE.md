@@ -16,7 +16,7 @@ comment    = ';' char* newline
 
 ## Core Forms (corelib)
 
-Six primitives. Everything else composes from these.
+Two algebras. Everything else composes from these.
 
 ```scheme
 ;; Naming
@@ -118,7 +118,7 @@ Derived forms built from the corelib.
 - Not a general-purpose language. It expresses algebraic cognition.
 - Not Turing complete. It doesn't need to be. The algebra is sufficient.
 - Not interpreted at runtime. Wat is compiled to Rust. The Rust runs.
-- Not a replacement for Lisp. It IS Lisp, restricted to the six primitives.
+- Not a replacement for Lisp. It IS Lisp, restricted to two algebras.
 
 ## What Wat Is
 
