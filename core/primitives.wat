@@ -1,4 +1,4 @@
-;; ── wat core — five generators, nine forms ──────────────────────────
+;; ── wat core ────────────────────────────────────────────────────────
 ;;
 ;; Two algebraic structures. Nothing here is derivable from the others.
 ;;
@@ -25,7 +25,7 @@
 ;; The only measurement. One number.
 (cosine thought direction) → Float  ; [-1.0, +1.0]
 
-;; ── Journal Coalgebra (1 generator, 5 forms) ────────────────────────
+;; ── Journal Coalgebra ───────────────────────────────────────────────
 ;;
 ;; Opaque state. The co-generators produce all observable behavior.
 ;; Removing any one makes the external characterization incomplete.

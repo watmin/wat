@@ -21,7 +21,7 @@
 ;; LAYER 0: Encoding — candle data becomes named thoughts
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (encode-candle candles expert-profile window-sampler vm)
+(define (encode-candle candles candle-idx expert-profile window-sampler vm)
   "Each expert encodes candles through its vocabulary modules.
    The window is sampled per expert per candle — discovered, not fixed."
   (let ((window (sample window-sampler candle-idx))
@@ -30,7 +30,7 @@
       (stdlib-comparisons slice)           ; shared: close vs SMA, MACD vs signal
       (match expert-profile
         "momentum"  (bundle (oscillators slice) (divergence slice) (crosses slice))
-        "structure" (bundle (segments slice vm) (levels slice) (channels-ind slice))
+        "structure" (bundle (segments slice vm) (levels slice) (price-channels slice))
         "volume"    (bundle (flow slice) (participation slice))
         "narrative" (bundle (temporal slice vm) (calendar (last slice)))
         "regime"    (bundle (persistence slice) (complexity slice) (microstructure slice))
@@ -212,7 +212,7 @@
           nothing     (begin
                         ;; Exit expert observes position state
                         (when (= 0 (mod (candles-held pos) exit-observe-interval))
-                          (observe exit-expert (encode-position pos candle)))))))
+                          (observe exit-expert (encode-position pos candle) label 1.0)))))))
     positions))
 
 ;; ═══════════════════════════════════════════════════════════════════

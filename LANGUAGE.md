@@ -60,7 +60,6 @@ Derived forms built from the corelib.
 (cleanup noisy codebook)         → Vector    ; snap to nearest
 (attend query memory strength mode) → Vector ; soft attention
 (coherence vectors)              → Float     ; mean pairwise similarity
-(similarity-profile a b)         → Vector    ; per-dimension agreement
 
 ;; Memory
 (online-subspace dims k)         → Subspace
@@ -69,12 +68,8 @@ Derived forms built from the corelib.
 (threshold subspace)             → Float     ; self-calibrating boundary
 
 ;; Gate (derived pattern)
-(gate journal curve threshold)   → Bool
-;; Equivalent to: (> (curve journal conviction) threshold)
-
-;; Noise floor (derived from geometry)
-(noise-floor dims)               → Float     ; 3 / sqrt(dims)
-(sweet-spot dims)                → Float     ; 5 / sqrt(dims)
+(gate journal threshold)         → Vector    ; bundle(prediction, credibility annotation)
+;; The gate annotates — it does not suppress. See std/patterns.wat.
 ```
 
 ## Control Forms
@@ -96,11 +91,6 @@ Derived forms built from the corelib.
 (filter fn list)
 (filter-map fn list)
 (fold step-fn initial-state items)   ; the catamorphism — (state, element) → state
-
-;; Channel (communication)
-(channel name :type schema)
-(publish channel message)
-(subscribe channel :filter expr :process fn)
 ```
 
 ## Type Annotations (optional)
@@ -121,7 +111,6 @@ Derived forms built from the corelib.
 (require primitives)             ; corelib
 (require common)                 ; stdlib atoms
 (require mod/oscillators)        ; domain vocabulary
-(require channels)               ; communication contract
 ```
 
 ## What Wat Is Not

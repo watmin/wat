@@ -9,11 +9,12 @@
 (atom "tentative")    ; source has NOT validated its curve
 
 ;; ── Predicates ──────────────────────────────────────────────────────
-;; Generic comparison relationships.
-(atom "above") (atom "below")
+;; Static comparisons.
+(atom "above") (atom "below") (atom "at")
+;; Crossing events.
 (atom "crosses-above") (atom "crosses-below")
+;; Contact events.
 (atom "touches") (atom "bounces-off")
-(atom "at")
 
 ;; ── Direction ───────────────────────────────────────────────────────
 ;; Generic directional atoms.
@@ -25,6 +26,7 @@
 (atom "before") (atom "after") (atom "during")
 
 ;; ── Logical ─────────────────────────────────────────────────────────
-(atom "null")         ; absence of signal
+(atom "nothing")      ; absence of signal — the null thought
+(atom "open")         ; something has started
 (atom "active")       ; something is in progress
 (atom "closed")       ; something has completed

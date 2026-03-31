@@ -11,7 +11,7 @@
 ;; conviction" may mean noise, or it may mean an expert about to prove
 ;; itself. The data decides. We don't engineer the policy — we name
 ;; the distinction and let the geometry discover the policy.
-(define (gate journal curve threshold)
+(define (gate journal threshold)
   (let ((prediction (predict journal))
         (status (if (> (curve journal) threshold)
                     (atom "proven")
@@ -19,6 +19,6 @@
     (bundle prediction (bind (atom "credibility") status))))
 
 ;; Consumers filter by reading the annotation:
-;;   Manager: (filter (lambda (msg) (= (unbind msg credibility) proven)) messages)
+;;   Manager: (filter (lambda (msg) (cosine (bind msg (atom "credibility")) (atom "proven"))) messages)
 ;;   Risk:    (identity messages)  ;; sees everything, proven and tentative
 ;;   Ledger:  (identity messages)  ;; records everything

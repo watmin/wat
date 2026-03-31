@@ -3,8 +3,8 @@
 ;; All derivable from the four algebra primitives (atom, bind, bundle, cosine).
 ;; Stdlib convenience, not core.
 
-;; Shift vector elements — directional encoding.
-;; BUY = atom, SELL = (permute atom 1). Orthogonal in hyperspace.
+;; Shift vector elements — orthogonal encoding of ordered alternatives.
+;; (permute A 0) = A.  (permute A 1) is quasi-orthogonal to A.
 (permute vector shift) → Vector
 
 ;; Structural change between two states.
