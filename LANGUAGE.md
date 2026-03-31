@@ -14,6 +14,18 @@ list       = '(' form* ')'
 comment    = ';' char* newline
 ```
 
+## Host Language
+
+Wat is Lisp. It inherits standard forms from the host:
+
+- **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`
+- **Comparison:** `=`, `>`, `<`, `>=`, `<=`
+- **Logical:** `and`, `or`, `not`
+- **Sequencing:** `begin`
+
+These are not wat forms — they are the substrate. Wat's contribution
+is the two algebras below and the stdlib derived from them.
+
 ## Core Forms (corelib)
 
 Two algebras. Everything else composes from these.
@@ -33,7 +45,7 @@ Two algebras. Everything else composes from these.
 (journal name dims refit-interval) → Journal
 (register journal name)          → Label
 (observe journal thought label weight) → ()   ; label is a Label symbol
-(predict journal thought)        → Prediction ; { scores, direction, conviction, raw_cos }
+(predict journal thought)        → Prediction ; { scores, direction, conviction, raw-cosine }
 (decay journal rate)             → ()
 
 ;; Evaluation — the journal evaluates itself
