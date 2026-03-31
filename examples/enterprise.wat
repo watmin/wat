@@ -125,21 +125,21 @@
                (filter-map encode-expert-opinion experts expert-preds))
 
              ;; Panel shape: emergent properties
-             (proven-preds (filter (lambda (expert prediction) (:curve-valid expert)) experts expert-preds))
+             (proven-panel (filter (lambda (expert prediction) (:curve-valid expert)) experts expert-preds))
              (panel-facts
-               (if (>= (length proven-preds) 2)
+               (if (>= (length proven-panel) 2)
                    (bundle
-                     (bind (atom "panel-agreement")  (encode-linear (agreement-ratio proven-preds) 1.0))
-                     (bind (atom "panel-energy")     (encode-linear (mean-conviction proven-preds) 1.0))
-                     (bind (atom "panel-divergence") (encode-linear (conviction-spread proven-preds) 1.0))
-                     (bind (atom "panel-coherence")  (encode-linear (pairwise-cosine proven-preds) 1.0)))
+                     (bind (atom "panel-agreement")  (encode-linear (agreement-ratio proven-panel) 1.0))
+                     (bind (atom "panel-energy")     (encode-linear (mean-conviction proven-panel) 1.0))
+                     (bind (atom "panel-divergence") (encode-linear (conviction-spread proven-panel) 1.0))
+                     (bind (atom "panel-coherence")  (encode-linear (pairwise-cosine proven-panel) 1.0)))
                    (bundle)))  ; identity — no panel signal
 
              ;; Context — the manager extracts time and volatility from the candle, not OHLCV
              (context-facts
                (bundle
                  (bind (atom "market-volatility") (encode-log (atr candle)))
-                 (bind (atom "discriminant-strength")     (encode-log (discriminant-strength generalist-prediction)))
+                 (bind (atom "generalist-strength")       (encode-log (discriminant-strength generalist-prediction)))
                  (bind (atom "hour-of-day")       (encode-circular (hour candle) 24.0))
                  (bind (atom "day-of-week")       (encode-circular (day candle) 7.0))))
 
@@ -254,9 +254,9 @@
 
         ;; Manager learning: raw price direction from expert config
         (when (resolved? pending-trade)
-          (let* ((direction-label (if (> price-change 0) Buy Sell))
-                 (manager-thought     (encode-manager-thought (expert-preds pending-trade))))
-            (observe (journal manager) manager-thought direction-label 1.0)))))
+          (let* ((direction-label  (if (> price-change 0) Buy Sell))
+                 (replay-thought    (encode-manager-thought (expert-preds pending-trade))))
+            (observe (journal manager) replay-thought direction-label 1.0)))))
     pending))
 
 ;; ═══════════════════════════════════════════════════════════════════
