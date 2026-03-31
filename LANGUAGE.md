@@ -94,6 +94,18 @@ Derived forms built from the corelib.
 ;; Gate (derived pattern)
 (gate opinion-vector expert-atom proven?) → Vector ; bundle(opinion, bind(expert, status))
 ;; The gate annotates — it does not predict or project. Vector in, Vector out.
+
+;; Fact constructors — bridge between domain vocabulary and the algebra
+(fact/zone indicator zone)           → Vector    ; bind(at, bind(indicator, zone))
+(fact/comparison predicate a b)      → Vector    ; bind(predicate, bind(a, b))
+(fact/scalar indicator value scale)  → Vector    ; bind(indicator, encode-linear(value, scale))
+(fact/bare label)                    → Vector    ; atom(label)
+
+;; Statistics — pre-algebra numeric helpers
+(mean xs)                            → Float
+(variance xs)                        → Float
+(stddev xs)                          → Float
+(skewness xs)                        → Float
 ```
 
 ## Type Annotations (optional)

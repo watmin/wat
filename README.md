@@ -32,6 +32,8 @@ wat/
 │   ├── vectors.wat               — derived vector operations (permute, difference, attend)
 │   ├── memory.wat                — online subspace (Template 2: reaction)
 │   ├── patterns.wat              — gate (credibility annotation)
+│   ├── facts.wat                 — fact constructors (zone, comparison, scalar, bare)
+│   ├── statistics.wat            — numeric helpers (mean, variance, stddev, skewness)
 │   └── common.wat                — shared vocabulary (predicates, directions, lifecycle)
 ├── examples/enterprise.wat       — the first complete wat program
 ├── LANGUAGE.md                   — formal grammar
