@@ -59,12 +59,10 @@
         (sampler (window-sampler (seed-for name) 12 2016)))
     (lambda (candles vm candle-idx)
       (let* ((thought (encode-candle candles candle-idx profile sampler vm))
-             (pred    (predict journal thought))         ; cosine → direction + conviction
-             (gate    (curve-valid? journal))             ; has the curve proven edge?
-             (status  (if gate (atom "proven") (atom "tentative"))))
-        ;; Returns prediction + status. The fold carries it upstream.
-        ;; The ledger records everything (always, unconditionally).
-        pred))))
+             (pred    (predict journal thought)))        ; cosine → direction + conviction
+        ;; Returns annotated prediction. The gate tells the manager
+        ;; whether this expert has proven edge or is still tentative.
+        (gate journal thought (curve-valid? journal))))))
 
 ;; Create the five experts + generalist
 (define experts
@@ -241,7 +239,8 @@
 ;; ═══════════════════════════════════════════════════════════════════
 
 (define (heartbeat candle-idx candles vm
-                   experts generalist manager risk treasury positions exit-expert)
+                   experts generalist manager risk treasury
+                   positions exit-expert pending band ledger)
   "The enterprise processes one candle. Everything flows from here."
 
   ;; 1. Experts encode and predict (LAYER 1)
