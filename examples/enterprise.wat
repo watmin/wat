@@ -94,12 +94,12 @@
 ;; LAYER 2: Manager — expert opinions become enterprise decisions
 ;; ═══════════════════════════════════════════════════════════════════
 
-(define (encode-expert-opinion expert pred)
+(define (encode-expert-opinion expert prediction)
   "One expert's opinion as a named fact: bind(expert, bind(status, bind(action, magnitude))).
    Returns nothing if below the noise floor — silence, not noise."
-  (let* ((cosine-magnitude (abs (raw-cosine pred)))
+  (let* ((cosine-magnitude (abs (raw-cosine prediction)))
          (magnitude (encode-linear cosine-magnitude 1.0))
-         (action    (if (>= (raw-cosine pred) 0) (atom "buy") (atom "sell")))
+         (action    (if (>= (raw-cosine prediction) 0) (atom "buy") (atom "sell")))
          (status    (if (gate-open? expert) (atom "proven") (atom "tentative"))))
     (when (>= cosine-magnitude noise-floor)
       (bind (atom (name expert))
@@ -111,13 +111,13 @@
    The discriminant learns what credibility means — tentative vs
    proven — from the geometry of outcomes."
   (let ((jrnl (journal "manager" dims refit-interval)))
-    (lambda (expert-predictions generalist-prediction candle)
+    (lambda (expert-predictions generalist-prediction market-context)
       (let* (;; Encode each expert's opinion with credibility annotation
              (expert-facts
                (filter-map encode-expert-opinion experts expert-predictions))
 
              ;; Panel shape: emergent properties
-             (proven-preds (filter (lambda (expert pred) (gate-open? expert)) experts expert-predictions))
+             (proven-preds (filter (lambda (expert prediction) (gate-open? expert)) experts expert-predictions))
              (panel-facts
                (if (>= (length proven-preds) 2)
                    (bundle
@@ -127,13 +127,13 @@
                      (bind (atom "panel-coherence")  (encode-linear (pairwise-cosine proven-preds) 1.0)))
                    (bundle)))  ; identity — no panel signal
 
-             ;; Context
+             ;; Context — the manager reads time and volatility, not OHLCV
              (context-facts
                (bundle
-                 (bind (atom "market-volatility") (encode-log (atr candle)))
+                 (bind (atom "market-volatility") (encode-log (atr market-context)))
                  (bind (atom "disc-strength")     (encode-log (disc-strength generalist)))
-                 (bind (atom "hour-of-day")       (encode-circular (hour candle) 24.0))
-                 (bind (atom "day-of-week")       (encode-circular (day candle) 7.0))))
+                 (bind (atom "hour-of-day")       (encode-circular (hour market-context) 24.0))
+                 (bind (atom "day-of-week")       (encode-circular (day market-context) 7.0))))
 
              ;; Bundle everything into the manager's thought
              (manager-thought (bundle expert-facts panel-facts context-facts))
@@ -156,7 +156,7 @@
         (volatility-sub (online-subspace dims 8))
         (correlation-sub (online-subspace dims 8)))
     (lambda (treasury positions expert-predictions)
-      (let* ((dd-state   (encode-drawdown treasury))
+      (let* ((drawdown-state   (encode-drawdown treasury))
              (acc-state  (encode-accuracy treasury))
              (vol-state  (encode-volatility treasury))
              (corr-state (encode-correlation positions))
@@ -164,14 +164,14 @@
                               (> (rolling-accuracy treasury) min-healthy-accuracy)))
              ;; Gated updates: only learn from healthy states
              (_          (when healthy?
-                           (update drawdown-sub dd-state)
+                           (update drawdown-sub drawdown-state)
                            (update accuracy-sub acc-state)
                            (update volatility-sub vol-state)
                            (update correlation-sub corr-state)))
              ;; Measure distance from healthy
              (residuals  (map residual
                            (list drawdown-sub accuracy-sub volatility-sub correlation-sub)
-                           (list dd-state acc-state vol-state corr-state)))
+                           (list drawdown-state acc-state vol-state corr-state)))
              (worst      (apply max residuals))
              (thresholds (map threshold
                            (list drawdown-sub accuracy-sub volatility-sub correlation-sub)))
@@ -196,7 +196,7 @@
                                 (* k-stop last-exit-atr))))
          (should-act?    (and in-band? risk-allows? market-moved?)))
     (when should-act?
-      (let* ((kelly-fraction (* (/ band-edge 2.0) risk-mult))
+      (let* ((kelly-fraction (* (/ band-edge 2.0) risk-mult))  ; half-Kelly: conservative sizing
              (deploy-amount  (* (balance treasury "USDC") kelly-fraction)))
         (when (> deploy-amount min-deploy-amount)
           (match (direction manager-pred)
@@ -264,7 +264,7 @@
          (gen-pred     ((:generalist state) candle vector-manager candle-idx))
 
          ;; 2. Manager reads expert opinions (LAYER 2)
-         (mgr-pred     ((:manager state) expert-preds gen-pred candle))
+         (mgr-pred     ((:manager state) expert-preds gen-pred candle))  ; candle as market-context
 
          ;; 3. Risk assesses portfolio health (LAYER 3)
          (risk-mult    ((:risk state) (:treasury state) (:positions state) expert-preds))

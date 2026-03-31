@@ -108,7 +108,7 @@ Derived forms built from the corelib.
 ```scheme
 (require primitives)             ; corelib
 (require common)                 ; stdlib atoms
-(require mod/oscillators)        ; domain vocabulary
+(require mod/my-vocabulary)      ; domain vocabulary
 ```
 
 ## What Wat Is Not
