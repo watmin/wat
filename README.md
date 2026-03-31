@@ -16,7 +16,7 @@ Two algebras. Everything else composes.
 ## What Wat Is
 
 Wat is the intermediate representation between human intuition and machine execution.
-The human generates wat programs. The machine compiles them to Rust. The Rust runs.
+The human writes wat. The Rust implements it. The Rust runs.
 The ledger records. The cycle continues.
 
 Wat IS Lisp, restricted to the algebra of hyperdimensional computing.

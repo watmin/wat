@@ -116,7 +116,7 @@ Derived forms built from the corelib.
 
 - Not a general-purpose language. It expresses algebraic cognition.
 - Not Turing complete. It doesn't need to be. The algebra is sufficient.
-- Not interpreted at runtime. Wat is compiled to Rust. The Rust runs.
+- Not interpreted at runtime. Wat specifies Rust implementations. The Rust runs.
 - Not a replacement for Lisp. It IS Lisp, restricted to two algebras.
 
 ## What Wat Is

@@ -33,6 +33,7 @@
 (define move-threshold 0.005)       ; minimum price move for signal
 (define max-healthy-drawdown 0.02)  ; risk: drawdown below this = healthy
 (define min-healthy-accuracy 0.52)  ; risk: accuracy above this = healthy
+(define min-deploy-amount 10.0)    ; treasury: below this is dust
 
 ;; ── The fold's carrier type ─────────────────────────────────────────
 ;;
@@ -197,7 +198,7 @@
     (when should-act?
       (let* ((sizing  (* (/ band-edge 2.0) risk-mult))  ; Kelly × risk modulation
              (deploy-amount  (* (balance treasury "USDC") sizing)))
-        (when (> deploy-amount 10.0)
+        (when (> deploy-amount min-deploy-amount)
           (match (direction manager-pred)
             Buy  (open-position treasury "USDC" "WBTC" deploy-amount (price candle))
             Sell (open-position treasury "WBTC" "USDC" deploy-amount (price candle))))))))
@@ -266,7 +267,7 @@
          (mgr-pred     ((:manager state) expert-preds gen-pred candle))
 
          ;; 3. Risk assesses portfolio health (LAYER 3)
-         (risk-mult    ((:risk state) (:treasury state)))
+         (risk-mult    ((:risk state) (:treasury state) (:positions state) expert-preds))
 
          ;; 4. Treasury decides and executes (LAYER 4)
          (_            (treasury-execute (:treasury state) mgr-pred risk-mult
