@@ -26,11 +26,12 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`
 
 These are the substrate any Lisp provides. Wat's contribution
-is the two algebras below and the stdlib derived from them.
+is the algebras, structural forms, and stdlib below.
 
 ## Core Forms (corelib)
 
-Two algebras. Everything else composes from these.
+Two algebras and one structural form. The algebras transform values.
+The structural form carries them.
 
 ```scheme
 ;; Naming
@@ -52,7 +53,12 @@ Two algebras. Everything else composes from these.
 
 ;; Evaluation — the journal evaluates itself
 (resolve journal conviction correct) → ()    ; accumulate a resolved prediction
-(curve journal)                  → (a, b)    ; accuracy = (1/N) + a × exp(b × conviction)
+(curve journal)                  → (amplitude, exponent) ; accuracy = (1/N) + a × exp(b × conviction)
+
+;; Structural — product types for program state
+(struct name field1 field2 ...)  ; declare a named product type
+(:field record)                  → value     ; keyword as function — project a field
+(update record :field value)     → record    ; functional update — new record, one field changed
 ```
 
 ## Standard Library (stdlib)

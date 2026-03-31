@@ -6,9 +6,10 @@
 ;;
 ;; Dependencies:
 ;;   FROM WAT LANGUAGE (~/work/holon/wat/):
-;;   (require core/primitives) ; atom, bind, bundle, cosine, journal, curve
-;;   (require std/common)      ; predicates, directions, gate status
-;;   (require std/patterns)    ; gate (credibility annotation)
+;;   (require core/primitives)  ; atom, bind, bundle, cosine, journal, curve
+;;   (require core/structural)  ; struct, :field, update
+;;   (require std/common)       ; predicates, directions, gate status
+;;   (require std/patterns)     ; gate (credibility annotation)
 ;;
 ;;   FROM APPLICATION (~/work/holon/holon-lab-trading/wat/):
 ;;   (require mod/oscillators mod/divergence mod/crosses)        ; momentum vocab
@@ -32,6 +33,15 @@
 (define move-threshold 0.005)       ; minimum price move for signal
 (define max-healthy-drawdown 0.02)  ; risk: drawdown below this = healthy
 (define min-healthy-accuracy 0.52)  ; risk: accuracy above this = healthy
+
+;; ── The fold's carrier type ─────────────────────────────────────────
+;;
+;; The enterprise IS this struct. The fold step takes one and returns one.
+;; Each field is a component of the enterprise tree.
+(struct enterprise-state
+  experts generalist manager risk treasury
+  positions exit-expert pending band ledger
+  last-exit-price last-exit-atr)
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 0: Encoding — candle data becomes named thoughts
@@ -174,7 +184,6 @@
 ;; LAYER 4: Treasury — decisions become actions
 ;; ═══════════════════════════════════════════════════════════════════
 
-;; rune:gaze(length) — last-exit-price and last-exit-atr are a pair; wat has no aggregate types
 (define (treasury-execute treasury manager-pred risk-mult band candle
                          last-exit-price last-exit-atr)
   "The root. Receives manager prediction + risk multiplier. Executes if all gates pass."
@@ -245,35 +254,35 @@
 ;; THE HEARTBEAT — one candle at a time
 ;; ═══════════════════════════════════════════════════════════════════
 
-;; rune:gaze(length) — the fold carrier holds the enterprise; wat has no aggregate types
-(define (heartbeat candle-idx candles vector-manager
-                   experts generalist manager risk treasury
-                   positions exit-expert pending band ledger
-                   last-exit-price last-exit-atr)
-  "The enterprise processes one candle. Everything flows from here."
+(define (heartbeat candle-idx candle vector-manager state)
+  "The enterprise processes one candle. The state is one struct. The fold is one step."
 
   ;; 1. Experts encode and predict (LAYER 1)
-  (let* ((expert-preds (map (lambda (e) (e candles vector-manager candle-idx)) experts))
-         (gen-pred     (generalist candles vector-manager candle-idx))
+  (let* ((expert-preds (map (lambda (e) (e candle vector-manager candle-idx))
+                            (:experts state)))
+         (gen-pred     ((:generalist state) candle vector-manager candle-idx))
 
          ;; 2. Manager reads expert opinions (LAYER 2)
-         (mgr-pred     (manager expert-preds gen-pred (candle candle-idx)))
+         (mgr-pred     ((:manager state) expert-preds gen-pred candle))
 
          ;; 3. Risk assesses portfolio health (LAYER 3)
-         (risk-mult    (risk treasury positions expert-preds))
+         (risk-mult    ((:risk state) (:treasury state)))
 
          ;; 4. Treasury decides and executes (LAYER 4)
-         (_            (treasury-execute treasury mgr-pred risk-mult band
-                                         (candle candle-idx) last-exit-price last-exit-atr))
+         (_            (treasury-execute (:treasury state) mgr-pred risk-mult
+                                         (:band state) candle
+                                         (:last-exit-price state) (:last-exit-atr state)))
 
          ;; 5. Manage open positions (LAYER 5)
-         (_            (manage-positions positions treasury exit-expert (candle candle-idx)))
+         (_            (manage-positions (:positions state) (:treasury state)
+                                         (:exit-expert state) candle))
 
          ;; 6. Learn from outcomes (LAYER 6)
-         (_            (learn experts generalist manager candles pending move-threshold)))
+         (_            (learn (:experts state) (:generalist state) (:manager state)
+                              candle (:pending state) move-threshold)))
 
     ;; 7. Ledger records everything (always, unconditionally)
-    (record-all ledger candle-idx)))
+    (record-all (:ledger state) candle-idx)))
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; THE PROGRAM

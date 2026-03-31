@@ -26,6 +26,7 @@ Wat IS Lisp, restricted to the algebra of hyperdimensional computing.
 ```
 wat/
 ├── core/primitives.wat           — vector algebra + journal coalgebra
+├── core/structural.wat           — product types (struct, projection, update)
 ├── std/
 │   ├── scalars.wat               — continuous value encoding (log, linear, circular)
 │   ├── vectors.wat               — derived vector operations (permute, difference, attend)
