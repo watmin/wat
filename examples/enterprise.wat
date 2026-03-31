@@ -34,6 +34,8 @@
 (define max-healthy-drawdown 0.02)  ; risk: drawdown below this = healthy
 (define min-healthy-accuracy 0.52)  ; risk: accuracy above this = healthy
 (define min-deploy-amount 10.0)    ; treasury: below this is dust
+(define min-window 12)             ; shortest meaningful pattern (1 hour at 5m)
+(define max-window 2016)           ; longest window (7 days at 5m)
 
 ;; ── The fold's carrier type ─────────────────────────────────────────
 ;;
@@ -79,7 +81,7 @@
   "A leaf node. Encodes candles, predicts direction, returns always."
   (let ((jrnl        (journal name dims refit-interval))
         (expert-atom (atom name))
-        (window-sampler (window-sampler (seed-for name) 12 2016)))
+        (window-sampler (window-sampler (seed-for name) min-window max-window)))
     (lambda (candles vector-manager candle-idx)
       (let* ((thought     (encode-candle candles candle-idx profile window-sampler vector-manager))
              (prediction  (predict jrnl thought))
@@ -104,15 +106,12 @@
 ;; ═══════════════════════════════════════════════════════════════════
 
 (define (encode-expert-opinion expert prediction)
-  "One expert's opinion as a named fact: bind(expert, bind(status, bind(action, magnitude))).
+  "Composes opinion → gate with a noise floor check.
    Returns nothing if below the noise floor — silence, not noise."
-  (let* ((cosine-magnitude (abs (:raw-cosine prediction)))
-         (magnitude (encode-linear cosine-magnitude 1.0))
-         (action    (if (>= (:raw-cosine prediction) 0) (atom "buy") (atom "sell")))
-         (status    (if (:curve-valid expert) (atom "proven") (atom "tentative"))))
-    (when (>= cosine-magnitude noise-floor)
-      (bind (:expert-atom expert)
-            (bind status (bind action magnitude))))))
+  (when (>= (abs (:raw-cosine prediction)) noise-floor)
+    (gate (opinion prediction (:expert-atom expert))
+          (:expert-atom expert)
+          (:curve-valid expert))))
 
 (define (manager dims refit-interval)
   "The branch node. Thinks in expert opinions, not candle data.
