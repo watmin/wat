@@ -131,16 +131,15 @@ Derived forms built from the corelib.
 ## Example: The Heartbeat
 
 ```scheme
-(define (heartbeat candle-idx candles vm experts generalist manager risk treasury)
-  (let* ((expert-preds (map (lambda (e) (e candles vm candle-idx)) experts))
-         (gen-pred     (generalist candles vm candle-idx))
-         (mgr-pred     (manager expert-preds gen-pred (nth candles candle-idx)))
-         (risk-mult    (risk treasury positions expert-preds))
-         (_            (treasury-execute treasury mgr-pred risk-mult))
-         (_            (manage-positions positions treasury exit-expert candle))
-         (_            (learn experts generalist manager candles pending threshold)))
-    (record-all ledger candle-idx)))
+(define (heartbeat state event experts generalist manager risk treasury)
+  (let* ((candle       (event-candle event))
+         (expert-preds (map (lambda (e) (e candle)) experts))
+         (gen-pred     (generalist candle))
+         (mgr-pred     (manager expert-preds gen-pred candle))
+         (risk-mult    (risk treasury))
+         (new-state    (fold-step state mgr-pred risk-mult candle)))
+    new-state))
 ```
 
-This is the enterprise in 8 lines. Each line is a layer. Each layer composes.
+Seven lines. Each is a layer. Each layer composes.
 The architecture is the language. The language is the architecture.

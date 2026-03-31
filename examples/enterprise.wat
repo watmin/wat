@@ -23,12 +23,15 @@
 ;; discovers everything else from the stream.
 (define dims 20000)                  ; vector dimensionality
 (define refit-interval 500)          ; journal curve refit every N observations
+(define noise-floor-sigma 3)         ; noise floor = sigma / sqrt(dims)
 (define k-stop 1.5)                 ; stop loss distance (× ATR)
 (define k-trail 0.5)                ; trailing stop distance (× ATR)
 (define k-tp 3.0)                   ; take profit distance (× ATR)
 (define band-edge 0.03)             ; conviction proof band edge
 (define exit-observe-interval 6)    ; exit expert samples every N candles
 (define move-threshold 0.005)       ; minimum price move for signal
+(define max-healthy-drawdown 0.02)  ; risk: drawdown below this = healthy
+(define min-healthy-accuracy 0.52)  ; risk: accuracy above this = healthy
 
 ;; ═══════════════════════════════════════════════════════════════════
 ;; LAYER 0: Encoding — candle data becomes named thoughts
@@ -55,14 +58,14 @@
 
 (define (expert name profile dims refit-interval)
   "A leaf node. Encodes candles, predicts direction, returns always."
-  (let ((journal (journal name dims refit-interval))
+  (let ((jrnl    (journal name dims refit-interval))
         (sampler (window-sampler (seed-for name) 12 2016)))
     (lambda (candles vm candle-idx)
       (let* ((thought (encode-candle candles candle-idx profile sampler vm))
-             (pred    (predict journal thought)))        ; cosine → direction + conviction
+             (pred    (predict jrnl thought)))           ; cosine → direction + conviction
         ;; Returns annotated prediction. The gate tells the manager
         ;; whether this expert has proven edge or is still tentative.
-        (gate journal thought (curve-valid? journal))))))
+        (gate jrnl thought (curve-valid? jrnl))))))
 
 ;; Create the five experts + generalist
 (define experts
@@ -85,7 +88,7 @@
    Encodes signed convictions with gate status annotations.
    The discriminant learns what credibility means — tentative vs
    proven — from the geometry of outcomes."
-  (let ((journal (journal "manager" dims refit-interval)))
+  (let ((jrnl (journal "manager" dims refit-interval)))
     (lambda (expert-predictions generalist-prediction candle)
       (let* (;; Encode each expert's opinion with credibility annotation
              (expert-facts
@@ -95,8 +98,8 @@
                           (action    (if (>= (raw-cos pred) 0) (atom "buy") (atom "sell")))
                           (status    (if (gate-open? expert) (atom "proven") (atom "tentative")))
                           (cos-val   (abs (raw-cos pred))))
-                     ;; Silence below noise floor (3/sqrt(dims) is the VSA noise floor)
-                     (when (>= cos-val (/ 3 (sqrt dims)))
+                     ;; Silence below noise floor
+                     (when (>= cos-val (/ noise-floor-sigma (sqrt dims)))
                        (bind (atom (name expert))
                              (bind status (bind action magnitude))))))
                  experts expert-predictions))
@@ -124,7 +127,7 @@
              (thought (bundle expert-facts panel-facts context-facts))
 
              ;; Predict
-             (pred (predict journal thought)))
+             (pred (predict jrnl thought)))
 
         ;; Return prediction. The fold carries it to the treasury.
         pred))))
@@ -145,8 +148,8 @@
              (acc-state  (encode-accuracy treasury))
              (vol-state  (encode-volatility treasury))
              (corr-state (encode-correlation positions))
-             (healthy?   (and (< (drawdown treasury) 0.02)
-                              (> (rolling-accuracy treasury) 0.52)))
+             (healthy?   (and (< (drawdown treasury) max-healthy-drawdown)
+                              (> (rolling-accuracy treasury) min-healthy-accuracy)))
              ;; Gated updates: only learn from healthy states
              (_          (when healthy?
                            (update drawdown-sub dd-state)
