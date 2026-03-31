@@ -22,11 +22,12 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Comparison:** `=`, `>`, `<`, `>=`, `<=`
 - **Logical:** `and`, `or`, `not`
 - **Sequencing:** `begin`
-- **Control:** `let`, `let*`, `define`, `if`, `when`, `cond`, `match`, `lambda`
-- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `count`
-- **Collections:** `list`, `len`, `nth`, `first`, `rest`, `last`, `append`, `take-last`, `empty?`, `reverse`, `sort`
+- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`
+- **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
 - **Maps:** `get`, `assoc`, `keys`, `dissoc`
+- **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
+- **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond`, `match`, `lambda`
 - **Mutation:** `set!`, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
 
 These are the substrate any Lisp provides. Wat's contribution
