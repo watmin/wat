@@ -76,7 +76,7 @@ The structural form carries them.
 (defprotocol name                            ; declare a set of function signatures
   (fn-name [params] "docstring"))            ; check-only — no dispatch
 (satisfies struct-name protocol-name         ; declare that a struct satisfies a protocol
-  :fn-name impl-fn-name)                    ; maps protocol fn to concrete fn
+  :fn1 impl1 :fn2 impl2 ...)               ; maps ALL protocol fns — exhaustive, explicit
 ;; The forge checks: does impl-fn exist? Correct arity?
 ;; Rust mapping: defprotocol → trait, satisfies → impl Trait for Struct
 ```

@@ -85,14 +85,31 @@
 ;; Separate from the struct — behavior is not data.
 ;; Maps each protocol function to a concrete implementation.
 
+;; Declare that a struct satisfies a protocol.
+;; Separate from the struct — behavior is not data.
+;; Maps each protocol function to a concrete implementation.
+;; EXHAUSTIVE: every protocol function must be mapped. Missing = error.
+;; One satisfies per (struct, protocol) pair. Duplicate = error.
+;; No convention-based inference. The mapping IS the spec.
+
 (satisfies struct-name protocol-name
-  :fn-name impl-fn-name)
+  :fn-name1 impl-fn-name1
+  :fn-name2 impl-fn-name2 ...)
 
 ;; (satisfies sma-state indicator
-;;   :step sma-step)
+;;   :step    sma-step
+;;   :ready?  sma-ready?
+;;   :reset   sma-reset)
+;;
+;; Multiple protocols = multiple satisfies:
+;;
+;; (satisfies sma-state serializable
+;;   :serialize   sma-serialize
+;;   :deserialize sma-deserialize)
 ;;
 ;; The forge checks:
-;;   - Does sma-step exist?
-;;   - Does sma-step take sma-state as first argument?
-;;   - Correct arity?
+;;   - Every protocol function is mapped (exhaustive)
+;;   - Each impl function exists
+;;   - Each impl function takes the struct as first argument
+;;   - Correct arity
 ;; The Rust compiler enforces the full trait contract.
