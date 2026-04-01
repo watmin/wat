@@ -20,9 +20,11 @@
 ;; One syntax for access, construction, and update.
 (:field record) → value
 
-;; Functional update — return a new record with one field changed.
-;; No mutation. The old record is unchanged. The new one differs in one field.
-(update record :field value) → record
+;; Functional update — return a new record with fields changed.
+;; Variadic: one or more :field value pairs. Parallel semantics —
+;; all field expressions evaluate against the ORIGINAL record.
+;; If a field depends on another field's new value, use let.
+(update record :field1 value1 ...) → record
 
 ;; ── Coproduct (enum) ────────────────────────────────────────────────
 

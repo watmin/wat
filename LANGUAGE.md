@@ -63,7 +63,7 @@ The structural form carries them.
 ;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
 (:field record)                  → value     ; keyword as function — project a field
-(update record :field value)     → record    ; functional update — new record, one field changed
+(update record :field1 value1 ...) → record  ; functional update — variadic, parallel semantics
 (enum name variant1 variant2 ...)            ; declare a sum type — exactly one alternative
 ;; match on enum must be exhaustive — every variant handled
 ```
