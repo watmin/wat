@@ -24,7 +24,7 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Sequencing:** `begin`
 - **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`
 - **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
-- **Maps:** `get`, `assoc`, `keys`, `dissoc`
+- **Maps:** `get`, `assoc` *(variadic: `(assoc m k1 v1 k2 v2)`, sequential — later entries see earlier changes)*, `keys`, `dissoc`
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
 - **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond`, `match`, `lambda`
