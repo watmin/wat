@@ -56,6 +56,10 @@ The structural form carries them.
 (predict journal thought)        → Prediction ; { scores, direction, conviction, raw-cosine }
 (decay journal rate)             → ()
 
+;; Introspection — read the journal's learned state
+(recalib-count journal)          → Integer   ; how many prototype rebuilds
+(discriminant journal label)     → Vector | None ; learned separation between labels
+
 ;; Evaluation — the journal evaluates itself
 (resolve journal conviction correct) → ()    ; accumulate a resolved prediction
 (curve journal)                  → (amplitude, exponent) ; accuracy = (1/N) + a × exp(b × conviction)

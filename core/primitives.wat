@@ -63,6 +63,18 @@
 ;; "I predicted with this conviction, and I was correct/wrong."
 (resolve journal conviction correct)
 
+;; Introspection — read the journal's learned state.
+
+;; How many times the journal has rebuilt its prototypes.
+;; Monotonically increasing integer. Used to detect recalibration events.
+(recalib-count journal) → Integer
+
+;; The learned separation vector between label prototypes.
+;; discriminant(label) = prototype(label) - prototype(other).
+;; None if < 2 labels registered or journal not yet calibrated.
+;; The discriminant IS the journal's learned knowledge, externalized.
+(discriminant journal label) → Vector | None
+
 ;; Fit the conviction-accuracy curve from resolved predictions.
 ;; The evaluation function of the coalgebra.
 ;; accuracy = (1/N) + a × exp(b × conviction),  N = number of labels.
