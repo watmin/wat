@@ -19,11 +19,11 @@ comment    = ';' char* newline
 Wat is Lisp. It inherits standard forms from the host:
 
 - **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`, `max`, `min`, `round`, `clamp`, `exp`, `ln`, `signum`
-- **Comparison:** `=`, `>`, `<`, `>=`, `<=`
+- **Comparison:** `=`, `!=`, `>`, `<`, `>=`, `<=`
 - **Logical:** `and`, `or`, `not`
 - **Sequencing:** `begin`
 - **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`
-- **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
+- **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
 - **Maps:** `get`, `assoc` *(variadic: `(assoc m k1 v1 k2 v2)`, sequential — later entries see earlier changes)*, `keys`, `dissoc`
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
