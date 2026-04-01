@@ -71,6 +71,14 @@ The structural form carries them.
 (update record :field1 value1 ...) → record  ; functional update — variadic, parallel semantics
 (enum name variant1 variant2 ...)            ; declare a sum type — exactly one alternative
 ;; match on enum must be exhaustive — every variant handled
+
+;; Protocols — type classes for shared behavior
+(defprotocol name                            ; declare a set of function signatures
+  (fn-name [params] "docstring"))            ; check-only — no dispatch
+(satisfies struct-name protocol-name         ; declare that a struct satisfies a protocol
+  :fn-name impl-fn-name)                    ; maps protocol fn to concrete fn
+;; The forge checks: does impl-fn exist? Correct arity?
+;; Rust mapping: defprotocol → trait, satisfies → impl Trait for Struct
 ```
 
 ## Standard Library (stdlib)
@@ -99,9 +107,9 @@ Derived forms built from the corelib.
 (residual subspace vector)       → Float     ; distance from learned manifold
 (threshold subspace)             → Float     ; self-calibrating boundary
 
-;; Derived fields — build-time declarations on product types
-(field struct-name field-name computation)
-;; Declares a computed value. Dependency order, no forward refs.
+;; Derived fields — RETIRED (proposal 014). Use defprotocol + satisfies.
+;; (field struct-name field-name computation) — removed.
+;; Protocols subsume derived fields. Behavior is separate from data.
 
 ;; Statistics — pre-algebra numeric helpers
 (mean xs)                            → Float

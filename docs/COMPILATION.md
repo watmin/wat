@@ -93,6 +93,16 @@ When a `?` field is not provided in the constructor, it initializes to `None`.
 | `(:f1 record)` | `record.f1` — field access |
 | `(update record :f1 v1 :f2 v2)` | `Name { f1: v1, f2: v2, ..record }` — parallel semantics |
 
+## Protocols
+
+| Wat | Rust |
+|-----|------|
+| `(defprotocol indicator (step [state input]))` | `trait Indicator { fn step(&self, input: f64) -> (Self, f64); }` |
+| `(satisfies sma-state indicator :step sma-step)` | `impl Indicator for SmaState { fn step(&self, input: f64) -> ... { sma_step(self, input) } }` |
+
+Protocols are check-only in wat — no dispatch. The forge verifies the named
+function exists with correct arity. The Rust compiler enforces the full trait.
+
 ## Enums
 
 | Wat | Rust |

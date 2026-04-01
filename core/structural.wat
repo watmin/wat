@@ -1,12 +1,18 @@
 ;; ── wat structural forms ─────────────────────────────────────────────
 ;;
-;; The ambient category's product and coproduct constructions.
+;; The ambient category's three constructions:
+;;   Product   (struct)       — named fields that travel together
+;;   Coproduct (enum)         — exactly one of several alternatives
+;;   Type class (defprotocol) — shared behavior across types
+;;
 ;; Programs need structure beyond the two algebras.
 ;; Structs and enums carry values through the fold. The algebras transform them.
+;; Protocols declare what types can do. The forge checks. The Rust enforces.
 ;;
 ;; These forms are orthogonal to the vector algebra and journal coalgebra.
 ;; A struct cannot be bound, bundled, or cosined. It holds things that can.
 ;; An enum variant is an identity, not a geometric object.
+;; A protocol is a contract, not a computation.
 
 ;; ── Product (struct) ────────────────────────────────────────────────
 
@@ -55,3 +61,38 @@
 ;; (match event
 ;;   (candle asset candle)   (process-candle asset candle)
 ;;   (deposit asset amount)  (deposit treasury asset amount))
+
+;; ── Type class (defprotocol) ───────────────────────────────────────
+
+;; Declare a set of function signatures that types can satisfy.
+;; Check-only — no dispatch machinery. The forge checks existence and arity.
+;; The Rust compiler enforces the trait implementation.
+;;
+;; defprotocol → Rust trait
+;; satisfies   → Rust impl Trait for Struct
+;;
+;; Protocols never enter the algebra. They organize programs, not vectors.
+
+(defprotocol name
+  "Docstring — what this protocol means."
+  (fn-name [params] "What this function does."))
+
+;; (defprotocol indicator
+;;   "A scalar stream processor. State in, state out."
+;;   (step [state input] "Advance by one input. Returns (state, output)."))
+
+;; Declare that a struct satisfies a protocol.
+;; Separate from the struct — behavior is not data.
+;; Maps each protocol function to a concrete implementation.
+
+(satisfies struct-name protocol-name
+  :fn-name impl-fn-name)
+
+;; (satisfies sma-state indicator
+;;   :step sma-step)
+;;
+;; The forge checks:
+;;   - Does sma-step exist?
+;;   - Does sma-step take sma-state as first argument?
+;;   - Correct arity?
+;; The Rust compiler enforces the full trait contract.
