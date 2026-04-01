@@ -20,7 +20,7 @@ Wat is Lisp. It inherits standard forms from the host:
 
 - **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`, `max`, `min`, `round`, `clamp`, `exp`, `ln`, `signum`
 - **Comparison:** `=`, `!=`, `>`, `<`, `>=`, `<=`
-- **Logical:** `and`, `or`, `not`
+- **Logical:** `and`, `or`, `not`, `true`, `false`
 - **Sequencing:** `begin`
 - **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`
 - **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
@@ -66,6 +66,7 @@ The structural form carries them.
 
 ;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
+;; field? (name ending in ?) = optional. Rust: Option<T>, None when unprovided.
 (:field record)                  → value     ; keyword as function — project a field
 (update record :field1 value1 ...) → record  ; functional update — variadic, parallel semantics
 (enum name variant1 variant2 ...)            ; declare a sum type — exactly one alternative

@@ -13,7 +13,12 @@
 ;; Declare a product type — named fields that travel together.
 ;; Untyped: the wat struct names the shape, the Rust struct names the types.
 ;; Opaque: no destructuring, no pattern matching on fields. Projections only.
+;;
+;; A field name ending in ? is optional — it may be absent.
+;; In Rust: Option<T>, initialized to None when not provided in constructor.
+;; In wat: (when-let ((x (:field? record))) ...) to access.
 (struct name field1 field2 ...)
+;; (struct side-state latest? age staleness)  ; latest? is optional
 
 ;; Project a field — keyword as function.
 ;; (:experts state) reads as "experts of state."
