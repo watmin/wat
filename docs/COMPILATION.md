@@ -209,6 +209,34 @@ These map to `&mut self` in Rust. Honest about mutation.
 | `(residual subspace vector)` | `subspace.residual(&vector)` → `f64` |
 | `(threshold subspace)` | `subspace.threshold()` → `f64` |
 
+## Tempering: efficiency expectations
+
+The wat specifies WHAT. The Rust implements HOW — including efficiency.
+These patterns guide the wat author on what to trust and what to hoist.
+
+**What the Rust compiler handles (trust it):**
+- Dead code elimination on unreachable branches
+- Inlining of small pure functions (noise_floor, sweet_spot)
+- Iterator fusion for chained `.map().filter().collect()`
+- Stack allocation for small fixed-size arrays
+
+**What the wat author must handle (don't trust the compiler):**
+- Loop-invariant hoisting: if a pure function has constant args inside a loop,
+  bind the result outside the loop in a `let`. The Rust compiler may or may not
+  hoist it — the wat should be explicit.
+- Pre-computation at construction: use `new-*` functions to compute once.
+  Don't recompute in `step` what doesn't change between steps.
+- Buffer pre-allocation: `Vec::with_capacity(N)` in Rust. In wat, this is
+  implicit — the compiler chooses capacity. But the wat should note when
+  a collection's size is known (e.g., "6 observers" → capacity 6).
+- Multi-moment statistics: use `(moments xs)` instead of separate calls to
+  `(mean xs)`, `(variance xs)`, `(stddev xs)`. Each separate call traverses
+  the input. `moments` shares the traversal.
+- Recalibration-frequency caching: computations that only change at
+  recalibration boundaries (e.g., conviction threshold, risk features)
+  should be computed at recalibration and cached. The wat expresses this
+  with conditional `when` blocks gated by recalibration count.
+
 ## Naming conventions
 
 | Wat | Rust |
