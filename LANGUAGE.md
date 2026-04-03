@@ -22,13 +22,25 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Comparison:** `=`, `!=`, `>`, `<`, `>=`, `<=`
 - **Logical:** `and`, `or`, `not`, `true`, `false`
 - **Sequencing:** `begin`
-- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`
+- **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`, `pmap`, `pfor-each`
 - **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
 - **Maps:** `get`, `assoc` *(variadic: `(assoc m k1 v1 k2 v2)`, sequential — later entries see earlier changes)*, `keys`, `dissoc`
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
 - **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond`, `match`, `lambda`
 - **Mutation:** `set!`, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
+
+`pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
+Semantically identical — same results, same order. The parallelism is
+a permission, not a directive. The runtime may evaluate sequentially.
+
+- `pmap`: the mapped function must be pure (no `set!`, `push!`, `inc!`).
+  Ward-enforced at compile time. Result order matches input order.
+- `pfor-each`: each element's mutations must be disjoint (each invocation
+  mutates through its own root object). Ward checks what it can;
+  programmer asserts the rest.
+- No `pfold`: a fold is inherently sequential. Parallel reduce uses
+  `(fold f init (pmap g xs))` — the MapReduce pattern.
 
 These are the substrate any Lisp provides. Wat's contribution
 is the algebras, structural forms, and stdlib below.

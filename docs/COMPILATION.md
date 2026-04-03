@@ -237,6 +237,15 @@ These patterns guide the wat author on what to trust and what to hoist.
   should be computed at recalibration and cached. The wat expresses this
   with conditional `when` blocks gated by recalibration count.
 
+## Temper: specific optimizations
+
+| Wat pattern | Rust optimization |
+|-------------|-------------------|
+| `(nth (sort xs) i)` — sort to extract one element | `xs.select_nth_unstable(i)` — O(n) selection, not O(n log n) sort |
+| `(mean xs)` + `(stddev xs)` separately | `moments(xs)` or single-pass Welford accumulator |
+| `(fold f init (map g xs))` — map then fold | `.iter().map(g).fold(init, f)` — fused iterator, no intermediate Vec |
+| `(for-each f xs)` + `(filter g xs)` on same list | Single pass: process and partition simultaneously |
+
 ## Naming conventions
 
 | Wat | Rust |
