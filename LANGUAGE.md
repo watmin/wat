@@ -71,6 +71,8 @@ The structural form carries them.
 ;; Introspection — read the journal's learned state
 (recalib-count journal)          → Integer   ; how many prototype rebuilds
 (discriminant journal label)     → Vector | None ; learned separation between labels
+(labels journal)                 → [Label]   ; registered labels in registration order
+(label-count journal label)      → Integer   ; observations accumulated for this label
 
 ;; Evaluation — the journal evaluates itself
 (resolve journal conviction correct) → ()    ; accumulate a resolved prediction

@@ -28,3 +28,10 @@
 
 ;; Mean pairwise similarity of a vector set.
 (coherence vectors) → Float
+
+;; L2 norm: magnitude of a vector. sqrt(sum(x_i^2)).
+(l2-norm vector) → Float
+
+;; L2 normalize: project onto the unit sphere. vector / ||vector||.
+;; Returns D-dimensional unit vector.
+(l2-normalize vector) → Vector
