@@ -85,6 +85,10 @@ The structural form carries them.
 (update record :field1 value1 ...) → record  ; functional update — variadic, parallel semantics
 (enum name variant1 variant2 ...)            ; declare a sum type — exactly one alternative
 ;; match on enum must be exhaustive — every variant handled
+(newtype name inner-type)                    ; declare a distinct type wrapping another
+;; A newtype is about MEANING, not structure. TradeId is not a usize —
+;; it is a TradeId that happens to be represented as a usize. The names
+;; are load-bearing. Maps to Rust's tuple struct: struct TradeId(usize).
 
 ;; Protocols — type classes for shared behavior
 (defprotocol name                            ; declare a set of function signatures
