@@ -6,13 +6,36 @@ Wat is an s-expression language for algebraic cognition.
 
 ```ebnf
 program    = form*
-form       = atom | number | string | list | comment
+form       = atom | number | string | list | typed-param | comment
 atom       = letter (letter | digit | '-' | '?' | '!' | '>')*
 number     = digit+ ('.' digit+)?
 string     = '"' char* '"'
 list       = '(' form* ')'
+typed-param = '[' atom ':' atom ']'
 comment    = ';' char* newline
 ```
+
+## Type Annotations (optional)
+
+Sort annotations on parameters and return types. Parseable but not enforced.
+Present when they clarify. Absent when obvious. The annotations are metadata
+on a free algebra — they name which carrier set a variable lives in.
+
+```scheme
+;; Typed parameter: [name : Type]
+(define (observe-scalar [acc : ScalarAccumulator] [value : f64])
+  ...)
+
+;; Return type: `: Type` after parameter list
+(define (new-window-sampler [seed : usize] [min : usize] [max : usize])
+  : WindowSampler
+  ...)
+
+;; Untyped is also valid — both accepted
+(define (tick bank raw-candle) ...)
+```
+
+Tooling may extract annotations when present. The language never demands them.
 
 ## Host Language
 
