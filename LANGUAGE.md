@@ -41,22 +41,22 @@ Tooling may extract annotations when present. The language never demands them.
 
 Wat is Lisp. It inherits standard forms from the host:
 
-- **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`, `max`, `min`, `round`, `clamp`, `exp`, `ln`, `signum`
+- **Arithmetic:** `+`, `-`, `*`, `/`, `abs`, `sqrt`, `mod`, `max`, `min`, `round`, `clamp`, `exp`, `ln`, `signum`, `f64-infinity`, `f64-neg-infinity`
 - **Comparison:** `=`, `!=`, `>`, `<`, `>=`, `<=`
 - **Logical:** `and`, `or`, `not`, `true`, `false`
 - **Sequencing:** `begin`
 - **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`, `pmap`, `pfor-each`
-- **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros`, `member?`, `some?`, `quantile`
+- **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros` *(nullary: zero vector at dims; `(zeros n)`: zero-filled array of size n)*, `member?`, `some?`, `quantile`
 - **Maps:** `map-of` *(constructor: `(map-of k1 v1 k2 v2)` — flat key-value pairs, a value not an entity)*, `get`, `assoc` *(variadic: `(assoc m k1 v1 k2 v2)`, sequential — later entries see earlier changes)*, `keys`, `dissoc`
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
-- **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond`, `match`, `lambda`
+- **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond` *(`else` as catch-all clause)*, `match`, `lambda`
 - **Quote:** `'(...)` or `(quote ...)` — data, not execution. The s-expression IS the tree.
   The vocabulary produces quoted expressions. The encoder evaluates them.
   Recursive structure is natural — `'(Bind (Atom "rsi") (Linear "close" 0.73 1.0))`
   is a nested list. No special type needed. The parentheses ARE the tree.
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
-- **Mutation:** `set!`, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
+- **Mutation:** `set!` *(single: `(set! place value)`, indexed: `(set! collection index value)`)*, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
 Semantically identical — same results, same order. The parallelism is
