@@ -35,3 +35,10 @@
 ;; L2 normalize: project onto the unit sphere. vector / ||vector||.
 ;; Returns D-dimensional unit vector.
 (l2-normalize vector) → Vector
+
+;; Zero vector at the current dimensionality.
+(zeros) → Vector
+
+;; Weighted interpolation between two vectors.
+;; ratio=0.0 → a, ratio=1.0 → b, ratio=0.5 → midpoint.
+(blend a b ratio) → Vector
