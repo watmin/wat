@@ -68,6 +68,20 @@ a permission, not a directive. The runtime may evaluate sequentially.
 These are the substrate any Lisp provides. Wat's contribution
 is the algebras, structural forms, and stdlib below.
 
+## File layout
+
+```
+core/
+  primitives.wat      — the four algebra generators + journal coalgebra
+  structural.wat      — struct, enum, newtype, defprotocol
+std/
+  vectors.wat         — derived vector operations (amplify, zeros, blend, etc.)
+  scalars.wat         — scalar encoding (encode-log, encode-linear, encode-circular)
+  memory.wat          — OnlineSubspace (CCIPCA anomaly detection)
+  statistics.wat      — statistical functions
+  fields.wat          — field access utilities
+```
+
 ## Core Forms (corelib)
 
 Two algebras and one structural form. The algebras transform values.
