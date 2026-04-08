@@ -51,6 +51,10 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
 - **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond`, `match`, `lambda`
+- **Quote:** `'(...)` or `(quote ...)` — data, not execution. The s-expression IS the tree.
+  The vocabulary produces quoted expressions. The encoder evaluates them.
+  Recursive structure is natural — `'(Bind (Atom "rsi") (Linear "close" 0.73 1.0))`
+  is a nested list. No special type needed. The parentheses ARE the tree.
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!`, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
 
