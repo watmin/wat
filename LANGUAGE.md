@@ -46,11 +46,11 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Logical:** `and`, `or`, `not`, `true`, `false`
 - **Sequencing:** `begin`
 - **Iteration:** `for-each`, `map`, `filter`, `filter-map`, `fold`, `fold-left`, `count`, `pmap`, `pfor-each`
-- **Collections:** `list`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros` *(nullary: zero vector at dims; `(zeros n)`: zero-filled array of size n)*, `member?`, `some?`, `quantile`
+- **Collections:** `list`, `cons`, `len`, `length`, `nth`, `first`, `second`, `rest`, `last`, `last-n`, `take`, `append`, `take-last`, `empty?`, `reverse`, `sort`, `sort-by`, `flatten`, `range`, `unzip`, `zeros` *(nullary: zero vector at dims; `(zeros n)`: zero-filled array of size n)*, `member?`, `some?`, `quantile`, `apply` *(apply function to list as arguments: `(apply bundle vectors)`)*
 - **Maps:** `map-of` *(constructor: `(map-of k1 v1 k2 v2)` — flat key-value pairs, a value not an entity)*, `get`, `assoc` *(variadic: `(assoc m k1 v1 k2 v2)`, sequential — later entries see earlier changes)*, `keys`, `dissoc`
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
-- **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond` *(`else` as catch-all clause)*, `match`, `lambda`
+- **Control:** `let`, `let*`, `let-values` *(destructure multiple returns: `(let-values (((a b) (f x))) body)`)*, `define`, `if`, `when`, `when-let`, `cond` *(`else` as catch-all clause)*, `match`, `lambda`, `values` *(multiple return: `(values x y)` — paired with `let-values`)*
 - **Quote:** `'(...)` or `(quote ...)` — data, not execution. The s-expression IS the tree.
   The vocabulary produces quoted expressions. The encoder evaluates them.
   Recursive structure is natural — `'(Bind (Atom "rsi") (Linear "close" 0.73 1.0))`
