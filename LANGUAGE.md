@@ -50,7 +50,7 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Maps:** `map-of` *(constructor: `(map-of k1 v1 k2 v2)` — flat key-value pairs, a value not an entity)*, `get`, `assoc` *(variadic: `(assoc m k1 v1 k2 v2)`, sequential — later entries see earlier changes)*, `keys`, `dissoc`
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
-- **Control:** `let`, `let*`, `let-values` *(destructure multiple returns: `(let-values (((a b) (f x))) body)`)*, `define`, `if`, `when`, `when-let`, `cond` *(`else` as catch-all clause)*, `match`, `lambda`, `values` *(multiple return: `(values x y)` — paired with `let-values`)*
+- **Control:** `let` *(supports destructuring: `(let (((a b) (f x))) body)` — the return is a list, destructuring is projection)*, `let*`, `define`, `if`, `when`, `when-let`, `cond` *(`else` as catch-all clause)*, `match`, `lambda`
 - **Quote:** `'(...)` or `(quote ...)` — data, not execution. The s-expression IS the tree.
   The vocabulary produces quoted expressions. The encoder evaluates them.
   Recursive structure is natural — `'(Bind (Atom "rsi") (Linear "close" 0.73 1.0))`
