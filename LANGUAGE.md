@@ -77,7 +77,7 @@ is the algebras, structural forms, and stdlib below.
 
 ```
 core/
-  primitives.wat      — the four algebra generators + journal coalgebra
+  primitives.wat      — the four algebra generators + reckoner coalgebra
   structural.wat      — struct, enum, newtype, defprotocol
 std/
   vectors.wat         — derived vector operations (amplify, zeros, blend, etc.)
@@ -103,22 +103,22 @@ The structural form carries them.
 ;; Measurement
 (cosine thought discriminant)    → Float     ; [-1.0, +1.0]
 
-;; Learning — journal coalgebra (opaque state, N-ary labels)
-(journal name dims refit-interval) → Journal
-(register journal name)          → Label
-(observe journal thought label weight) → ()   ; label is a Label symbol
-(predict journal thought)        → Prediction ; { scores, direction, conviction, raw-cosine }
-(decay journal rate)             → ()
+;; Learning — reckoner coalgebra (opaque state, N-ary labels)
+(reckoner name dims refit-interval) → Reckoner
+(register reckoner name)         → Label
+(observe reckoner thought label weight) → ()  ; label is a Label symbol
+(predict reckoner thought)       → Prediction ; { scores, direction, conviction, raw-cosine }
+(decay reckoner rate)            → ()
 
-;; Introspection — read the journal's learned state
-(recalib-count journal)          → Integer   ; how many prototype rebuilds
-(discriminant journal label)     → Vector | None ; learned separation between labels
-(labels journal)                 → [Label]   ; registered labels in registration order
-(label-count journal label)      → Integer   ; observations accumulated for this label
+;; Introspection — read the reckoner's learned state
+(recalib-count reckoner)         → Integer   ; how many prototype rebuilds
+(discriminant reckoner label)    → Vector | None ; learned separation between labels
+(labels reckoner)                → [Label]   ; registered labels in registration order
+(label-count reckoner label)     → Integer   ; observations accumulated for this label
 
-;; Evaluation — the journal evaluates itself
-(resolve journal conviction correct) → ()    ; accumulate a resolved prediction
-(curve journal)                  → (amplitude, exponent) ; accuracy = (1/N) + a × exp(b × conviction)
+;; Evaluation — the reckoner evaluates itself
+(resolve reckoner conviction correct) → ()   ; accumulate a resolved prediction
+(curve reckoner)                 → (amplitude, exponent) ; accuracy = (1/N) + a × exp(b × conviction)
 
 ;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
@@ -132,6 +132,9 @@ The structural form carries them.
 ;; A newtype is about MEANING, not structure. TradeId is not a usize —
 ;; it is a TradeId that happens to be represented as a usize. The names
 ;; are load-bearing. Maps to Rust's tuple struct: struct TradeId(usize).
+
+;; Struct constructors follow the make-<name> convention.
+;; (make-broker ...) constructs a Broker.
 
 ;; Protocols — type classes for shared behavior
 (defprotocol name                            ; declare a set of function signatures
@@ -221,13 +224,13 @@ Derived forms built from the corelib.
   (bind (atom "diverging") (bind (atom "close") (atom "rsi")))
   (bind (atom "at") (bind (atom "dfa-alpha") (atom "anti-persistent"))))
 
-;; A journal learns which thoughts predict
-(define jrnl (journal "example" 10000 500))
-(let ((buy  (register jrnl "Buy"))     ; string → Label symbol
-      (sell (register jrnl "Sell")))
-  (observe jrnl thought buy 1.0)       ; label is a symbol, not a string
-  (predict jrnl thought)               ; → direction + conviction
-  (curve jrnl))                        ; → (amplitude, exponent) — the proof
+;; A reckoner learns which thoughts predict
+(define rk (reckoner "example" 10000 500))
+(let ((buy  (register rk "Buy"))       ; string → Label symbol
+      (sell (register rk "Sell")))
+  (observe rk thought buy 1.0)         ; label is a symbol, not a string
+  (predict rk thought)                 ; → direction + conviction
+  (curve rk))                          ; → (amplitude, exponent) — the proof
 ```
 
 The full enterprise example is in `examples/enterprise.wat`.
