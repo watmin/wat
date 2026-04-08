@@ -51,6 +51,7 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Queues:** `deque`, `push-back`, `pop-front`
 - **Strings:** `format`, `substring`
 - **Control:** `let`, `let*`, `define`, `if`, `when`, `when-let`, `cond`, `match`, `lambda`
+- **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!`, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
@@ -117,7 +118,8 @@ The structural form carries them.
 
 ;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
-;; field? (name ending in ?) = optional. Rust: Option<T>, None when unprovided.
+;; Optional values use (Some value) and None — Rust: Option<T>.
+;; No naming convention needed — the type carries the optionality.
 (:field record)                  → value     ; keyword as function — project a field
 (update record :field1 value1 ...) → record  ; functional update — variadic, parallel semantics
 (enum name variant1 variant2 ...)            ; declare a sum type — exactly one alternative
