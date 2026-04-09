@@ -104,9 +104,10 @@ The structural form carries them.
 (cosine thought discriminant)    → Float     ; [-1.0, +1.0]
 
 ;; Learning — reckoner coalgebra (opaque state, N-ary labels)
-(make-reckoner config)           → Reckoner  ; config is a reckoner-config enum
-                                             ; (Discrete dims recalib-interval labels)
-                                             ; or (Continuous dims recalib-interval default-value)
+;; Constructor: Reckoner::new(name, dims, recalib_interval, config) in holon-rs.
+;; config is ReckConfig: Discrete(labels) or Continuous(default_value).
+;; dims and recalib-interval are separate parameters, not inside config.
+(reckoner name dims recalib-interval config) → Reckoner
 (observe reckoner thought observation weight) → () ; observation is label (discrete) or scalar (continuous)
 (predict reckoner thought)       → Prediction ; Discrete: scores + conviction. Continuous: value + experience.
 (decay reckoner rate)            → ()
@@ -118,13 +119,12 @@ The structural form carries them.
 (labels reckoner)                → [Label]   ; registered labels in registration order
 (label-count reckoner label)     → Integer   ; observations accumulated for this label
 
-;; Curve — standalone evaluation of a reckoner's edge
-;; The curve measures: when you predicted strongly, how often were you right?
-;; Input: prediction strength. Output: accuracy. A continuous surface.
-(make-curve)                     → Curve
-(record-prediction curve conviction correct?) → () ; feed each resolved prediction
-(edge-at curve conviction)       → f64       ; query: how accurate at this conviction level?
-(proven? curve min-samples)      → bool      ; enough data to trust?
+;; Curve — the reckoner evaluates itself. Not a separate object.
+;; The reckoner carries its own curve internally. These are methods on the reckoner.
+;; holon-rs: resolve(), accuracy_at(), curve_valid() on Reckoner.
+(resolve reckoner conviction correct?) → ()  ; feed a resolved prediction to the internal curve
+(edge-at reckoner conviction)    → f64       ; query: how accurate at this conviction level?
+(proven? reckoner min-samples)   → bool      ; enough data to trust the curve?
 
 ;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
