@@ -104,11 +104,13 @@ The structural form carries them.
 (cosine thought discriminant)    → Float     ; [-1.0, +1.0]
 
 ;; Learning — reckoner coalgebra (opaque state, N-ary labels)
-(reckoner name dims refit-interval) → Reckoner
-(register reckoner name)         → Label
-(observe reckoner thought label weight) → ()  ; label is a Label symbol
-(predict reckoner thought)       → Prediction ; { scores, direction, conviction, raw-cosine }
+(make-reckoner config)           → Reckoner  ; config is a reckoner-config enum
+                                             ; (Discrete dims recalib-interval labels)
+                                             ; or (Continuous dims recalib-interval default-value)
+(observe reckoner thought observation weight) → () ; observation is label (discrete) or scalar (continuous)
+(predict reckoner thought)       → Prediction ; Discrete: scores + conviction. Continuous: value + experience.
 (decay reckoner rate)            → ()
+(experience reckoner)            → f64       ; how much has this reckoner learned? 0.0 = ignorant.
 
 ;; Introspection — read the reckoner's learned state
 (recalib-count reckoner)         → Integer   ; how many prototype rebuilds
@@ -116,9 +118,13 @@ The structural form carries them.
 (labels reckoner)                → [Label]   ; registered labels in registration order
 (label-count reckoner label)     → Integer   ; observations accumulated for this label
 
-;; Evaluation — the reckoner evaluates itself
-(resolve reckoner conviction correct) → ()   ; accumulate a resolved prediction
-(curve reckoner)                 → (amplitude, exponent) ; accuracy = (1/N) + a × exp(b × conviction)
+;; Curve — standalone evaluation of a reckoner's edge
+;; The curve measures: when you predicted strongly, how often were you right?
+;; Input: prediction strength. Output: accuracy. A continuous surface.
+(make-curve)                     → Curve
+(record-prediction curve conviction correct?) → () ; feed each resolved prediction
+(edge-at curve conviction)       → f64       ; query: how accurate at this conviction level?
+(proven? curve min-samples)      → bool      ; enough data to trust?
 
 ;; Structural — products and coproducts for program state
 (struct name field1 field2 ...)  ; declare a named product type
@@ -169,6 +175,8 @@ Derived forms built from the corelib.
 (online-subspace dims k)         → Subspace
 (update subspace vector)         → ()
 (residual subspace vector)       → Float     ; distance from learned manifold
+(anomalous-component subspace vector) → Vector ; what the subspace CANNOT explain — the residual vector
+(sample-count subspace)          → Integer   ; how many observations has this subspace seen?
 (threshold subspace)             → Float     ; self-calibrating boundary
 
 ;; Derived fields — RETIRED (proposal 014). Use defprotocol + satisfies.
