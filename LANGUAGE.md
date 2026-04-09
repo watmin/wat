@@ -233,12 +233,21 @@ Derived forms built from the corelib.
   (bind (atom "at") (bind (atom "dfa-alpha") (atom "anti-persistent"))))
 
 ;; A reckoner learns which thoughts predict
-(define rk (reckoner "example" 10000 500))
-(let ((buy  (register rk "Buy"))       ; string → Label symbol
-      (sell (register rk "Sell")))
-  (observe rk thought buy 1.0)         ; label is a symbol, not a string
-  (predict rk thought)                 ; → direction + conviction
-  (curve rk))                          ; → (amplitude, exponent) — the proof
+(let ((name "example")
+      (dims 10000)
+      (recalib-interval 500)
+      (labels '("Buy" "Sell")))
+  (define rk (reckoner name dims recalib-interval (Discrete labels)))
+  (let ((buy  "Buy")
+        (sell "Sell"))
+    (observe rk thought buy 1.0)       ; label is a string, weight is 1.0
+    (predict rk thought)               ; → Prediction (scores + conviction)
+    (let ((conviction 0.25)
+          (correct true)
+          (min-samples 100))
+      (resolve rk conviction correct)  ; feed the internal curve
+      (edge-at rk conviction)          ; → f64 — how accurate at this conviction?
+      (proven? rk min-samples))))
 ```
 
 The full enterprise example is in `examples/enterprise.wat`.
