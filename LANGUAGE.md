@@ -93,21 +93,22 @@ functions compose.
 
 ```scheme
 ;; A service is just a function that selects over pipes.
-(define (encoder-service-loop pipes answers cache)
+;; Layout: pipes interleave [request, learn] pairs per client.
+(define (encoder-service-loop pipes replies cache)
   (let ((n (/ (len pipes) 2)))
     (loop
       (match (select pipes)
         ((Some (idx value))
-          (let ((client (/ idx 2))
-                (pipe-type (mod idx 2)))
-            (if (= pipe-type 0)
-              (send (nth answers client) (get cache value))
-              (let (((ast vec) value))
+          (let ((client    (/ idx 2))
+                (direction (mod idx 2)))
+            (if (= direction 0)          ; request — look up and reply
+              (send (nth replies client) (get cache value))
+              (let (((ast vec) value))    ; learn — store new encoding
                 (set! cache ast vec)))))
         (:closed (break))))))
 
 ;; The binary spawns it.
-(spawn (lambda () (encoder-service-loop pipes answers cache)))
+(spawn (lambda () (encoder-service-loop pipes replies cache)))
 ```
 
 These are the substrate any Lisp provides, plus the pipe forms
