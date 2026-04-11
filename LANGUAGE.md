@@ -57,6 +57,7 @@ Wat is Lisp. It inherits standard forms from the host:
   is a nested list. No special type needed. The parentheses ARE the tree.
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!` *(single: `(set! place value)`, indexed: `(set! collection index value)`)*, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
+- **Pipes:** `send` *(blocking write: `(send pipe value)`)*, `recv` *(blocking read: `(recv pipe)` → value)*, `try-recv` *(non-blocking: `(try-recv pipe)` → `(Some value)` or `None`)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
 Semantically identical — same results, same order. The parallelism is
@@ -70,8 +71,39 @@ a permission, not a directive. The runtime may evaluate sequentially.
 - No `pfold`: a fold is inherently sequential. Parallel reduce uses
   `(fold f init (pmap g xs))` — the MapReduce pattern.
 
-These are the substrate any Lisp provides. Wat's contribution
-is the algebras, structural forms, and stdlib below.
+## Pipe Forms
+
+Two declaration forms for CSP (communicating sequential processes).
+The algebra lives in **Vect**. The pipes live in **Proc**. Orthogonal.
+
+```scheme
+;; defpipe — a typed boundary between two processes.
+;; Capacity determines synchronization: bounded 1 = lockstep.
+(defpipe obs-input
+  :capacity (bounded 1)
+  :carries  (Candle Arc<Vec<Candle>> usize))
+
+;; defprocess — a persistent thread with pipe endpoints.
+;; Loop is explicit — a process that doesn't loop is a function.
+;; State is owned — no sharing. Pipes are the only communication.
+(defprocess observer-thread
+  :reads  (obs-input obs-learn)
+  :emits  obs-output
+  :state  MarketObserver
+  :body
+    (loop
+      (let ((msg (recv obs-input)))
+        ;; process msg, send result
+        (send obs-output result))))
+```
+
+A pipe is a value with semantics — capacity is on the pipe, not
+the process. `send`/`recv`/`try-recv` are host verbs that operate
+on pipes.
+
+These are the substrate any Lisp provides, plus the pipe forms
+from Proposal 002. Wat's contribution is the algebras, structural
+forms, and stdlib below.
 
 ## File layout
 
