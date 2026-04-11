@@ -57,7 +57,7 @@ Wat is Lisp. It inherits standard forms from the host:
   is a nested list. No special type needed. The parentheses ARE the tree.
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!` *(single: `(set! place value)`, indexed: `(set! collection index value)`)*, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
-- **Pipes:** `send` *(blocking write: `(send pipe value)`)*, `recv` *(blocking read: `(recv pipe)` → value)*, `try-recv` *(non-blocking: `(try-recv pipe)` → `(Some value)` or `None`)*, `select` *(multiplex N pipes: `(select pipes)` → `(Some (idx value))` or `:closed`. Parks when idle — zero CPU. Drains buffered values from closed pipes before reporting them dead.)*
+- **Pipes:** `make-pipe` *(constructor: `(make-pipe :capacity N :carries Type)` → `(tx, rx)` pair. Destructure at creation.)*, `send` *(blocking write: `(send tx value)`)*, `recv` *(blocking read: `(recv rx)` → value)*, `try-recv` *(non-blocking: `(try-recv rx)` → `(Some value)` or `None`)*, `select` *(multiplex N rx ends: `(select pipes)` → `(Some (idx value))` or `:closed`. Parks when idle — zero CPU.)*
 - **Threads:** `spawn` *(run a function on a thread: `(spawn (lambda () body))`. A process is a function. The caller spawns it.)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
@@ -72,24 +72,32 @@ a permission, not a directive. The runtime may evaluate sequentially.
 - No `pfold`: a fold is inherently sequential. Parallel reduce uses
   `(fold f init (pmap g xs))` — the MapReduce pattern.
 
-## Pipe Forms
+## Pipes
 
-One declaration form for CSP (communicating sequential processes).
-The algebra lives in **Vect**. The pipes live in **Proc**. Orthogonal.
+Pipes are CSP (communicating sequential processes). The algebra
+lives in **Vect**. The pipes live in **Proc**. Orthogonal.
+
+A pipe is a value. `make-pipe` creates one. Returns a `(tx, rx)` pair.
+Destructure at creation. Pass the ends into functions. A process is
+just a function that loops over pipe ends. `spawn` puts it on a thread.
 
 ```scheme
-;; defpipe — a typed boundary between two processes.
-;; Capacity determines synchronization: bounded 1 = lockstep.
-(defpipe obs-input
-  :capacity (bounded 1)
-  :carries  (Candle Arc<Vec<Candle>> usize))
+;; Create a pipe. Capacity is a number (items in flight) or :unbounded.
+;; :carries declares the type that crosses the boundary.
+(let (((tx rx) (make-pipe :capacity 1 :carries ObsOutput)))
+  ;; tx — the sender end. Blocks when capacity is full.
+  ;; rx — the receiver end. Blocks when empty.
+  (spawn (lambda () (producer tx)))
+  (consumer rx))
+
+;; Unbounded: sender never blocks. Buffer grows.
+(let (((learn-tx learn-rx) (make-pipe :capacity :unbounded :carries LearnSignal)))
+  ...)
 ```
 
-A pipe is a value with semantics — capacity lives on the pipe.
-A process is a function that loops over pipes. `spawn` puts it on
-a thread. `select` multiplexes N pipes. The function knows its layout.
-The index is the dispatch. No special process or service forms —
-functions compose.
+`select` multiplexes N pipe ends. Returns `(Some (idx value))` or
+`:closed`. Parks when idle — zero CPU. The function knows its layout.
+The index is the dispatch.
 
 ```scheme
 ;; A service is just a function that selects over pipes.
@@ -110,6 +118,11 @@ functions compose.
 ;; The binary spawns it.
 (spawn (lambda () (encoder-service-loop pipes replies cache)))
 ```
+
+No `defpipe`. No `defprocess`. No `defservice`. Pipes are values.
+Processes are functions. The forms are `make-pipe`, `send`, `recv`,
+`try-recv`, `select`, `spawn`. Six verbs. Everything else is
+regular functions.
 
 These are the substrate any Lisp provides, plus the pipe forms
 from Proposals 002 and 003. Wat's contribution is the algebras,
