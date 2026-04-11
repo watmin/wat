@@ -57,7 +57,7 @@ Wat is Lisp. It inherits standard forms from the host:
   is a nested list. No special type needed. The parentheses ARE the tree.
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!` *(single: `(set! place value)`, indexed: `(set! collection index value)`)*, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
-- **Pipes:** `send` *(blocking write: `(send pipe value)`)*, `recv` *(blocking read: `(recv pipe)` → value)*, `try-recv` *(non-blocking: `(try-recv pipe)` → `(Some value)` or `None`)*
+- **Pipes:** `send` *(blocking write: `(send pipe value)`)*, `recv` *(blocking read: `(recv pipe)` → value)*, `try-recv` *(non-blocking: `(try-recv pipe)` → `(Some value)` or `None`)*, `select-ready` *(block until any pipe in a set has data: `(select-ready pipes)` → returns when at least one is ready, caller then drains with `try-recv`)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
 Semantically identical — same results, same order. The parallelism is
