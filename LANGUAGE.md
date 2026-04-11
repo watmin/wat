@@ -120,10 +120,42 @@ The index is the dispatch.
 (spawn (lambda () (encoder-service-loop pipes replies cache)))
 ```
 
+`make-topic` wires 1→N fan-out over existing pipes. A topic is a
+write-only value. The caller's `send` IS the fan-out — synchronous,
+no thread, no queue.
+
+```scheme
+;; Fan-out: market observer notifies N exit observers.
+(let (((exit1-tx exit1-rx) (make-pipe :capacity 1 :carries MarketSignal))
+      ((exit2-tx exit2-rx) (make-pipe :capacity 1 :carries MarketSignal))
+      ((exit3-tx exit3-rx) (make-pipe :capacity 1 :carries MarketSignal)))
+
+  (let ((topic (make-topic (list exit1-tx exit2-tx exit3-tx))))
+    ;; send fans out to all three. Synchronous. No thread.
+    (send topic signal)))
+```
+
+The Rust translation is mechanical — the topic is a struct with a
+`Vec<Sender<T>>` and a for loop:
+
+```rust
+struct Topic<T: Clone> {
+    outputs: Vec<Sender<T>>,
+}
+
+impl<T: Clone> Topic<T> {
+    fn send(&self, value: T) {
+        for tx in &self.outputs {
+            let _ = tx.send(value.clone());
+        }
+    }
+}
+```
+
 No `defpipe`. No `defprocess`. No `defservice`. Pipes are values.
-Processes are functions. The forms are `make-pipe`, `send`, `recv`,
-`try-recv`, `select`, `spawn`. Six verbs. Everything else is
-regular functions.
+Topics are values. Processes are functions. The forms are `make-pipe`,
+`make-topic`, `send`, `recv`, `try-recv`, `select`, `spawn`, `join`.
+Everything else is regular functions.
 
 These are the substrate any Lisp provides, plus the pipe forms
 from Proposals 002 and 003. Wat's contribution is the algebras,
