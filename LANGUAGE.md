@@ -57,7 +57,8 @@ Wat is Lisp. It inherits standard forms from the host:
   is a nested list. No special type needed. The parentheses ARE the tree.
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!` *(single: `(set! place value)`, indexed: `(set! collection index value)`)*, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
-- **Pipes:** `send` *(blocking write: `(send pipe value)`)*, `recv` *(blocking read: `(recv pipe)` → value)*, `try-recv` *(non-blocking: `(try-recv pipe)` → `(Some value)` or `None`)*, `select-ready` *(block until any pipe in a set has data: `(select-ready pipes)` → returns when at least one is ready, caller then drains with `try-recv`)*
+- **Pipes:** `send` *(blocking write: `(send pipe value)`)*, `recv` *(blocking read: `(recv pipe)` → value)*, `try-recv` *(non-blocking: `(try-recv pipe)` → `(Some value)` or `None`)*, `select` *(multiplex N pipes: `(select pipes)` → `(Some (idx value))` or `:closed`. Parks when idle — zero CPU. Drains buffered values from closed pipes before reporting them dead.)*
+- **Threads:** `spawn` *(run a function on a thread: `(spawn (lambda () body))`. A process is a function. The caller spawns it.)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
 Semantically identical — same results, same order. The parallelism is
@@ -73,7 +74,7 @@ a permission, not a directive. The runtime may evaluate sequentially.
 
 ## Pipe Forms
 
-Two declaration forms for CSP (communicating sequential processes).
+One declaration form for CSP (communicating sequential processes).
 The algebra lives in **Vect**. The pipes live in **Proc**. Orthogonal.
 
 ```scheme
@@ -82,28 +83,36 @@ The algebra lives in **Vect**. The pipes live in **Proc**. Orthogonal.
 (defpipe obs-input
   :capacity (bounded 1)
   :carries  (Candle Arc<Vec<Candle>> usize))
-
-;; defprocess — a persistent thread with pipe endpoints.
-;; Loop is explicit — a process that doesn't loop is a function.
-;; State is owned — no sharing. Pipes are the only communication.
-(defprocess observer-thread
-  :reads  (obs-input obs-learn)
-  :emits  obs-output
-  :state  MarketObserver
-  :body
-    (loop
-      (let ((msg (recv obs-input)))
-        ;; process msg, send result
-        (send obs-output result))))
 ```
 
-A pipe is a value with semantics — capacity is on the pipe, not
-the process. `send`/`recv`/`try-recv` are host verbs that operate
-on pipes.
+A pipe is a value with semantics — capacity lives on the pipe.
+A process is a function that loops over pipes. `spawn` puts it on
+a thread. `select` multiplexes N pipes. The function knows its layout.
+The index is the dispatch. No special process or service forms —
+functions compose.
+
+```scheme
+;; A service is just a function that selects over pipes.
+(define (encoder-service-loop pipes answers cache)
+  (let ((n (/ (len pipes) 2)))
+    (loop
+      (match (select pipes)
+        ((Some (idx value))
+          (let ((client (/ idx 2))
+                (pipe-type (mod idx 2)))
+            (if (= pipe-type 0)
+              (send (nth answers client) (get cache value))
+              (let (((ast vec) value))
+                (set! cache ast vec)))))
+        (:closed (break))))))
+
+;; The binary spawns it.
+(spawn (lambda () (encoder-service-loop pipes answers cache)))
+```
 
 These are the substrate any Lisp provides, plus the pipe forms
-from Proposal 002. Wat's contribution is the algebras, structural
-forms, and stdlib below.
+from Proposals 002 and 003. Wat's contribution is the algebras,
+structural forms, and stdlib below.
 
 ## File layout
 
