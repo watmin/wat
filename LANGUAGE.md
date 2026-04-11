@@ -58,7 +58,7 @@ Wat is Lisp. It inherits standard forms from the host:
 - **Optionals:** `(Some value)`, `None` *(Rust: Option<T>. Match with `(Some x)` and `None`.)*
 - **Mutation:** `set!` *(single: `(set! place value)`, indexed: `(set! collection index value)`)*, `push!`, `pop!`, `inc!` *(Rust compilation target — these map to &mut self)*
 - **Pipes:** `make-pipe` *(constructor: `(make-pipe :capacity N :carries Type)` → `(tx, rx)` pair. Destructure at creation.)*, `send` *(blocking write: `(send tx value)`)*, `recv` *(blocking read: `(recv rx)` → value)*, `try-recv` *(non-blocking: `(try-recv rx)` → `(Some value)` or `None`)*, `select` *(multiplex N rx ends: `(select pipes)` → `(Some (idx value))` or `:closed`. Parks when idle — zero CPU.)*
-- **Threads:** `spawn` *(run a function on a thread: `(spawn (lambda () body))` → Handle. A process is a function. The caller spawns it.)*, `join` *(block until handles complete: `(join handles)` → Vec of return values. Works on a single handle or a list.)*
+- **Threads:** `spawn` *(run a function on a thread: `(spawn (lambda () body))` → Handle. A process is a function. The caller spawns it.)*, `join` *(block until all handles in a list complete: `(join handles)` → list of return values. Always takes a list. Always returns a list.)*
 
 `pmap` and `pfor-each` are parallel variants of `map` and `for-each`.
 Semantically identical — same results, same order. The parallelism is
