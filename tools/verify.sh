@@ -72,17 +72,41 @@ else
   tools/check/driver-test.sh "$SANDBOX" || die "tools/check/driver-test.sh rc $?"
 fi
 
-check "fresh clone" "$DUR_CMD" -- git clone --quiet "$PWD" "$SANDBOX/clone"
+# The clone rows test this working tree, not HEAD. The commit is in the
+# sandbox copy. The live index is never touched.
+candidate=$SANDBOX/candidate
+check "candidate copy" "$DUR_LONG" -- cp -a . "$candidate"
+git -C "$candidate" config commit.gpgsign false
+check "candidate add" "$DUR_CMD" -- git -C "$candidate" add -A
+if git -C "$candidate" diff --cached --quiet; then
+  echo "candidate: worktree matches HEAD"
+else
+  check "candidate commit" "$DUR_CMD" -- git -C "$candidate" commit -q -m "hex0 gate candidate"
+fi
 export HEX0_SCRATCH=$SANDBOX
-check "fresh clone layout" "$DUR_CMD" -- tools/layout.sh "$SANDBOX/clone" >"$SANDBOX/clone.layout"
+check "plain clone" "$DUR_CMD" -- git clone --quiet "$candidate" "$SANDBOX/clone"
+check "plain clone layout" "$DUR_CMD" -- tools/layout.sh "$SANDBOX/clone" >"$SANDBOX/clone.layout"
 cat "$SANDBOX/clone.layout"
-echo "fresh clone: layout ok"
-
-check "autocrlf clone" "$DUR_CMD" -- git -c core.autocrlf=true clone --quiet "$PWD" "$SANDBOX/crlf-clone"
+echo "plain clone: layout ok"
+check "autocrlf clone" "$DUR_CMD" -- git -c core.autocrlf=true clone --quiet "$candidate" "$SANDBOX/crlf-clone"
 if grep -q $'\r' "$SANDBOX/crlf-clone/tools/verify.sh"; then
   die "autocrlf clone rewrote a tools script"
 fi
+check "autocrlf clone layout" "$DUR_CMD" -- tools/layout.sh "$SANDBOX/crlf-clone" >"$SANDBOX/crlf.layout"
+cat "$SANDBOX/crlf.layout"
 echo "autocrlf clone: lf"
 
-echo "verify: working tree and HEAD clone"
+noattr=$SANDBOX/candidate-noattr
+check "noattr copy" "$DUR_LONG" -- cp -a "$candidate" "$noattr"
+grep -v -x -F '* text=auto eol=lf' "$noattr/.gitattributes" > "$noattr/.gitattributes.tmp"
+mv "$noattr/.gitattributes.tmp" "$noattr/.gitattributes"
+check "noattr add" "$DUR_CMD" -- git -C "$noattr" add -A -- .gitattributes
+check "noattr commit" "$DUR_CMD" -- git -C "$noattr" commit -q -m "hex0 gate candidate without the attribute line"
+check "noattr autocrlf clone" "$DUR_CMD" -- git -c core.autocrlf=true clone --quiet "$noattr" "$SANDBOX/crlf-noattr"
+if ! grep -q $'\r' "$SANDBOX/crlf-noattr/tools/verify.sh"; then
+  die "reverted attribute stayed lf"
+fi
+echo "mutant autocrlf without the attribute: red"
+
+echo "verify: working tree, committed in the sandbox and cloned"
 exit 0

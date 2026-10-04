@@ -108,7 +108,9 @@ HEX0_DRIVER_TEST=1 \
   HEX0_SANDBOX="$WORK/nonhost-sandbox" \
   "$copy/tools/verify.sh" >"$WORK/nonhost.out" 2>"$WORK/nonhost.err" || rc=$?
 if [ "$rc" -ne 0 ]; then
-  die "non-host target: driver rc $rc $(cat "$WORK/nonhost.err")"
+  printf 'verify: non-host target: driver rc %s\n' "$rc" >&2
+  cat "$WORK/nonhost.err" >&2
+  exit 1
 fi
 grep -q -F 'aarch64-linux: not executed on this host' "$WORK/nonhost.out" \
   || die "non-host target stayed silent"

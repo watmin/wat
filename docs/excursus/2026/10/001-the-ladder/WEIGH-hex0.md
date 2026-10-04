@@ -1059,3 +1059,23 @@ Grok's run was red, and its SCORE named the cause: the clone rows clone HEAD, wh
   `verify: non-host target: driver rc 1 verify: autocrlf clone rewrote a tools script` on one line.
 
 After R34: my re-run, a checkpoint, then the third vigilia.
+
+## R34 received — weighed (2026-10-04)
+
+- **Live run, before any commit:** `tools/verify.sh` rc 0 with empty stderr. `git status` and the `.git/index` hash
+  are identical before and after, and no `hex0-verify.*` sandbox is left. The gate is now green on the very tree it
+  approves.
+- **The SIGXFSZ default row:** the journal still logs the crash event, but `coredumpctl info` shows
+  `Storage: none`. No core is kept.
+- **Breaking it:** in a scratch copy, removing `* text=auto eol=lf` from the working tree alone, with no commit,
+  makes the gate go red with `autocrlf clone rewrote a tools script`. The candidate row tests the working tree.
+- **A concern withdrawn:** from reading the code, I expected the sandbox commit to need a configured git identity. On
+  a probe with an empty HOME and `GIT_CONFIG_NOSYSTEM=1` the gate is green, because git falls back to user@host.
+  Not a finding.
+- **My own probe error:** the first round of probes wrote their output files into the tree under test, and the gate
+  correctly went red on rule 1. Probe output lives outside the tree under test. I re-ran them that way; the results
+  above are from the re-run.
+- **Small, for the vigilia:** `git -C "$candidate" config commit.gpgsign false` and the no-attribute `grep -v`/`mv`
+  run outside `check`.
+
+Checkpointed. Next: the third vigilia.

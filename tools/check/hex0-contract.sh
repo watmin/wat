@@ -355,12 +355,22 @@ EOF
 check "sigxfsz gcc" "$DUR_CMD" -- gcc -O2 -o "$SANDBOX/sigxfsz" "$SANDBOX/sigxfsz.c"
 rm -f "$SANDBOX/sig-dfl.out" "$SANDBOX/sig-ign.out"
 rc=0
-( cd "$SANDBOX" && run_status "$DUR_FAST" -- "$SANDBOX/sigxfsz" dfl "$HEX0" "$SANDBOX/big.hex0" "$SANDBOX/sig-dfl.out" ) || rc=$?
+(
+  ulimit -c 0
+  cd "$SANDBOX" || exit 99
+  run_status "$DUR_FAST" -- "$SANDBOX/sigxfsz" dfl "$HEX0" "$SANDBOX/big.hex0" "$SANDBOX/sig-dfl.out"
+) >"$SANDBOX/sig-dfl.capture" 2>&1 || rc=$?
 if timed_out "$rc"; then
   die "row 6 SIGXFSZ default timed out"
 fi
-[ "$rc" -eq 153 ] || die "row 6 SIGXFSZ default rc $rc"
-echo "row 6: SIGXFSZ default exit 153"
+[ "$rc" -eq 153 ] || die "row 6 SIGXFSZ default rc $rc $(cat "$SANDBOX/sig-dfl.capture")"
+if [ -e "$SANDBOX/core" ] || [ -e core ]; then
+  die "row 6 SIGXFSZ default left a core"
+fi
+grep -q -F 'File size limit exceeded' "$SANDBOX/sig-dfl.capture" \
+  || die "row 6 SIGXFSZ default: bash note not captured"
+echo "row 6: SIGXFSZ default exit 153, no core"
+sed 's/^/row 6 SIGXFSZ note: /' "$SANDBOX/sig-dfl.capture"
 rc=0
 run_status "$DUR_FAST" -- "$SANDBOX/sigxfsz" ign "$HEX0" "$SANDBOX/big.hex0" "$SANDBOX/sig-ign.out" || rc=$?
 if timed_out "$rc"; then
