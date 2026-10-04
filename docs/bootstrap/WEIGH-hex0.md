@@ -84,3 +84,10 @@ Two more things fail Honest. Both go into round 2:
 
 The seed grows: R1 by a few bytes, R3 and R4 by a few dozen. Keep it under 512, and re-audit every jump displacement:
 row 9's disassembly is where a hand-counted offset shows itself.
+
+- **R5 — the fuzz is an instrument, so it lives in the repository.** A check that only ran once in `/var/tmp` does
+  not guard the next edit of the seed. Add `tools/check/fuzz-hex0.py`: a reference decoder written from the CONTRACT
+  (not `hex-check.py`'s code), a generator covering all bytes, near-misses, comments, CRLF and lengths 0–4,096, and a
+  fixed seed. `tools/verify.sh` runs a fast slice (2,000 cases) as a row. Each disagreement is kept as a fixture and
+  printed. Prove the instrument discriminates with a mutant seed: one byte flipped in the classifier, for example
+  `cmp $0x46` → `cmp $0x47`, must produce disagreements. Then revert it.
