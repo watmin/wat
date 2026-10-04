@@ -1962,3 +1962,25 @@ Checkpointed. Next: vigilia 4, against this checkpoint.
 Cast at checkpoint `8201e8d`, after round 6, R45, R46 and R47. The same 19 inward wards, each fetching its full signed
 text. CONVERGENCE means zero L1 and no un-runed L2. A rune counts only if its reason earns it, and the wards judge
 each rune's reason. circumspicere is cast last.
+- **nesciens: 0 L1, 2 L2.** The cold walk holds:
+  - the `sed|xxd|cmp` line gives `cmp=0`;
+  - the objdump line, run from inside `x86_64-linux/`, matches all 156 comments;
+  - the ELF fields check out by hand;
+  - every fixture, and the fixpoint, behave as the README says;
+  - links resolve;
+  - the fast tier is green.
+
+  Findings:
+  - **L2:** R35 does not fully hold. `hex0.hex0:18-19` still says "objdump is given --adjust-vma so its addresses are
+    file offsets", four lines after the one-liner, which needs no such flag. Adding it labels the ELF header as code.
+    Delete the clause, or name seed-audit's own recipe.
+  - **L2:** the README's objdump line uses a bare `hex0`, but README:5 places the reader at the repository root,
+    where it fails (`No such file`). No row runs this line. Use `ladder/0-hex0/x86_64-linux/hex0`, as the sed line
+    does, and do the same in the header.
+  - **L3 (not counted):**
+    - terms used before they are defined (rung, watc, weigh);
+    - "one per target: that target's seed" lost its antecedent ("the one binary not built from source");
+    - "`objdump -d` prints nothing" is not exact;
+    - the expected results live only in the contract script;
+    - README:24's capability sentence is opaque;
+    - "the three ways out of the loop".
