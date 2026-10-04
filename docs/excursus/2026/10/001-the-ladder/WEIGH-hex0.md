@@ -1582,3 +1582,39 @@ arrive.
     - fault.c swallows signals;
     - the plain clone inherits a global `core.autocrlf`;
     - rule 7 scans ignored files.
+- **peragrare: 4 L1, 8 L2.** Census scripts are in `/var/tmp/vigilia3-hex0/peragrare/census/`. Of the second vigilia's
+  32 unvisited cells, 30 now hold. The two that do not are row 1 and the 3a mutant. The main fuzz grid has no empty
+  cell, and the contract grid has none filed.
+  - **L1:** a linked worktree breaks the candidate rows. `cp -a .` copies a `.git` FILE that points at the live
+    gitdir, so the candidate's add, config and commit act on the live repository.
+    - Measured in a worktree of its copy: rc 0, the copy's branch gained 4 commits (driver-test's stubbed candidate
+      and two "without the attribute line"), HEAD lost `* text=auto eol=lf`, and `commit.gpgsign` was written to the
+      shared config.
+    - Our repository has no worktree, no such config and no such commits: checked.
+    - Distinct from sequi's `GIT_*` finding. Fix: the candidate is built with `git init` plus a copy of the files, or
+      `git clone` of a temporary index; it never carries the original `.git`.
+  - **L1:** the clone rows read one file. The eol check reads only `crlf-clone/tools/verify.sh`, and both rows run the
+    LIVE layout.sh against the clone, never the clone's own gate. With `tools/check/*.sh text eol=crlf` added, verify
+    printed "autocrlf clone: lf" and rc 0, while the clone's seed-audit had 163 CRs and dies with `bash\r`. The fix:
+    check every text file for CRs, or run the clone's own `layout.sh`.
+  - **L1:** the row-1 mutant (the fifth report). Measured: rows 1, 2 and 10 all made inert with `--size 999`, and
+    seed-audit is still green.
+  - **L1:** fuzz loses both the hung input and the disagreement (the seventh report).
+  - **L2:** row 2 (the stranger's decode) is never shown red.
+  - **L2:** row 10 is never shown red.
+  - **L2:** the status self-test is hollow (it accepts kind 5).
+  - **L2:** the 3a mutant is hollow. `note.md` is caught by the note-name check, so deleting the `*.md` branch stays
+    green, and `plan.md` passes.
+  - **L2:** rule 7 misses quoted paths: `> "out/nope"`, `>'out/nope'`, `of="out/nope"`, `-o "out/nope"` and
+    `>"$ROOT/out/nope"` are all green.
+  - **L2:** a rule-2 scanner exception (a 0xFF filename) is reported as an empty rule-2 violation.
+  - **L2:** a hang in any unguarded step is unbounded and invisible to the hang proofs.
+  - **L2:** R28's "no descendant alive" is unproven, and a `setsid` child escaped.
+  - **L3 (not counted):**
+    - as root, the read-only row goes falsely red;
+    - the FIFO-reader race was not observed in 200 runs;
+    - the CRLF fixtures still pass after the CRs are stripped;
+    - seed-audit dies for any non-x86 target;
+    - rule 3 accepts a lone `gate.tsv`.
+
+All 19 inward wards are in. circumspicere is cast last.
