@@ -45,8 +45,10 @@ orientation, prune it.
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
 - **State:** the fourth vigilia is complete, cast at `8201e8d`, and it DIVERGES. The seed has converged; the gate has
   not, with about 20 L1s in a few bash-rooted classes (see WEIGH's verdict).
-- **Next:** the builder rules on round 7: a Python rewrite of the gate (an outer checker, under `-I`), or bash
-  patches. Then draw round 7, checkpoint, and cast vigilia 5.
+- **Next:** round 7 (R48–R54) is drawn and was knocked to Grok. It is the gate re-shaped as one Python program:
+  observe, then judge, with every judge proven by mutants on every run, and one tier. Then my weigh: break each
+  COMPARISON, and run the hostile-environment, gitfile, signal and concurrency probes. Then checkpoint, and cast
+  vigilia 5.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
   - what sequences the rungs (bash given, or a seed-built shell), needed before hex1's brief;

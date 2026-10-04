@@ -2593,3 +2593,194 @@ wards:
 Every class is a property of bash's subshell, pipeline and process-group semantics, or of a proof that cannot tell
 "ran" from "compared". The orchestrator's recommendation to the builder: rewrite the gate as one Python program, run
 under `-I`, as an outer checker, in place of a seventh round of bash patches. The builder rules.
+
+## Round 7 — the gate re-shaped: observe, then judge, in one Python program (2026-10-04)
+
+The builder ruled on 2026-10-04, after the fourth vigilia: draw round 7 as a re-shaped gate written in Python, not a
+port of the bash. The four questions disqualified both alternatives:
+- **Patching bash** fails Obvious, Simple and Honest, because the classes stay expressible.
+- **A straight port** fails Simple, because it carries over bash-policing machinery. It also fails Honest, because a
+  proof by "disable the function" stays hollow in any language.
+
+The seed and its fixtures do not change in behaviour. Only seed COMMENTS change (R50). The sequencer question ("what
+drives the rungs") stays open until hex1's brief.
+
+### R48 — the shape
+
+- **Runner and judge are separate.**
+  - The runner executes a command and returns an Observation: exit status; OUT's existence, bytes and mode; stdout and
+    stderr; whether THE RUNNER killed it on its timer; and any descendant that outlived it.
+  - A judge is a pure function of (expectation, Observation) that returns a verdict, either accept or refuse with its
+    own reason.
+  - Rows only run and judge. A row contains no comparison of its own.
+- **Every judge is proven by mutants, through the same code path that runs it.**
+  - Each judge declares its mutants: wrong Observations derived from the real one. Examples: status + 1; one OUT byte
+    flipped; OUT present when absent was expected; mode 0644; a timeout flag set.
+  - The prover feeds the real Observation (it must accept) and each mutant (it must refuse with the judge's own
+    reason). A judge with no mutant is red.
+  - The prover is tested by running a judge that always accepts through the SAME loop; that must be red. A sibling
+    branch does not count.
+  - Mutants are pure calls, so this runs on every verify.
+  - **There is one tier.** `--prove` and row-proof are deleted.
+- **A lint over the AST, not over text.** `ast` parses every row module. A row module containing `if`, a comparison,
+  `assert`, or a boolean operator on an Observation is red. Loops over fixtures are allowed. The lint gets its own
+  mutant files.
+- **The gate checks; it never builds or sequences a rung.**
+  - It takes artifacts as inputs and observes them. Running the seed on a fixture is observing; writing a rung's
+    product for later use is not.
+  - For hex1, a separate build step will produce `hex1` and the gate will check it. What issues that build is the
+    builder's open question, and the gate must not answer it by default.
+  - State this in DESIGN and LAYOUT.
+
+### R49 — the runner owns processes, time and the environment
+
+- **The entry point** is `tools/verify` (no extension), executable.
+  - It refuses to run unless it was started clean. On its first line it re-executes itself under `env -i` with an
+    allowlist (a fixed `PATH`, `LC_ALL=C`, a sandbox `HOME`), and under `python3 -I`. So `BASH_ENV`, `ENV`,
+    `PYTHONPATH`, `PYTHONHOME`, the user site's `.pth` and `GIT_*` never reach any child.
+  - Python ≥ 3.11 is asserted at the top.
+  - **Proof:** a driver row runs a nested gate with a hostile `BASH_ENV`, `PYTHONPATH` and user-site `.pth` against a
+    copy with a flipped seed byte; it must be red.
+- **Steps.**
+  - Each step runs in its own session.
+  - The gate makes itself a child subreaper (`prctl(PR_SET_CHILD_SUBREAPER)` via `ctypes`), so every orphan returns to
+    it and is killed and reaped.
+  - "Timed out" means the runner's own timer fired. It is never inferred from text or from a return code.
+  - Nested gates do not exist. A module is a function, not a subprocess, so there are no nested timers.
+- **Signals.** INT, TERM and HUP kill every live step session, remove the sandbox and exit nonzero.
+  - **Proof:** each signal is sent to the gate's whole process group while a step is in flight. The step's start is
+    observed by an event (a FIFO open completes), never by a sleep. Afterwards, no descendant and no sandbox remain.
+- **Sandbox and scratch.**
+  - One `mktemp -d` under `/var/tmp`, made by the gate. No environment variable chooses or overrides it, and the
+    `HEX0_*` knobs are deleted.
+  - A lock on `out/` refuses a second concurrent gate with a named message.
+  - Nothing is left in `/var/tmp` after any exit, red or green.
+  - Evidence of a failure (the input, the observation and the diff) is PRINTED, not kept in files.
+- **Time.** One duration table, scaled by nothing. Budgets come from a measured basis written beside them. The whole
+  gate runs in under 2 minutes on this laptop, measured and recorded.
+
+### R50 — the seed's documents say exactly what is true (comments only; the bytes are unchanged)
+
+- **The header register table** lists every register the code writes, with each value in order and the offset that
+  sets it.
+  - rsi has six values: `+008b`, `+00a5`, `+00c9`, `+012c`, `+0144`, `+0153`.
+  - rdi, rax, rcx (the digit scratch) and r14b's set at `+01b8` are included.
+  - The `safety-margin` note becomes a rune that names the ABI edge it guards: the psABI leaves the registers
+    unspecified at entry.
+- **The objdump lines.** Delete the `--adjust-vma` sentence. The README's and the header's disassembly lines use the
+  path from the repository root: `ladder/0-hex0/x86_64-linux/hex0`.
+- **The README's capability sentence** names what holds:
+  - a read-only same file is 3, unless the open succeeds, which needs CAP_DAC_OVERRIDE effective over that inode on
+    a writable mount, and then it is 7;
+  - `fs.protected_regular` can refuse the open in a sticky world-writable directory.
+- **The README publishes the seed's sha256.** A row checks it.
+- **x86 facts stay out of the rung README.** It contains no usage-line "x86-64", no stat size, no objdump machine.
+  They live in the target header and `gate.tsv`.
+- **BRIEF's copied status table is deleted** and replaced with a pointer.
+- **The decode provenance is stated once, as the history shows it**, citing the commit. If it cannot be known, say
+  that both readers agree byte for byte and that the trust rests on the hand audit, not on which reader ran first.
+  LAYOUT rule 4, BRIEF, DESIGN and MACHINE all agree.
+
+### R51 — the rows (each one runs, observes, judges, and has mutants)
+
+Port every check the old gate made, as a judge. **Parity table:** SCORE maps each old row and check to its new row, or
+to a deletion with its reason (for example, "step-lint: replaced by the AST lint"). The rows:
+- **Rows 1 and 2:** the decode by hex-check, and the independent `sed|xxd`, each against the seed.
+- **Row 3:** the fixpoint.
+- **Rows 4 and 5:** exit42, and the mode.
+- **Row 6:** every format fixture.
+- **Row 7:** every refusal, on absent and existing OUT, plus the FIFO, `/dev/null`, read-only, link and directory
+  cases.
+- **Row 8:** syscalls, with exactly one `execve` as the first traced call.
+- **Row 9:** disassembly. Every fact comes from `gate.tsv`, including the code base and `--insn-width`.
+- **Row 10:** size, `p_filesz` and `p_memsz`, with each branch mutated.
+- **Row 11:** lint and ASCII.
+- **Row 12:** fuzz.
+  - Its reference is written independently from the README's grammar, as a transition table, not a copy of
+    hex-check.
+  - It is compared three ways: seed, reference and hex-check.
+  - Boundary cases come first, the per-case limit is the runner's, and a disagreement prints the input.
+- **Row 13:** faults. fault.c's NTH means one call on both paths. The FD range is driven.
+- **Rows 14 and 15:** SIGXFSZ, both dispositions.
+- **The capability row:** under `unshare -U` with the capability effective, the read-only same file gives 7, unchanged.
+  The plain row refuses to run while CAP_DAC_OVERRIDE is effective, and names the capability instead of the EUID.
+- **The empty-argv row:** argc 0 delivered by ptrace at the exec stop (excusare's 20-line probe), expecting 1.
+- **The fd300 row:** it uses the soft NOFILE limit only, about 301.
+- **The sha256 row** (R50).
+- **Every row prints its row number and label**, and EXPECTATIONS lists exactly the rows the gate prints.
+
+### R52 — git, the outer repository, and the clone rows
+
+- **One git function.**
+  - The environment is already clean (R49); it adds:
+    - `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`;
+    - `-c core.hooksPath=/dev/null`, `maintenance.auto=false`, `core.fsmonitor=false`;
+    - a fixed identity;
+    - `--template=` on init and clone.
+  - No index copies.
+  - git ≥ 2.32 is asserted.
+- **The outer repository check** resolves the real gitdir and common dir (`rev-parse --absolute-git-dir` and
+  `--git-common-dir`). It hashes every file under them, so a gitfile `.git` and a linked worktree are covered.
+  - **Proof, both red:** a ref added during the run, and a write to `info/exclude`. Each is proven with a directory
+    `.git` AND with a gitfile.
+- **The candidate.** `git init` plus a copy of the visible files, never the original `.git`.
+- **The clone rows.** Each runs the CLONE'S OWN `tools/verify --layout-only` under `python3 -I`, and checks every text
+  file for CR (`check-attr -z`).
+  - **Proof:** a `*.py text eol=crlf` attribute is red, and so is a deleted `tests/* -text` line (the CRLF fixtures
+    lose their CRs).
+
+### R53 — the layout rules, as functions over the tree
+
+- **Rule 1.** The only exemption is the top-level `.git`; a `.git` at any depth is examined. Brand files are checked by
+  image signature, and the whole file is scanned for ELF magic.
+- **Rule 2.** Every file on disk except `.git` and `out/`; LAYOUT states that scope.
+- **Rule 3 and the Targets table.** Every name is admitted only when its row says the machine is in hand (an explicit
+  column). The non-host decision is the seed's `e_machine` against the host. A target the host can execute is
+  executed.
+- **Rule 5.** A target source states no status meaning. Outside one declared pointer sentence, the word "status" in
+  any case is red. Mutants: `Status 4:`, `EXIT STATUS:`, `status: 4`, `status=4`, and a `| 4 |` table row.
+- **Rule 7.** "tools never write a rung's product or the seed" is checked by EFFECT, not by spelling. The visible tree
+  outside `out/` is hashed before and after the run and must be identical.
+  - **Proof:** a step that rewrites the seed is red, and so is one that writes into `tools/`.
+- **Rule 8.** States the builder's symbol rule (the first slash splits namespace from name) and namespace ownership:
+  `wat.*` is reserved, binders belong to `$bound`, `user/` is for rendezvous. CRAWL's sentence points here.
+- **Rule 9.** No tree-wide quote exemption. A reference that must be quoted is exempt by exact file and line, declared
+  in LAYOUT. Case-insensitive.
+- **Every rule's needle is its own refusal text**, and every rule has a mutant.
+
+### R54 — the documents, and what is deleted
+
+- **Deleted:**
+  - `tools/verify.sh`, `tools/layout.sh`;
+  - `gate-lib.sh`, `step-lint.py`, `row-proof.sh`, `driver-test.sh`, `layout-mutants.sh`, `seed-audit.sh`,
+    `hex0-contract.sh`, `git-sandbox`, `text-cr.py`.
+- **Kept and absorbed:**
+  - kept: `hex-check.py` (the second reader, also importable) and `fault.c` (an instrument, built into the sandbox);
+  - absorbed into modules: `disasm-check.py`, `syscalls-check.py`, the fuzz.
+- **Updated:**
+  - LAYOUT: the tree, the rules and their scopes;
+  - RECOVERY: "Green is";
+  - MACHINE:
+    - the floors (Python ≥ 3.11, git ≥ 2.32);
+    - what the gate runs: `sed`, `xxd`, `objdump`, `strace`, `gcc`, `unshare`;
+    - non-root, without CAP_DAC_OVERRIDE effective;
+    - the measurement tools removed or bound to a named rung;
+  - EXPECTATIONS: rewritten for this gate;
+  - DESIGN:
+    - the TSV column order;
+    - the Targets table's in-hand column;
+    - the aarch64 column removed until a machine is in hand;
+    - the `exigere(prose)` rune fixed;
+  - `.gitignore`.
+- **Struck runes** are removed, and each new rune earns its standing with a valid category.
+
+**STOP triggers.** STOP, and yield `ask-admin`, if:
+- the seed's bytes would need to change;
+- Python ≥ 3.11 or git ≥ 2.32 is unavailable here;
+- the subreaper cannot be set;
+- a check the old gate made has no honest port and no reason to delete.
+
+Never improvise around any of these.
+
+After round 7: my weigh. I break each judge's COMPARISON, never the function. I run the hostile-environment, gitfile,
+signal and concurrency probes myself. Then a checkpoint, and vigilia 5.

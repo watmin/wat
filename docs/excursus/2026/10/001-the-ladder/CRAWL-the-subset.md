@@ -119,8 +119,7 @@ The builder accepts wat-rs's reader being more lax on pathological spellings. Th
 - Any name in a binder slot (a `let` binding, a function argument, and the like) is allocated to the implicit
   namespace `$bound`.
 - `wat` (and its sub-namespaces, such as `wat.core`) is reserved for wat itself.
-- Every other namespace belongs to the user, with `user/` reserved for rendezvous. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
-state this rule once it is next edited.
+- Every other namespace belongs to the user, with `user/` reserved for rendezvous. LAYOUT rule 8 states this rule and namespace ownership: round 7, R53 (WEIGH-hex0).
 
 **Q4 crawled on wat-rs `origin/main` `839e8fbbf` (2026-10-03, read-only).** Spot-checked by hand where it matters.
 `wat/` is converted to symbol spelling, but `wat-tests/` and `examples/` are not yet: the cutover's step 5c-iii is
