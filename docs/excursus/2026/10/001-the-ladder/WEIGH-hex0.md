@@ -1209,3 +1209,68 @@ arrive.
 
   **Lesson for my weigh:** a printed "mutant …: red" is the executor's claim. Before crediting a mutant, I break the
   ROW it guards and watch the gate go red.
+- **cohaerere: 0 L1, 9 L2 (INCOHERENT).** The second vigilia's five cohaerere fixes hold.
+  - **L2:** the standing documents are listed three ways. LAYOUT:18 omits RECOVERY, and R33's "as LAYOUT does" was a
+    false premise of mine.
+  - **L2:** "7 before 3" (as experiri; fault-injected fstat OUT on the same file gives rc 3).
+  - **L2:** "independent decoder" names two things. BRIEF:45 gives it to hex-check.py; MACHINE, DESIGN, README and
+    EXPECTATIONS give it to sed|xxd.
+  - **L2:** "the one binary not built from source" (DESIGN:8 and :32, README:32, the rung README, BRIEF, the header)
+    against "one seed per target" (DESIGN:43, LAYOUT:31). R33 fixed only DESIGN:131.
+  - **L2:** RECOVERY's green line. Already fixed in `74b3234`.
+  - **L2:** layout scope is stated three ways. LAYOUT says "tracked" or "committed"; RECOVERY says "not git-ignored";
+    the gate examines every name on disk for rule 1 and everything not ignored for rules 2, 8 and 9. Shown with
+    STRAY, an untracked colon file, and `__pycache__`.
+  - **L2:** who fetches a ward's text. WARDS says the orchestrator pastes it; RECOVERY says the agent fetches it.
+  - **L2:** EXPECTATIONS says "written before the strike", but it has six later commits, and row 10 records history.
+  - **L2:** "total" is bounded in DESIGN and unbounded in the rung README, the header and BRIEF.
+  - **L3 (not counted):**
+    - "worktree" in MACHINE means a working tree, against "never use worktrees";
+    - wait/shell 153;
+    - "no core" beside "dumped core";
+    - BRIEF's blast radius is stale;
+    - row 4 decodes via `hex-check --digits | xxd`;
+    - EXPECTATIONS:3 "a command in verify.sh";
+    - stale files in `out/` and `__pycache__`.
+- **mora: 2 L1, 5 L2.** The direct question is answered: a step's timer kill leaves no descendant, for every command
+  the gate runs. Measured: the fuzz with a forking fake hex0 left no process. Modules are untimed, so no budget is
+  inverted.
+  - **L1:** the hang proofs cannot tell a timer from any SIGKILL. "Timed out" is inferred from rc 137 alone, never
+    from timeout's own "sending signal" line. A stub that runs `kill -KILL $$` (no hang) passed all three hang
+    proofs. `exit 124` is also classed as timed out, and an OOM kill would be reported as a timeout. The second
+    vigilia's mora L1 and R27/R28 do not hold.
+  - **L1:** the fuzz names a hung input it has already deleted. `finally` unlinks the work directory, and verify's
+    trap deletes the sandbox on a red too, so neither "hung on" nor "kept fuzz-disagree" exists after a red. R28's
+    "names and keeps" does not hold.
+  - **L2:** `HEX0_TIME_SCALE=0` disables every timer (`timeout 0`). A ward's probe hung on it.
+  - **L2:** fuzz has its own unscaled `timeout=5` per case, a second timer level, and it is reported as rc 1, not
+    "timed out".
+  - **L2:** reap_group sleep-polls, about 2 s, and sees only the process group. A `setsid` child escapes.
+  - **L2:** the "FIFO with a reader" row races the reader's open. It never flipped in 800 runs; the fix is
+    `exec 3<>fifo` before the row.
+  - **L2:** gate-lib's stated basis ("fuzz inside 120 s") contradicts DUR_LONG 90, and the measured time is 5.4 s.
+  - **L3 (not counted):**
+    - pgid reuse in reap_group;
+    - `set -m` job notices on stderr;
+    - a die inside the SIGXFSZ subshell is reported as rc 1;
+    - the setsid escape.
+- **solvere: 2 L1, 7 L2.**
+  - **L1:** the header restates every status meaning while saying it does not (as probare). Measured: header status
+    4 and 7 rewritten to contradict the README, and full verify rc 0. BRIEF:31 and :70 still instruct a third copy.
+    R25 fails. The header shrinks to a pointer.
+  - **L1:** x86 facts remain in the per-rung scripts:
+    - `verify.sh:47` keys `--size 537` on the target name;
+    - seed-audit maps arch to objdump, holds the x86 mutant text and a literal `+0078`;
+    - fuzz's BOUND and LETTER are x86 opcode patterns.
+    Measured: adding a `riscv64-linux` target gives `row 9: no disassembler mapped`, red. driver-test's non-host
+    proof stubs seed-audit, so it hid this. R29 holds only for hex0-contract. Every per-target fact moves to
+    `gate.tsv`.
+  - **L2:** the contract finds `gate.tsv` through `dirname "$SRC"`, a hidden channel. `fact` and `nr_of` swallow awk
+    failures. It should take the target directory, as seed-audit does.
+  - **L2:** `out/` is a fixed-name channel shared by concurrent runs; a second run's row 3 broke the first (measured).
+  - **L2:** the syscall set is written three times, and `ALLOWED` in syscalls-check is a dead literal.
+  - **L2:** fuzz's reference uses the same algorithm as hex-check, line for line.
+  - **L2:** the rung README holds x86 facts (registers, the 144-byte stat, offsets).
+  - **L2:** tracebacks in syscalls-check and fuzz are rc 1. R27 holds only for hex-check and disasm-check.
+  - **L2:** rule 3 accepts any non-`hex0` file as "the source" (a target with only `gate.tsv` is green). The
+    target-name grammar is written three times.
