@@ -485,3 +485,19 @@ x86-64 Linux. `docs/LAYOUT.md` rules 2 and 3 and `DESIGN-the-ladder.md` "Targets
   still hold. Rung 0's README remains the contract's only home.
 
 Then the orchestrator re-runs everything and casts `vigilia` on the final layout.
+
+## R21 received; reproduced on my runs (2026-10-04)
+
+The source and the seed live at `ladder/0-hex0/x86_64-linux/`; the contract (README, `tests/`) stays on the rung.
+
+**My runs:**
+- `tools/verify.sh`: ok, rc 0, with 22 labelled layout mutants, including R21's four.
+- `git status --porcelain` is identical before and after.
+- My decode is identical to the 537-byte seed, and two generations are identical.
+- `aarch64-linux: not executed on this host` shows the cannot-execute branch, reported rather than silently green.
+
+I widened `.gitattributes` to `ladder/0-hex0/*/hex0 binary`, so any future target's seed is protected.
+
+**Next:** `partire` on `tools/verify.sh` (the builder: *"our wat/tools/verify.sh is already showing signs it needs to
+be modular?"*), so the gate splits along its true seams before rungs and targets multiply it. Then `vigilia` again on
+the result.
