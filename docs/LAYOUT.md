@@ -44,8 +44,10 @@ wat/
 5. **Every rung's `README.md` states its contract:** its input language, what it outputs, and every exit status.
 6. **`archived/` is frozen.** Its tracked files must equal the list at `c45603e`, the archive commit, byte for byte.
 7. **`tools/` checks; it never builds a rung.** No rung's output in `out/` may be produced by anything under `tools/`.
-   A check may build its own instruments into `out/` (the fault injector, built by `gcc`) and stage fixtures there.
-   Those are not rungs.
+   `out/` holds only what a RUNG produces when the gate runs it (for example, the seed decoding its own source). A
+   check's own scratch and instruments (the fault injector built by `gcc`, staged OUT files, the copied tree the
+   layout mutants run on) live in a sandbox under `/var/tmp/`, never in the repository. Every instrument a check
+   needs is built from tracked source during the run: the gate depends on nothing outside the repository.
 8. **Only Clojure/EDN-compliant syntax.** No tracked file outside `archived/` and `docs/` contains a token with `::`
    (a colon path such as `:wat::core::+`), or a bare `<-` or `->` used as a type annotation. Names are namespaced
    symbols (`wat.core/+`), and types are ascribed with `:-`. The builder, 2026-10-04: *"we are not going to support

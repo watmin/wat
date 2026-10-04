@@ -501,3 +501,59 @@ I widened `.gitattributes` to `ladder/0-hex0/*/hex0 binary`, so any future targe
 **Next:** `partire` on `tools/verify.sh` (the builder: *"our wat/tools/verify.sh is already showing signs it needs to
 be modular?"*), so the gate splits along its true seams before rungs and targets multiply it. Then `vigilia` again on
 the result.
+
+## The checkpoint, and what committing revealed (2026-10-04)
+
+The builder: *"we should commit and push often - we don't have any CI yet... we should view github as our DR
+(disaster recovery) site"*. Until now the rung was uncommitted until landing. **From here on, every round that passes
+the orchestrator's re-run is committed and pushed as a checkpoint, labelled NOT landed.** The landing is a separate
+commit after vigilia converges. The checkpoint is `579778d`.
+
+Committing revealed two failures:
+- **My `.gitattributes` corrupted the DR copy.** `*.hex0 text eol=lf` stored `crlf.hex0` and `crlf-two.hex0` without
+  their CRs, the bytes those fixtures exist to test. Fixed in `c485276`: fixtures are `-text` (byte for byte), rung
+  sources are LF, and the seed is binary. The committed bytes now equal the disk.
+- **The layout gate went red the moment `tools/` was tracked:** rule 8, `tools/verify.sh:460`, an arrow inside an
+  error message. Rule 8 scans only TRACKED files, so the gate never examined its own scripts, or any strike file,
+  until commit. A gate whose verdict depends on what happens to be staged is a gate that passes the uncommitted work
+  it exists to check.
+
+## R22 — the gate modular, self-contained, and blind to nothing on disk (2026-10-04)
+
+From `partire` (SPLIT: three cuts) and what committing revealed.
+
+- **Cut 1: `tools/check/layout-mutants.sh SCRATCH_DIR`.**
+  - It holds the baseline `layout: ok`, the copied tree, `mutant_expect`, every mutant, the post-run `layout: ok`, and
+    the check that the live tree was untouched.
+  - It takes a seed from the tree's `ladder/0-hex0/*/hex0`, not the host's.
+  - The rung-gap mutant is computed as the highest rung number + 2; `ladder/2-skip` breaks the day hex1 lands.
+  - It has one reason to change: `docs/LAYOUT.md`'s rules, in the same commit.
+- **Cut 2: `tools/check/seed-audit.sh <ladder/0-hex0/<arch>-<os>> <sandbox> [--size N]`.**
+  - It is the ONE copy of rows 1, 2, 9, 10 and 11, plus row 9's comment mutant, for every target.
+  - Delete the host's duplicate rows. They have drifted: only the host copy pins the size, and only it has the row-9
+    mutant.
+  - It runs nothing it decodes.
+- **Cut 3: `tools/check/hex0-contract.sh <hex0> <target-src> <ladder/0-hex0/tests> <sandbox>`.**
+  - It holds rows 3–8, 12 and 13, and their mutants, for a target the host can execute.
+  - A later rung gets its own `<rung>-contract.sh`; this one does not move.
+- **The driver, `tools/verify.sh`.** It handles the sandbox, the guards, host detection, and the loop over rungs and
+  targets dispatching to the modules. `die` and `guard` go in a sourced `tools/check/gate-lib.sh`: one definition of
+  how the gate fails and times out, not four copies.
+- **Self-contained.** The truncate-before-fchmod mutant is derived DURING the run, from the seed, by a byte patch
+  (the way `fuzz-hex0.py` flips bytes, asserting its pattern matches exactly once). It is no longer read from
+  `/var/tmp/vigilia-hex0/peragrare/`, a ward's scratch directory that my round-4 item R15 named. That was my brief's
+  defect, and on a fresh clone the gate is red. LAYOUT rule 7 now says it: "the gate depends on nothing outside the
+  repository".
+- **Blind to nothing on disk.**
+  - `layout.sh`'s rules 2, 8 and 9 examine every file in the tree that is not git-ignored (the files a commit could
+    carry), not only tracked ones.
+  - A mutant proves it: an UNTRACKED tools file containing a colon path must be red.
+  - Then fix the false positive at `tools/verify.sh:460` (write "to", not an arrow).
+- **The syscall ABI.**
+  - The fault rows' raw x86-64 syscall numbers, and the syscall allow-list's `open`, become the target's: a small
+    table per target directory.
+  - This is not a cut while there is one target, so it is bounded: the brief that adds the second executable target
+    carries it as a row.
+  - Name the table's place now, in DESIGN's Targets section.
+
+Then the orchestrator re-runs everything, checkpoints, and casts `vigilia` on the modular gate.
