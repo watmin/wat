@@ -37,14 +37,14 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `7f3898f`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `fcfeeb8`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** round 6 is checkpointed (`7f3898f`), weighed by a break battery (`/var/tmp/r6-weigh/battery.sh`): every
-  named row function was made `return 0`, and the gate must go red. Four rows had no mutant, and one proof was
-  hollow. R45 was knocked to Grok: a `row-proof` module turns that battery into a row of the gate.
-- **Next:** read Grok's SCORE, re-run the battery, checkpoint, then cast vigilia 4. **The seed lands only when vigilia
-  converges** (zero L1, and every L2 fixed or runed).
+- **State:** round 6 and R45 are checkpointed (`7f3898f`, `fcfeeb8`). row-proof forces every row function to
+  `return 0` and requires red, and that is proven. The full gate takes about 30 min. R46 was knocked to Grok: a fast
+  tier, plus `--prove` for checkpoints.
+- **Next:** read Grok's SCORE, re-run both tiers (breaking a row), checkpoint, then cast vigilia 4 against the fast
+  tier, with `--prove` run once. **The seed lands only when vigilia converges.**
 - **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief. Also open: what sequences the rungs (bash given, or a seed-built shell);
   the GitHub description and homepage overclaim (circumspicere C3-5).
 
