@@ -636,3 +636,20 @@ circumspicere is cast last. Reports are recorded here as they arrive.
   - **L2:** the same-file check (7) precedes the non-regular check (3); state the order.
   - **L2:** the contract is written twice (README and header), with nothing comparing them. The header could keep only
     what the bytes need and point to the README.
+- **nesciens: 0 L1, 3 L2.** The bytes audit holds by hand: header, offsets, encodings, jumps, syscalls, constants.
+  - **L2:** the README presents "running this seed on its source and comparing" as equal to the independent decode.
+    A fixpoint proves self-consistency, not trust: a seed that recognises its own source would pass it. Say so.
+  - **L2:** the precedence of 7 over 3 (`hex0 /dev/null /dev/null` exits 7) is unstated.
+  - **L2:** there is no exact verification command a stranger can run from the README.
+- **exigere: 1 L1, 3 L2.**
+  - **L1:** `DESIGN-the-ladder.md` describes `syscalls.tsv` as if it exists and is read. It does not exist yet; the
+    fault rows and the allow-list hardcode the numbers.
+  - **L2:** the `HEX0_DRIVER_TEST` silent skip is still open (the R23 note).
+  - **L2:** the aarch64 and riscv rows in DESIGN are half-filled. Use "not a target until a machine is in hand".
+  - **L2:** "the invariant is checked by the gate" (16-byte alignment) is not a check yet. Bind it to "the first rung
+    with a `call` carries an alignment row".
+  - **Routed elsewhere:**
+    - `layout.sh:236,249` still allows `out/fault`, a stale exemption (the injector now builds in the sandbox);
+    - EXPECTATIONS row 13 still says `out/fault`;
+    - `SCORE-hex0.md:3` "Nothing was committed" is stale against the checkpoints;
+    - `verify.sh:66` probes a nonexistent `aarch64-linux` every run.
