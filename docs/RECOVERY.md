@@ -52,7 +52,7 @@ orientation, prune it.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
   - what sequences the rungs (bash given, or a seed-built shell), needed before hex1's brief;
-  - the GitHub description and homepage overclaim (circumspicere C3-5).
+  - none on the public face: the description is set and the homepage is ruled (WEIGH, after round 7's draw).
 
 ## How work moves
 

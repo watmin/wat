@@ -2784,3 +2784,9 @@ Never improvise around any of these.
 
 After round 7: my weigh. I break each judge's COMPARISON, never the function. I run the hostile-environment, gitfile,
 signal and concurrency probes myself. Then a checkpoint, and vigilia 5.
+
+**The public face, ruled by the builder (2026-10-04).** The description is set to "A Lisp for Linux programming. In
+progress: a full-source bootstrap from a 537-byte hand-auditable hex seed, with no Rust, C or libc in its build chain."
+The homepage stays https://algebraic-intelligence.dev/ until it moves to wat.algebraic-intelligence.dev. Still to fix
+in the next round's documents: README:10's present-tense "Built from a seed you can read." becomes "Being built from a
+seed you can read."
