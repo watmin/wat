@@ -111,7 +111,15 @@ has to guess between namespace and name:
   (wat.kernel/println x))
 ```
 
-The builder accepts wat-rs's reader being more lax on pathological spellings. The rule is the first slash. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
+The builder accepts wat-rs's reader being more lax on pathological spellings. The rule is the first slash.
+
+**The known namespaces (the builder, 2026-10-04).**
+- wat-rs knows `wat`, `rust` and `$bound`.
+- watmin/wat will very likely claim only `wat` and `$bound`.
+- Any name in a binder slot (a `let` binding, a function argument, and the like) is allocated to the implicit
+  namespace `$bound`.
+- `wat` (and its sub-namespaces, such as `wat.core`) is reserved for wat itself.
+- Every other namespace belongs to the user, with `user/` reserved for rendezvous. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
 state this rule once it is next edited.
 
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
