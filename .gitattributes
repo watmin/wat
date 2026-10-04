@@ -1,2 +1,2 @@
-# wat is s-expression — render as Scheme on GitHub
-*.wat linguist-language=Scheme
+# wat is s-expression — render as clojure on GitHub
+*.wat linguist-language=clojure
