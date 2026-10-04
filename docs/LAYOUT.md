@@ -16,6 +16,7 @@ wat/
   tools/                CHECKS only, never builds a rung: verify.sh, layout.sh, check/
   docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE); everything else in an excursus
     excursus/YYYY/MM/NNN-<slug>/   one excursus: its design, crawls, briefs, expectations, scores, weighs
+  brand/                the logo and icons, image files only, copied verbatim from watmin/algebraic-intelligence.dev
   archived/             frozen: the 2024–26 repository
   out/                  build output: gitignored, never committed
 ```
@@ -23,7 +24,7 @@ wat/
 ## The rules `tools/layout.sh` enforces
 
 1. **The top level is exactly the list above.** `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
-   `ladder/`, `watc/`, `tools/`, `docs/` and `archived/` are allowed; `out/` may exist but is never tracked. Any other
+   `ladder/`, `watc/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. Any other
    tracked top-level name is a red.
 2. **One committed binary: `ladder/0-hex0/hex0`.** A tracked file anywhere else that begins with the ELF magic
    (`7F 45 4C 46`) is a red. Every other binary is built into `out/`.
@@ -45,6 +46,6 @@ wat/
    no source, no fixtures, no binaries. Those live in their rung. The builder, 2026-10-04: *"i prefer monthly
    resolution with new counters per month... we use excursus instead of arc"*.
    **An excursus is referred to by its full `YYYY/MM/NNN-<slug>`**, or by its whole slug where the date is plain from
-   context, in documents, comments, commit messages and names. Never by a bare number such as "excursus 001": the
+   context, in documents, comments, commit messages and names. Never by a bare number (the name, a space, then digits): the
    counter restarts every month, so a bare number is ambiguous by design. The builder, 2026-10-04: *"wat-rs docs kept
    using 'arc NNN' and it got messy.... my preference is the time stamp in comments and names"*.

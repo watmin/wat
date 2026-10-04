@@ -135,14 +135,14 @@ When R6 is in, the orchestrator casts the wards (`docs/WARDS.md`) on the seed, i
 and then the rung lands.
 
 - **R6, extended.** Rule 9 also forbids a bare numbered reference to an excursus. Outside `archived/`, a tracked file
-  containing `excursus` or `arc` followed by a bare number (`excursus 001`, `arc 12`) is a red. A reference names
-  `YYYY/MM/NNN-<slug>`. Add one mutant: a line reading "see excursus 001".
+  containing `excursus` or `arc` followed by a bare number (the name, a space, then digits) is a red. A reference names
+  `YYYY/MM/NNN-<slug>`. Add one mutant: a tracked line with the name, a space, and a counter.
 
 ## R6 received (2026-10-04) — the docs shape is gated; the bare-reference half is still open
 
 `SCORE-hex0.md` "R6 — the docs shape" adds four rule-9 mutants (a stray directory, a counter gap, a non-document in an
 excursus, a bad slug), and `verify: ok`. **The "R6, extended" item above crossed that score in flight and is not in
-`tools/layout.sh`**: no check forbids a bare numbered reference. Add it, with its mutant ("see excursus 001" in a
+`tools/layout.sh`**: no check forbids a bare numbered reference. Add it, with its mutant (the name, a space, and a counter, in a
 tracked file outside `archived/`, which must be red naming rule 9).
 
 ## The wards, cast on the 511-byte seed (2026-10-04)
@@ -176,3 +176,17 @@ be split by whitespace or a comment (R1–R3, R5, R2). Unstated: why `fchmod` co
 **Weighed:** all accepted. None changes behaviour except D1.
 
 Round 3 is drawn after `experiri`, `peragrare` and `cohaerere` report, as one batch.
+
+## The brand arrives (2026-10-04)
+
+The builder: *"i also have a logo for wat... in watmin/algebraic-intelligence.dev... i think we can copy all of them?..
+we can decorate our readme a bit too?"*
+- **The files.** `brand/` holds that repository's `brand/` directory (at `cf1d1c8`): 12 files, copied verbatim. Their
+  sha256 sums are recorded in the commit, and both repositories are Apache-2.0, copyright John Shields.
+- **The layout.** `docs/LAYOUT.md` allows `brand/` at the top level, for image files only.
+- **The README.** It shows the logo.
+- **For Grok,** with the bare-reference check:
+  - add `brand` to rule 1's allowed list in `tools/layout.sh`;
+  - make rule 2's ELF scan and rule 8's syntax scan pass over `brand/` honestly (the SVG is text: 0 colon paths and 0
+    arrows today);
+  - add a mutant: a non-image file such as `brand/x.md`, which must be red. That is rule 1's "image files only".

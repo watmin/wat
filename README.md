@@ -1,7 +1,24 @@
-# wat
+<p align="center">
+  <img src="brand/logo-256.png" width="200" alt="the wat logo">
+</p>
 
-A Lisp for Linux programming, compiled to native x86-64 code. It aims to meet or beat C's performance, and to always
-beat Rust's.
+<h1 align="center">wat</h1>
+
+<p align="center">
+  <b>A Lisp for Linux programming, compiled to native x86-64.</b><br>
+  It aims to meet or beat C's performance, and to always beat Rust's.<br>
+  Built from a seed you can read.
+</p>
+
+<p align="center">
+  <a href="docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md">the ladder</a> ·
+  <a href="docs/LAYOUT.md">layout</a> ·
+  <a href="docs/WARDS.md">wards</a> ·
+  <a href="docs/MACHINE.md">machine</a> ·
+  <a href="LICENSE">Apache-2.0</a>
+</p>
+
+---
 
 > *"its a lisp for linux programming... (maybe more OS later... linux for now)... like c is .... i want watc to emit
 > code that meets or exceeds c's perf (always better than rust's perf)"* — the builder, 2026-10-03
@@ -18,7 +35,16 @@ The home of the native, Rust-free wat:
   first, then an assembler, then a minimal interpreter for the subset watc is written in. That interpreter runs
   watc's source once, and from there watc rebuilds itself.
 
-The work starts at the bottom of that ladder.
+The work starts at the bottom of that ladder: `ladder/0-hex0/`, a seed of a few hundred bytes written as commented hex,
+so every byte can be checked against the instruction it encodes.
+
+## Where to read
+
+- [`docs/excursus/2026/10/001-the-ladder/`](docs/excursus/2026/10/001-the-ladder/): the ladder's design, the census of
+  the subset watc is written in, and each rung's brief, expectations, score and weigh.
+- [`docs/LAYOUT.md`](docs/LAYOUT.md): where everything lives. A gate enforces it.
+- [`docs/WARDS.md`](docs/WARDS.md): the quality guards cast before anything lands.
+- [`docs/MACHINE.md`](docs/MACHINE.md): what a fresh machine needs, on Omarchy or Debian.
 
 ## Lineage
 
