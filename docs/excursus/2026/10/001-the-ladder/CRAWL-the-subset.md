@@ -83,9 +83,16 @@ before wat0's brief is drawn, which is where they are first needed:
   dilemma is raised with the builder, never guessed.
 - **Q5, the grammar.** wat-rs is the thing watmin/wat mirrors. Any dilemma is raised.
 
-**A dilemma to raise (Q1).** `u/rec/n` holds two slashes. Clojure's reader accepts it: `clj` reads it as namespace
-`u`, name `rec/n`. The EDN spec allows `/` once in a symbol. LAYOUT rule 8 says "Clojure/EDN-compliant", so the
-repository either names Clojure's reader as the standard, or asks for a different accessor spelling.
+**The symbol rule (the builder, 2026-10-04).** The FIRST slash partitions the namespace from the name, and everything
+after it is the name:
+- `wat.core//` is `{:ns wat.core, :name /}`;
+- `u/rec/n` is `{:ns u, :name rec/n}`;
+- `u/pathological/foo//bar/` is `{:ns u, :name pathological/foo//bar/}`.
+
+Measured against `clj` 1.12: the first two read identically in Clojure. Clojure rejects the third (`Invalid token`).
+wat's rule is therefore a deliberate superset of Clojure's reader, a dialect choice and not a Clojure bug. A
+symbol Clojure reads, wat reads the same way. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
+state this rule once it is next edited.
 
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
 `Option` (one `Some`, one `None`).
