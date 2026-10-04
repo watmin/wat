@@ -2536,3 +2536,60 @@ each rune's reason. circumspicere is cast last.
     - SIGHUP is untrapped.
 
 All 19 inward wards are in. circumspicere is cast last.
+- **circumspicere (cast last): 1 L1, 1 L2.**
+  - **L1:** the interpreters' startup environment enters the gate. Nothing scrubs `BASH_ENV`, `PYTHONPATH`,
+    `PYTHONHOME` or the Python user site (`.pth`). Measured, each turning a red gate green:
+    - `PYTHONPATH` with a `sitecustomize` makes row 9 pass a `sysenter` comment;
+    - a user-site `.pth`, with NO environment variable at all, does the same;
+    - `BASH_ENV` with a six-line `cmp()` hid a flipped seed byte 10 from rows 1 and 2 (928 bash startups sourced it).
+
+    This breaks LAYOUT's "depends on nothing outside the repository". No inward ward looked here. Closure:
+    `env -S -u BASH_ENV -u ENV` shebangs, or an `env -i` re-exec with an allowlist; `python3 -I` everywhere (measured:
+    `-I` ignores both hooks); and a driver row proving a flipped seed is red under hostile startup files.
+  - **L2:** the public face claims more than the tree delivers:
+    - the GitHub description says "bootstrapped … no C", but the languages bar shows C (`fault.c`) and the gate links
+      helpers against glibc;
+    - the homepage is the superseded era's site ("defined by wat-rs");
+    - README:10 says "Built from a seed you can read." in the present tense;
+    - there are 0 tags and `main` is unprotected.
+
+    **The description's wording was mine, accepted by the builder.** It overclaims, and a revision is proposed to the
+    builder.
+  - **L3 (not counted):**
+    - **Tool version floors are unstated:** the gate needs git ≥ 2.32 (`GIT_CONFIG_GLOBAL`; on 2.31 the global config is
+      silently read), and Python ≥ 3.7.
+    - **Resources are honest:** fast tier 99 s, 12 processes, 58 MB; `--prove` 305 s, 20 processes, 82 MB. The
+      session's 6.9 GB in `/var/tmp` is ward scratch, not the gate.
+    - **On the Pi** it fails closed with "no target for this host".
+    - **No seed hash is published** anywhere: sha256 `572f8ef3…ae72`. stage0-posix commits its answers file.
+  - **For the rewrite decision:** stage0-posix sequences with a seed-built shell (kaem) and verifies with an in-chain
+    sha256sum. live-bootstrap uses Python only as a host-side preparer. **Precedent allows Python as an outer checker,
+    never as the in-chain sequencer or verifier.** Neither bash nor Python is on wat's ladder, so either stays a
+    trusted host tool. `sed|xxd|cmp` loads 5 shared objects, while `hex-check.py` loads 37 files from a 193 MB stdlib.
+    A Python rewrite must run under `-I`, declare a version floor, and must not become the sequencer without a ruling.
+
+### The fourth vigilia's verdict — DIVERGES
+
+**The seed has converged, for the fourth time.**
+- No ward found a defect in its bytes or behaviour.
+- experiri drove 1,179 cells with 0 mismatches; struere checked 50 branches by hand; sequi traced every register path.
+- What remains in the seed tree is wording: the register table (rsi takes six values), the header's `--adjust-vma`
+  sentence, and the README's capability sentence.
+
+**The gate has not converged.** About 20 L1s, nearly all the same few classes, each found independently by several
+wards:
+
+| class | found by |
+|---|---|
+| `$(step …)` fails open, so row 12 cannot go red | conformare, struere, solvere |
+| row-proof proves "the body ran", not "it compared" | solvere, complectens, peragrare, purgare |
+| text-mode `expect` never reads rc | intueri, solvere, complectens, peragrare |
+| `HEX0_ROW_PROOF_ONLY` hollows `--prove` | sequi, cernere, excusare |
+| `outer_sum` hashes nothing for a gitfile `.git` | purgare, sequi, cernere, peragrare |
+| "timed out" is matched as text, and nested steps survive kills | mora, struere, sequi |
+| the non-host skip, keyed on the name | excusare |
+| interpreter startup files (`BASH_ENV`, `PYTHONPATH`, `.pth`) | circumspicere |
+
+Every class is a property of bash's subshell, pipeline and process-group semantics, or of a proof that cannot tell
+"ran" from "compared". The orchestrator's recommendation to the builder: rewrite the gate as one Python program, run
+under `-I`, as an outer checker, in place of a seventh round of bash patches. The builder rules.

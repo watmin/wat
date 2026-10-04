@@ -40,13 +40,13 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `8201e8d`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `dd7552a`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** R47 is checkpointed (`8201e8d`): the fast tier runs in 98 s, `--prove` in 299 s, and both are green live.
-  The **fourth vigilia** is in flight, cast at `8201e8d`, with scratch under `/var/tmp/vigilia4-hex0/<ward>/`.
-- **Next:** record each report in WEIGH as it arrives, then cast circumspicere last. If it converges, land the seed
-  (a separate commit). If not, draw the next round by class.
+- **State:** the fourth vigilia is complete, cast at `8201e8d`, and it DIVERGES. The seed has converged; the gate has
+  not, with about 20 L1s in a few bash-rooted classes (see WEIGH's verdict).
+- **Next:** the builder rules on round 7: a Python rewrite of the gate (an outer checker, under `-I`), or bash
+  patches. Then draw round 7, checkpoint, and cast vigilia 5.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
   - what sequences the rungs (bash given, or a seed-built shell), needed before hex1's brief;
