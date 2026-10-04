@@ -2417,3 +2417,29 @@ each rune's reason. circumspicere is cast last.
     - the escape scan scales with the process count;
     - six separate gcc runs;
     - "under 2 min" holds solo, not under load.
+- **complectens: 1 L1, 7 L2.** Two copies with comparisons neutered (mA: 10 sites; mB: 7 sites) both ran the full
+  `--prove` green and printed `proved`.
+  - **L1:** R45 proves only that "the body ran". `return 0` kills the comparison and the `row_did` sentinel together,
+    and the needles are the sentinel's "did not compare". With only the comparisons inside `row4_bytes`, `fix_ok`,
+    `assert_out` and `clone_layout` neutered (`if false`), `--prove` printed each one `red` and then `proved`.
+    - **This corrects my R45 weigh.** I wrote "each row now records that it compared (`row_did`)". That is false:
+      `row_did` records that the end was reached.
+    - My own break (`row4_bytes` → `return 0`) was the hollow test itself, because it removes the sentinel along with
+      the comparison. **Lesson: break the COMPARISON, not the function.** This is the third, solvere's and
+      complectens', independent report of this class.
+  - **L2:** inline comparisons nothing catches: the outer-repo equality (`verify.sh:191`, while the line still says
+    "unchanged"), the trunc verdict, the seed hash, and about 8 more.
+  - **L2:** `expect`'s status and text comparisons are unproven. Both were made `if false`, and `--prove` stayed
+    green.
+  - **L2:** row-proof's own verdict (`accept_red`) is unproven. Its self-test runs a sibling branch.
+  - **L2:** driver-test's assertions (the setsid and hang verdicts) are proven only by assertion.
+  - **L2:** R37's git rows are never shown red (`hostile dir` and `hook commit` replaced with `true`: green). The hook
+    row cannot detect the loss of any single defence, because three are stacked.
+  - **L2:** `fail()`'s rune does not earn its exemption, and `mutant_expect` ignores rc (shown in mC and mA).
+  - **L2:** the index-copy leak. `/var/tmp` held **30,973** copies at its count.
+  - **L3 (not counted):**
+    - "24 row functions" was 22 functions plus two proofs (my R47 weigh miscounted);
+    - the `stayed green` needle is unnamed;
+    - `needle_for`'s default accepts any red;
+    - `file_mode` is listed as proven;
+    - `outer_sum`'s scope.
