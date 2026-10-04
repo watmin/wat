@@ -2,9 +2,12 @@
 
 The builder, 2026-10-03: *"we've been burned many times working on holon and wat with letting llms run wild... we just
 need to be mindful"*. Mindfulness alone is a convention, and conventions rot. So this layout is CHECKED:
-`tools/layout.sh` runs first in `tools/verify.sh`, and a file in the wrong place, or written in a retired syntax, is
-red when `tools/verify.sh` runs, which is before every checkpoint. There is no CI. To change the layout,
-amend this document and the gate together, in one commit, on purpose.
+`tools/layout.sh` runs first in `tools/verify.sh`. That command, with no argument, is the fast tier: every edit and
+every executor strike. It runs every check except row-proof, and its final line names the skip (`row-proof not run`).
+`tools/verify.sh --prove` runs those checks plus row-proof, and its final line says `proved`. A checkpoint, a landing,
+and vigilia require `--prove`. The flag is the only switch. An unknown argument is refused. A file in the wrong place,
+or written in a retired syntax, is red when either tier runs. There is no CI. To change the layout, amend this
+document and the gate together, in one commit, on purpose.
 
 ```
 wat/

@@ -16,6 +16,17 @@ cd "$root" || exit 2
 . tools/check/gate-lib.sh || exit 2
 umask 0022
 
+# The flag is the only tier switch. Zero arguments is the fast tier.
+# --prove adds row-proof. Anything else is refused before a sandbox exists.
+prove=0
+if [ "$#" -eq 0 ]; then
+  :
+elif [ "$#" -eq 1 ] && [ "$1" = "--prove" ]; then
+  prove=1
+else
+  die "unknown argument: $*"
+fi
+
 if [ -n "${HEX0_SANDBOX:-}" ]; then
   SANDBOX=$(under_tmp "$HEX0_SANDBOX")
   if [ -e "$SANDBOX" ]; then
@@ -169,10 +180,8 @@ step "noattr autocrlf" "$DUR_CMD" -- "$GIT" -c core.autocrlf=true clone --quiet 
 capture_red "mutant autocrlf attribute" "text file contains CR" cr_check "$SANDBOX/crlf-noattr"
 echo "mutant autocrlf without lf: red"
 
-# A nested gate proves one function. It must not start this proof again.
-if [ "${HEX0_ROW_PROOF:-}" = 1 ] || [ "${HEX0_DRIVER_TEST:-}" = 1 ]; then
-  echo "row-proof: skipped"
-else
+# A nested gate is started with no flag, so it stays on the fast tier.
+if [ "$prove" -eq 1 ]; then
   step "row-proof" "$DUR_MODULE" -- tools/check/row-proof.sh "$SANDBOX/rows"
 fi
 
@@ -180,5 +189,9 @@ outer_after=$(outer_sum) || die "outer sum failed"
 outer_after=${outer_after%% *}
 [ "${#outer_after}" -eq 64 ] || die "outer sum length ${#outer_after}"
 [ "$outer_before" = "$outer_after" ] || die "outer repository changed"
-echo "verify: sandbox candidate, clone layout, outer repository unchanged"
+if [ "$prove" -eq 1 ]; then
+  echo "verify: sandbox candidate, clone layout, outer repository unchanged, proved"
+else
+  echo "verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run"
+fi
 exit 0

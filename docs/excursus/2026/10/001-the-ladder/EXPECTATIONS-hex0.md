@@ -1,6 +1,6 @@
 # EXPECTATIONS — rung 0: hex0
 
-Amended through round 6; see WEIGH. Every row is a check the gate prints.
+Amended through R46; see WEIGH. Every row is a check the gate prints. `tools/verify.sh` with no argument is the fast tier: every edit and every executor strike. Its last line names the skip (`row-proof not run`). `tools/verify.sh --prove` adds row-proof and its last line says `proved`. A checkpoint, a landing, and vigilia require `--prove`. The flag is the only switch. An unknown argument is refused.
 
 | # | what | the command that checks it | expected |
 |---|---|---|---|

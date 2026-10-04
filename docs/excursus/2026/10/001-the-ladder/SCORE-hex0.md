@@ -2,7 +2,7 @@
 
 2026-10-04. Nothing here is landed. Checkpoints exist and are not a landing. This strike does not commit. The tree is dirty on purpose.
 
-Current seed, after the R45 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`. That run of `tools/verify.sh` exited 0. Stderr was empty. Its last line was `verify: sandbox candidate, clone layout, outer repository unchanged`. This strike does not commit. The Round 6 section records the earlier run with that same last line. The R34 section records the earlier run whose last line was `verify: working tree, committed in the sandbox and cloned`. The round 5 section records the run that exited 1. The R23 section records the earlier gate, which printed `verify: ok`. The R22 section records the modular gate. The R21 section records the move into the target directory. The round-4 section records that same seed at `ladder/0-hex0/hex0`, before that move. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
+Current seed, after the R46 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`. That run of `tools/verify.sh` exited 0. Stderr was empty. Its last line was `verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run`. The timed command took 522.14s. This strike does not commit. The R45 section records the earlier run whose last line was `verify: sandbox candidate, clone layout, outer repository unchanged`. The Round 6 section records the earlier run with that same last line. The R34 section records the earlier run whose last line was `verify: working tree, committed in the sandbox and cloned`. The round 5 section records the run that exited 1. The R23 section records the earlier gate, which printed `verify: ok`. The R22 section records the modular gate. The R21 section records the move into the target directory. The round-4 section records that same seed at `ladder/0-hex0/hex0`, before that move. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -1536,4 +1536,241 @@ row-proof: self-kill decision red
 row-proof: unruned function red
 row-proof: ok
 verify: sandbox candidate, clone layout, outer repository unchanged
+```
+
+## R46 — two tiers, and the gate names which one ran
+
+`tools/verify.sh` with no argument exited 0. Stderr was empty (0 bytes). The log is `/var/tmp/hex0-verify-r46.log`, 220 lines. The timed command is one `timeout -s KILL` of `tools/verify.sh`, snapshots excluded, and it took 522.14s (`522140963759` ns). That is over two minutes. HEAD stayed `212bd863e71da728b26378a50c511d2f22570c85`. The index sha256 stayed `d9de16ec4135fe35a1f46bb015ed53dc58fecc0912cce67e3b97ba73a4ef1049`. The `HEAD` file sha256 stayed `28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80`. The config sha256 stayed `a1c6972edf8a01940533811e5d92583eb51d307a781df3cd0795011e530e951e`. A tar of `.git` `HEAD`, `index`, `config`, and `refs` hashed `3a5388a105b37aad3e2f8cd56d286226ae7bb072e3bcd399adb3a82e06e38768` both before and after. `git status --porcelain` was the same five paths before and after: `docs/LAYOUT.md`, `docs/RECOVERY.md`, `docs/excursus/2026/10/001-the-ladder/EXPECTATIONS-hex0.md`, `tools/check/row-proof.sh`, and `tools/verify.sh`. This strike does not commit. This section is written after those snapshots.
+
+The log printed `row 10: 537 bytes`, `row 5: 755`, and `row 9: 156 instructions match`. The seed file is 537 bytes, mode 755. Seven lines say `step-lint: ok`. The last line is `verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run`.
+
+`tools/verify.sh --no-such` exited 1. Stdout was empty. Stderr was `verify: unknown argument: --no-such`.
+
+A copy at `/var/tmp/hex0-r46-break` has `return 0` as the first line of `row4_bytes` in `tools/check/hex0-contract.sh`. On that copy, `tools/verify.sh` exited 1 in 299.77s (`299766710128` ns). Its stderr ends with `verify: row 4 bytes did not compare`. `tools/verify.sh --prove` on the same copy exited 1 in 299.64s (`299637854970` ns), and its stderr ends with the same line. Both stdout logs end at `mutant row 11 (ascii): red`. The prove run died in the contract.
+
+`docs/LAYOUT.md`, the Green-is bullet in `docs/RECOVERY.md`, and `EXPECTATIONS-hex0.md` name both tiers. A checkpoint, a landing, and vigilia require `--prove`.
+
+Wards were not cast. The rung is not landed. hex1 was not started. What sequences the rungs, and the GitHub description and homepage, are still open. The root refusal was not executed: this strike is not root.
+
+```
+step-lint: ok
+step-lint: ok
+step-lint: ok
+step-lint: ok
+step-lint: ok
+step-lint: ok
+step-lint: ok
+row 18: step-lint ok
+bare command: cmp line 2: cmp /dev/null /dev/null
+mutant step-lint: red
+layout: ok
+layout: rule 1: top-level name not in the layout: STRAY
+mutant stray top-level file: red
+layout: rule 1: brand/ holds a non-image: brand/subdir
+mutant brand directory: red
+layout: rule 1: brand/ holds a non-image: brand/x.md
+mutant brand non-image: red
+layout: rule 2: ELF magic outside the seed: brand/evil.png
+mutant ELF in brand: red
+layout: rule 2: ELF magic outside the seed: brand/marked.png
+mutant ELF appended to a PNG: red
+layout: rule 1: tracked out/ path: out/h1
+mutant tracked out: red
+rm 'out/h1'
+layout: rule 2: ELF magic outside the seed: ladder/0-hex0/tests/second.elf
+mutant second ELF: red
+layout: rule 2: ELF magic outside the seed: ladder/0-hex0/hex0
+mutant seed outside a target: red
+layout: rule 2: ELF magic outside the seed: ladder/0-hex0/x86_64-linux/other
+mutant second binary inside a target: red
+layout: rule 2: binary outside the seed and brand/: ladder/0-hex0/tests/second.bin
+mutant NUL binary: red
+layout: rule 3: process document inside a rung: ladder/0-hex0/x86_64-linux/note.md
+mutant markdown inside a target: red
+layout: rule 3: process document inside a rung: ladder/0-hex0/x86_64-linux/plan.md
+mutant plan inside a target: red
+layout: rule 3: rung holds something other than README, tests/, and a target: ladder/0-hex0/.BRIEF.md
+mutant hidden brief: red
+layout: rule 3: process document inside a rung: ladder/0-hex0/tests/BRIEF-hex1.md
+mutant brief inside tests: red
+layout: rule 3: tests/ holds a directory: ladder/0-hex0/tests/nested
+mutant nested tests directory: red
+layout: rule 3: rung holds something other than README, tests/, and a target: ladder/0-hex0/BRIEF.md
+mutant brief inside a rung: red
+layout: rule 3: target has no source: ladder/0-hex0/aarch64-linux
+mutant target with no source: red
+layout: rule 3: target has no source: ladder/0-hex0/aarch64-linux
+mutant target with only a table: red
+layout: rule 3: target not named in the design table: ladder/0-hex0/x86_64-freebsd
+mutant target not in the design table: red
+layout: rule 3: target name is not <arch>-<os>: ladder/0-hex0/X86-64
+mutant badly named target: red
+layout: rule 4: rung directory is not <n>-<name>: NotARung
+mutant rung name: red
+layout: rule 4: rung directory is not <n>-<name>: .1-hex1
+mutant hidden rung: red
+layout: rule 4: rung numbers skip 1 (found 3)
+mutant rung number gap: red
+rm 'ladder/0-hex0/README.md'
+layout: rule 5: rung has no README.md: 0-hex0
+mutant rung without README: red
+layout: rule 5: readme has no exit statuses: 0-hex0
+mutant readme without an exit table: red
+layout: rule 5: target source states a status meaning: ladder/0-hex0/x86_64-linux/hex0.hex0
+mutant status word: red
+layout: rule 5: target source states a status meaning: ladder/0-hex0/x86_64-linux/hex0.hex0
+mutant status block: red
+layout: rule 6: archived/ bytes differ from c45603e
+mutant archived byte: red
+layout: rule 6: untracked file under archived/: ?? archived/untracked.txt
+mutant untracked archived file: red
+layout: rule 7: a tools file redirects into out/: tools/check/writes-out.sh
+mutant redirect into out/: red
+layout: rule 7: a tools file redirects into out/: tools/check/writes-quoted.sh
+mutant quoted redirect: red
+layout: rule 7: a tools file redirects into out/: tools/check/writes-var.sh
+mutant variable redirect: red
+layout: rule 7: a tools file tees into out/: tools/check/tees-out.sh
+mutant tee-out: red
+layout: rule 7: a tools file copies into out/: tools/check/copies-out.sh
+mutant copy into out/: red
+layout: rule 7: a tools file moves into out/: tools/check/moves-out.sh
+mutant move into out/: red
+layout: rule 7: a tools file writes out/ with dd: tools/check/dd-out.sh
+mutant dd into out/: red
+layout: rule 7: a tools file installs into out/: tools/check/installs-out.sh
+mutant install-out: red
+layout: rule 7: a tools file names -o into out/: tools/check/o-out.sh
+mutant dash-o into out/: red
+layout: rule 7: a tools file writes a target seed: tools/check/writes-seed.sh
+mutant tools write a seed: red
+layout: rule 8: colon-path token in tools/check/colon.wat
+mutant colon path: red
+rm 'tools/check/colon.wat'
+layout: rule 8: bare type arrow in tools/check/arrow.wat
+mutant tracked arrow: red
+rm 'tools/check/arrow.wat'
+layout: rule 9: stray directory under docs/: stray-dir
+mutant stray directory under docs/: red
+layout: rule 9: docs/ top level is not a standing document: stray.bin
+mutant docs top-level non-document: red
+layout: rule 9: excursus year is not YYYY: YYYY
+mutant year not YYYY: red
+layout: rule 9: excursus month is not MM: 2026/13
+mutant month not MM: red
+layout: rule 9: excursus month has no counter: 2026/02
+mutant empty month: red
+layout: rule 9: excursus counter gap: 2026/10 missing 002
+mutant counter gap: red
+layout: rule 9: excursus holds a directory: 2026/10/001-the-ladder/nested
+mutant directory inside an excursus: red
+layout: rule 9: excursus holds a non-document: 2026/10/001-the-ladder/stray.hex0
+mutant non-document in an excursus: red
+layout: rule 9: badly formed excursus slug: 2026/10/002-BadSlug
+mutant bad slug: red
+layout: rule 9: bare numbered reference in docs/bare-ref.md
+mutant bare numbered reference: red
+rm 'docs/bare-ref.md'
+layout: rule 9: bare numbered reference in docs/case-ref.md
+mutant case-insensitive bare reference: red
+rm 'docs/case-ref.md'
+second target with a pointer: green
+layout: rule 2: scan crashed
+mutant rule 2 crash: red
+row 1: cmp identical
+mutant row 1 (byte): red
+row 2: cmp identical
+mutant row 2 (byte): red
+row 9: 156 instructions match
+mutant row 9 (comment): red
+mutant row 9 (offset): red
+mutant row 9 (count): red
+row 10: 537 bytes
+mutant row 10 (size): red
+row 11: lint ok
+mutant row 11 (bare): red
+mutant row 11 (ascii): red
+row 3: cmp identical, exit 0
+mutant row 3 (bytes): red
+row 8: execve read write open close fstat exit ftruncate fchmod
+mutant row 8 (extra syscall): red
+mutant row 8 (second execve): red
+row 4: cmp identical, exit 42
+mutant row 4 (status): red
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 6: comment-nibble exit 0
+row 6: comment-cr exit 0
+row 6: comment-tab exit 0
+row 6: comment-high exit 0
+row 6: crlf-two exit 0
+row 7: empty argv exit 1
+row 7: argc 1 exit 1
+row 7: one path exit 1
+row 7: argc 4 exit 1
+row 7: missing IN exit 2
+row 7: G exit 4
+row 7: vt exit 4
+row 7: ff exit 4
+row 7: reject-2f exit 4
+row 7: reject-40 exit 4
+row 7: reject-80 exit 4
+row 7: reject-ff exit 4
+row 7: odd exit 5
+row 7: odd-after exit 5
+row 7: missing OUT directory exit 3, absent stays absent
+row 7: non-regular exit 3, mode unchanged
+row 7: same device exit 7
+row 7: fifo with no reader exit 3, mode unchanged
+row 7: fifo with a reader exit 3, mode unchanged
+row 7: read-only same file exit 3, unchanged
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+row 7: absent same path exit 2
+row 7: directory IN exit 6
+fault: range checks exit 93
+fault: close_range closed fd 300
+fault: signal re-injected
+row 13: fstat IN exit 2, control 0
+row 13: fstat OUT exit 3, control 0
+row 13: fchmod exit 3, control 0
+row 13: read exit 6, control 0
+row 13: write exit 6, control 0
+row 13: close exit 6, control 0
+row 13: ftruncate exit 6, control 0
+row 13: write after a byte exit 6, control 0
+row 13: read after bytes exit 6, control 0
+mutant trunc-before-fchmod: red (rc 3, mode 640, bytes truncated)
+row 14: SIGXFSZ default exit 153, RLIMIT_CORE 0
+row 15: SIGXFSZ ignored exit 6, 1024 bytes kept
+fuzz: 2000 agree
+fuzz mutant: stopped at first status disagreement
+fuzz letter-offset mutant: stopped at first byte disagreement
+row 12: fuzz ok
+driver: self-kill is not timed out
+driver: setsid escape
+driver: scale refusal
+driver: interrupt stopped the step
+driver: replay kept the token
+driver: layout-mutants exit 1 is fatal
+driver: layout-mutants hang timed out
+driver: non-host target is not executed
+driver-test: skipped on the nested run
+git: caller GIT_DIR ignored
+git: hooks ignored
+git: fixed identity
+HEAD is now at d89adeb fixed identity
+git: linked worktree did not copy the gitdir
+plain clone: layout ok
+autocrlf clone: lf
+mutant autocrlf attribute: red
+mutant autocrlf without lf: red
+verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run
 ```

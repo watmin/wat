@@ -1903,3 +1903,41 @@ Checkpointed. R46 splits the tiers.
   - an unknown argument is refused.
 - **Documents:** LAYOUT, RECOVERY ("Green is …") and EXPECTATIONS name both tiers, and say which one each checkpoint
   requires.
+
+## R46 received — the tiers hold, and the fast tier is slow (2026-10-04)
+
+- **Live fast tier:** rc 0, empty stderr, and `.git` byte-identical. The last line names the skip. An unknown argument
+  is refused. Grok's break of `row4_bytes` is red in both tiers (`row 4 bytes did not compare`).
+- **Too slow:** the fast tier took **495 s** on my run and 522 s on Grok's. R46's own criterion was under 2 minutes, so
+  it fails, and Grok's SCORE says so.
+- **Where the time goes** (each output line timestamped):
+
+  | module | now | at `9b334d1` |
+  |---|---|---|
+  | layout-mutants | 263 s | 14 s |
+  | contract | 125 s | 10 s |
+  | driver-test | 67 s | 10 s |
+
+  One `layout.sh` run takes 6.1 s against 0.41 s at `9b334d1`, with about 3,900 execs per run.
+- **The cause, measured:** one `step` call costs **301 ms**, of which **282 ms** is `_marks_alive`, the setsid-escape
+  scan. For every one of the ~431 `/proc/*/environ` files it forks a `tr` and a `grep`. R36 routed every command
+  through `step`, so that cost is paid thousands of times. R36's wording ("every command … goes through one of
+  them") was mine; the per-call cost was never measured when it was drawn.
+
+Checkpointed. R47 makes the step cheap.
+
+## R47 — a step costs milliseconds, and the fast tier fits its budget (2026-10-04)
+
+- **The escape scan.** `_marks_alive` reads every environ in ONE process: `grep -l -z -x -F "HEX0_STEP_MARK=$mark"`
+  over `/proc/[0-9]*/environ`, with unreadable files skipped and the pids taken from the paths. No fork per process.
+  Keep the existing proof: `driver: setsid escape` must still go red when a step leaks a setsid child.
+- **Measure, then decide granularity.** Record the per-`step` overhead (the mean over 20 calls of `step … -- true`)
+  and one `layout.sh` run in SCORE.
+  - If the fast tier is still over 2 minutes, make `layout.sh` a single step from its callers, not a `step` per
+    internal command. Its children only read local files, the caller's timer bounds the whole run, and its own
+    `layout: rule N:` lines label every failure.
+  - In that case, exempt `layout.sh` from step-lint with `rune:mora(bounded-by-caller)` and that reason.
+- **Proof:**
+  - the fast tier's measured time is in SCORE and is under 2 minutes on this laptop;
+  - `--prove` still goes red with one row function forced to `return 0`;
+  - the setsid-escape proof is still red-proven.

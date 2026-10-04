@@ -207,16 +207,16 @@ prove_one() {
   step "work $name" "$DUR_FAST" -- mkdir -p "$work"
   case $rel in
     tools/check/seed-audit.sh|tools/check/hex0-contract.sh)
-      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_ROW_PROOF=1 HEX0_SCRATCH="$work" "$dest/$rel" "$TARGET" "$work")
+      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_SCRATCH="$work" "$dest/$rel" "$TARGET" "$work")
       ;;
     tools/check/layout-mutants.sh)
-      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_ROW_PROOF=1 HEX0_SCRATCH="$work" "$dest/$rel" "$work")
+      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_SCRATCH="$work" "$dest/$rel" "$work")
       ;;
     tools/layout.sh)
-      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_ROW_PROOF=1 HEX0_SCRATCH="$work" "$dest/$rel" "$dest")
+      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_SCRATCH="$work" "$dest/$rel" "$dest")
       ;;
     tools/verify.sh)
-      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_ROW_PROOF=1 HEX0_SCRATCH="$work" HEX0_SANDBOX="$work/sb" "$dest/$rel")
+      blob=$(carry "proof $name" "$DUR_MODULE" env HEX0_SCRATCH="$work" HEX0_SANDBOX="$work/sb" "$dest/$rel")
       ;;
     *) die "no runner for $rel" ;;
   esac
