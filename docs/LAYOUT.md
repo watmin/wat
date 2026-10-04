@@ -44,3 +44,7 @@ wat/
    month and has no gaps, and `<slug>` is lowercase words joined by `-`. An excursus directory holds documents only:
    no source, no fixtures, no binaries. Those live in their rung. The builder, 2026-10-04: *"i prefer monthly
    resolution with new counters per month... we use excursus instead of arc"*.
+   **An excursus is referred to by its full `YYYY/MM/NNN-<slug>`**, or by its whole slug where the date is plain from
+   context, in documents, comments, commit messages and names. Never by a bare number such as "excursus 001": the
+   counter restarts every month, so a bare number is ambiguous by design. The builder, 2026-10-04: *"wat-rs docs kept
+   using 'arc NNN' and it got messy.... my preference is the time stamp in comments and names"*.

@@ -133,3 +133,7 @@ after the move.
 
 When R6 is in, the orchestrator casts the wards (`docs/WARDS.md`) on the seed, its README and header, and the gate,
 and then the rung lands.
+
+- **R6, extended.** Rule 9 also forbids a bare numbered reference to an excursus. Outside `archived/`, a tracked file
+  containing `excursus` or `arc` followed by a bare number (`excursus 001`, `arc 12`) is a red. A reference names
+  `YYYY/MM/NNN-<slug>`. Add one mutant: a line reading "see excursus 001".
