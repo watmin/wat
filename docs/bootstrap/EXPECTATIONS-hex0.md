@@ -4,17 +4,18 @@ Written 2026-10-03, before the strike. Every row must be a command in `tools/ver
 
 | # | what | the command that checks it | expected |
 |---|---|---|---|
-| 1 | The seed is its source | `tools/hex-check.py seed/hex0.hex0` → bytes; `cmp` with `seed/hex0` | identical |
-| 2 | The seed matches a second decoder | strip comments, then `xxd -r -p`; `cmp` with `seed/hex0` | identical |
-| 3 | The fixpoint | `seed/hex0 seed/hex0.hex0 /var/tmp/…/h1`; `cmp h1 seed/hex0` | identical, exit 0 |
-| 4 | It builds a program that runs | `seed/hex0 docs/bootstrap/probe-exit42.hex0 out`; run `out` | `out` equals the `xxd` decode; `out` exits 42 |
-| 5 | Output is executable | `stat -c %a out` | `755` |
+| 1 | The seed is its source | `tools/check/hex-check.py ladder/0-hex0/hex0.hex0` → bytes; `cmp` with `ladder/0-hex0/hex0` | identical |
+| 2 | The seed matches a second decoder | strip comments, then `xxd -r -p`; `cmp` with `ladder/0-hex0/hex0` | identical |
+| 3 | The fixpoint | `ladder/0-hex0/hex0 ladder/0-hex0/hex0.hex0 out/h1`; `cmp out/h1 ladder/0-hex0/hex0` | identical, exit 0 |
+| 4 | It builds a program that runs | `ladder/0-hex0/hex0 docs/bootstrap/probe-exit42.hex0 out/exit42`; run it | it equals the `xxd` decode, and exits 42 |
+| 5 | Output is executable | `stat -c %a out/exit42` | `755` |
 | 6 | Format edges | fixtures: lower and upper case; CRLF line ends; a comment at end of file with no newline; `;` and `#` comments; digits split across whitespace (`4 1` is one byte, `0x41`) | each decodes to its expected bytes |
 | 7 | Every refusal, by its own status | fixtures: argc 2; a missing IN; OUT in a missing directory; a `G`; an odd digit count | exits 1, 2, 3, 4, 5, each for the matching fixture and no other |
-| 8 | Syscalls are only the honest ones | `strace -f seed/hex0 …` on row 3 | only `execve` (the kernel's), then `open`, `read`, `write`, `close`, `exit` |
+| 8 | Syscalls are only the honest ones | `strace -f ladder/0-hex0/hex0 …` on row 3 | only `execve` (the kernel's), then `open`, `read`, `write`, `close`, `exit` |
 | 9 | Every encoded instruction is what its comment says | `objdump -D -b binary -m i386:x86-64` on the code bytes, read beside `hex0.hex0` | every instruction comment matches the disassembly |
-| 10 | Small enough to read | `wc -c seed/hex0` | ≤ 512 bytes |
-| 11 | Commented throughout | every line of `hex0.hex0` that carries a hex digit also carries a comment (checked by `tools/hex-check.py --lint`) | 0 bare lines |
+| 10 | Small enough to read | `wc -c ladder/0-hex0/hex0` | ≤ 512 bytes |
+| 0 | The layout | `tools/layout.sh`, the seven rules of `docs/LAYOUT.md`, plus one mutant per rule: a stray top-level file, a second ELF, a brief inside a rung, a gap in rung numbers, a rung README without an exit table, an edit under `archived/`, a `tools/` script writing into `out/` | `layout: ok` on the tree; each mutant red, naming its rule, then reverted |
+| 11 | Commented throughout | every line of `hex0.hex0` that carries a hex digit also carries a comment (checked by `tools/check/hex-check.py --lint`) | 0 bare lines |
 
 **Runtime prediction:** 1–3 hours.
 

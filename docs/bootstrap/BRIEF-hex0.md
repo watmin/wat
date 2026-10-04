@@ -19,7 +19,7 @@
 
 ## THE WORK
 
-**hex0**: a static x86-64 Linux ELF, written as commented hex in `seed/hex0.hex0`.
+**hex0**: a static x86-64 Linux ELF, written as commented hex in `ladder/0-hex0/hex0.hex0`. The repository's layout is enforced: read `docs/LAYOUT.md` first. The paths below follow it.
 - **Its contract.**
   - **Invocation.** It runs as `hex0 IN OUT`.
   - **Input.** It reads IN byte by byte.
@@ -39,10 +39,14 @@
   | 5 | an odd number of digits at end of input |
   | 6 | a read or write failed |
 
-- **The seed.** `seed/hex0` is that ELF, produced ONCE by decoding `seed/hex0.hex0` with an independent decoder: a
-  Python script you write at `tools/hex-check.py`, which CHECKS only. hex0 then has to reproduce `seed/hex0` from its
-  own source.
-- **The harness.** `tools/verify.sh` runs every row of `EXPECTATIONS-hex0.md` and exits nonzero on any failure.
+- **The seed.** `ladder/0-hex0/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/hex0.hex0` with an
+  independent decoder: a Python script you write at `tools/check/hex-check.py`, which CHECKS only. hex0 then has to
+  reproduce `ladder/0-hex0/hex0` from its own source.
+- **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
+  rule 5).
+- **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: the seven rules of `docs/LAYOUT.md`, each a check
+  that fails loudly. It then runs every row of `EXPECTATIONS-hex0.md`, building into `out/`, and exits nonzero on any
+  failure.
 
 ## SKETCH — the shape, in prose
 
@@ -58,7 +62,7 @@
   - A digit: convert it. If no nibble is pending, keep it as the high nibble. If one is, combine the two and write
     one byte (status 6 on a short write).
   - Anything else: status 4.
-- **Commenting.** Every line of `hex0.hex0` that carries bytes ends with a comment naming the instruction or field
+- **Commenting.** Every line of `ladder/0-hex0/hex0.hex0` that carries bytes ends with a comment naming the instruction or field
   those bytes encode, as `probe-exit42.hex0` does. The header comment carries the exit-status table and the register
   conventions.
 
@@ -66,17 +70,18 @@ Registers and layout are yours to choose. Small and readable beat clever: one by
 
 ## BLAST RADIUS
 
-This repository only:
-- `seed/hex0.hex0` and `seed/hex0`;
-- `tools/hex-check.py` and `tools/verify.sh`;
-- `tests/hex0/` (fixtures);
+This repository only, in `docs/LAYOUT.md`'s places:
+- `ladder/0-hex0/`: `README.md`, `hex0.hex0`, `hex0`, and `tests/` for the fixtures;
+- `tools/verify.sh`, `tools/layout.sh` and `tools/check/hex-check.py`;
 - `docs/bootstrap/SCORE-hex0.md`.
+
+Nothing goes anywhere else.
 
 ## STOP TRIGGERS
 
 - **STOP-1** — the format wants something beyond digits, comments and whitespace, such as labels or addresses. That
   belongs to rung 1 (hex1/hex2). Say what, and why.
-- **STOP-2** — `hex0` built from its own source differs from `seed/hex0` and the cause cannot be named.
+- **STOP-2** — `hex0` built from its own source differs from `ladder/0-hex0/hex0` and the cause cannot be named.
 - **STOP-3** — any rung output would have to come from a tool other than a rung (an assembler, `xxd -r`, Python).
   Those check; they never build.
 
