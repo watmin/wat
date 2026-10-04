@@ -2025,3 +2025,32 @@ each rune's reason. circumspicere is cast last.
     - MACHINE's list of gcc uses;
     - no wards were cast at the R45–R47 weighs (vigilia 4 covers them);
     - 255 s for the fast tier under load.
+- **probare: 0 L1, 4 L2.** Assay of `hex0.hex0`:
+  - 178 data lines carry all 537 bytes, every one commented;
+  - 0 non-ASCII bytes and 0 CRs;
+  - all 156 instruction comments match objdump with `--insn-width=15`;
+  - the 22 ELF fields match readelf;
+  - R35's pointer holds.
+
+  The README's capability claims were measured: an owned file under `unshare -r` gives 7, and `/etc/hostname`
+  gives 3.
+
+  Findings:
+  - **L2:** the register table is incomplete. rsi is set six times, not four: `+008b`, `+00a5`, `+00c9`, `+012c`,
+    `+0144`, `+0153`. rdi (9 sets) and rax are not listed; rcx's digit-scratch role and r14b's set at `+01b8` are
+    missing. **"rsi holds four" was my own wrong count in R35,** and the executor copied it.
+  - **L2:** the README's objdump line with a bare `hex0` (as nesciens found).
+  - **L2:** rule 5 is evaded by a capital `Status 4:` or by "exits 7". A header line contradicting README rows 4 and 7
+    left layout ok and the full fast tier green. The match is lowercase and keyword-only, while LAYOUT's headline
+    claims "any status meaning".
+  - **L2:** BRIEF:30 says "the table lives in the rung README", then holds a full second copy, which has already
+    drifted (row 2's old mode, row 6's ignored-SIGXFSZ case). R35 stopped the request for a copy but left the copy.
+  - **L3 (not counted):**
+    - the safety-margin note explains the encoding, not the margin;
+    - the `--adjust-vma` sentence;
+    - "pop into edi";
+    - the sequence summary omits the same-file check;
+    - "prints nothing";
+    - README:24's wording;
+    - the ELF field and register comments have no gate row;
+    - 280 s for the fast tier under load.
