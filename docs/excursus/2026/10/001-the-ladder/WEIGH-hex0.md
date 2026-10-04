@@ -2350,3 +2350,43 @@ each rune's reason. circumspicere is cast last.
     - the README's objdump line is never run;
     - `HEAD is now at …` leaks;
     - "empty argv exit 1" claims a case it cannot observe.
+- **cernere: 2 L1, 8 L2.** Everything traces to its spec:
+  - the 156 instructions (a clean diff against the README's one-liner);
+  - readelf;
+  - the syscall numbers, 0x841, the stat layout and S_IFMT/S_IFREG against `/usr/include`;
+  - the trunc displacements;
+  - every git option and config key, measured where the man page is silent;
+  - grep `-z`;
+  - timeout;
+  - close_range;
+  - seccomp and ptrace;
+  - the Python APIs.
+
+  R36's range checks, R40's 99 wrappers, R41's case fold and R47's `maintenance.auto` hold.
+
+  Findings:
+  - **L1:** `HEX0_ROW_PROOF_ONLY` makes `--prove` say `proved` when nothing was proven (as sequi found,
+    independently).
+  - **L1:** "outer repository unchanged" in a linked worktree hashes the empty stream (as purgare and sequi found,
+    independently). It also omits `packed-refs` and the worktree's own HEAD and index.
+  - **L2:** step-lint misreads bash's grammar: `if`, `!`, `|`, `exec`, `command`, `time` and `<(…)` all pass.
+  - **L2:** rule 9's greedy quote strip, and its comment is false.
+  - **L2:** rule 5 is case-sensitive and literal (`Status 4:`, `EXIT STATUS:`, `exit 4 means`), and `readme_set` is
+    only tested for being non-empty.
+  - **L2:** rsi takes six values (the fifth report).
+  - **L2:** the header's phantom `--adjust-vma` (the fourth report).
+  - **L2:** `tar --exclude=out` is unanchored, so `docs/out/keep.md` is dropped from the candidate.
+  - **L2:** the `+0078` literal in seed-audit.
+  - **L2:** `ulimit -n 524288` sets the hard limit as well. Any host below it is red on a correct seed, though the
+    proof needs about 301. MACHINE is silent.
+  - **L3 (not counted):**
+    - "prints nothing";
+    - the stat wording and "pop into edi";
+    - rune placement;
+    - MACHINE's C comparisons and "core utilities";
+    - dead layout code;
+    - layout-mutants removes `2026/02` regardless;
+    - fault.c's variadic `int` and a swallowed SIGTRAP;
+    - git 2.55's config-based hooks are not covered by `core.hooksPath` (the sandbox is safe because its config is
+      fresh);
+    - the interrupt proof relies on a 0.4 s sleep.
