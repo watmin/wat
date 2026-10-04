@@ -144,3 +144,35 @@ and then the rung lands.
 excursus, a bad slug), and `verify: ok`. **The "R6, extended" item above crossed that score in flight and is not in
 `tools/layout.sh`**: no check forbids a bare numbered reference. Add it, with its mutant ("see excursus 001" in a
 tracked file outside `archived/`, which must be red naming rule 9).
+
+## The wards, cast on the 511-byte seed (2026-10-04)
+
+Cast per `docs/WARDS.md`, one fresh agent per ward, each reading the target cold. **Disclosure:** these first casts
+embedded a CONDENSED text of each ward, not the full signed text the grimoire requires. Their findings stand as
+findings. The cast that calls this rung done (`vigilia`) carries every ward's complete text.
+
+### conferre: the contract holds on every behaviour it drove; 3 Level-2 findings
+
+It decoded the seed, reproduced the fixpoint, ran every exit path it could trigger, checked `strace` order and umask
+`077`, and drove a nibble split across a comment. Its findings:
+- **D1:** `sub $0x7f,%rsp` reserves 127 bytes (`hex0.hex0:87`). `fstat` writes a 144-byte `struct stat` there
+  (`:88`), so the write runs 17 bytes past the slot, over argc, argv[0] and argv[1]'s low byte (gdb at `0x4000d1`). The
+  header calls it "the 127-byte stack slot".
+- **D2:** the branch targets in comments are offsets from the first code byte, and nothing says so. Every one
+  disagrees with the brief's own `objdump` command.
+- **D3:** "every refusal is total" (`BRIEF-hex0.md:30`) can be read two ways. Refusals 4, 5 and 6, and an `fstat`
+  failure on IN, leave a partial or empty OUT behind, and no document says so.
+
+**Weighed:** D1 confirmed by my own reading of `hex0.hex0:87–88`. D2 and D3 accepted as stated.
+
+### nesciens: converges, K = 0; 8 soft stumbles
+
+The same overrun (H4). Branch targets have an undeclared coordinate system, and there are no per-line offsets, no
+block labels, and no named exit convention (H8). `p_filesz`'s 511 is not stated as a checkable sum (H7). The README
+lacks the usage line and the platform, never defines "ladder", "rung" or "seed", and never says a byte's two digits may
+be split by whitespace or a comment (R1–R3, R5, R2). Unstated: why `fchmod` comes before `ftruncate` (H2), the
+`st_dev` and `st_ino` offsets (H5), and that `rsi`/`rdx`/`r10` survive `syscall` (H4).
+
+**Weighed:** all accepted. None changes behaviour except D1.
+
+Round 3 is drawn after `experiri`, `peragrare` and `cohaerere` report, as one batch.
