@@ -35,8 +35,7 @@ The home of the native, Rust-free wat:
   commented hex so every byte can be audited by hand. It comes first, then an assembler, then a minimal interpreter for the subset watc is written in. That interpreter runs
   watc's source once, and from there watc rebuilds itself.
 
-The work starts at the bottom of that ladder: `ladder/0-hex0/`, a seed of a few hundred bytes written as commented hex,
-so every byte can be checked against the instruction it encodes.
+The work starts at the bottom of that ladder: `ladder/0-hex0/`. The contract is the rung's. The machine code for x86-64 Linux is the target `ladder/0-hex0/x86_64-linux/`, a seed of a few hundred bytes written as commented hex, so every byte can be checked against the instruction it encodes.
 
 ## Where to read
 

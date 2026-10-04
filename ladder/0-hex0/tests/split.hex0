@@ -1,0 +1,2 @@
+# two digits, one byte, whitespace between the nibbles
+4 1                     # 0x41

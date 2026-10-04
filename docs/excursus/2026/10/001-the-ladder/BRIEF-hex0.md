@@ -19,7 +19,7 @@
 
 ## THE WORK
 
-**hex0**: a static x86-64 Linux ELF, written as commented hex in `ladder/0-hex0/hex0.hex0`. The paths below follow `docs/LAYOUT.md` (reading item 1).
+**hex0**: a static x86-64 Linux ELF, written as commented hex in `ladder/0-hex0/x86_64-linux/hex0.hex0`. The contract is the rung's (`README.md` and `tests/`). The machine code and the syscalls belong to the target `x86_64-linux`. The paths below follow `docs/LAYOUT.md` (reading item 1).
 - **Its contract.**
   - **Invocation.** It runs as `hex0 IN OUT`.
   - **Input.** It reads IN byte by byte.
@@ -41,9 +41,9 @@
   | 6 | a read, write, close or truncate failed | a failed truncate leaves the old bytes, mode already 0755. A failed read or write leaves the bytes written before that failure, after the truncate, mode 0755. A failed close leaves the full decoded bytes, mode 0755 |
   | 7 | IN and OUT are the same file, and OUT opened | untouched |
 
-- **The seed.** The one binary not built from source: the seed, written as commented hex so every byte can be audited by hand. `ladder/0-hex0/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/hex0.hex0` with an
+- **The seed.** The one binary not built from source: the seed, written as commented hex so every byte can be audited by hand. `ladder/0-hex0/x86_64-linux/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/x86_64-linux/hex0.hex0` with an
   independent decoder: a Python script you write at `tools/check/hex-check.py`. That one decode is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the script only checks. hex0 then has to
-  reproduce `ladder/0-hex0/hex0` from its own source.
+  reproduce `ladder/0-hex0/x86_64-linux/hex0` from its own source.
 - **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
   rule 5).
 - **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: every rule of `docs/LAYOUT.md`, each a check
@@ -66,7 +66,7 @@
   - A digit: convert it. If no nibble is pending, keep it as the high nibble. If one is, combine the two and write
     one byte (status 6 on a short write, a failed close, or a failed truncate).
   - Anything else: status 4.
-- **Commenting.** Every line of `ladder/0-hex0/hex0.hex0` that carries bytes ends with a comment naming the instruction or field
+- **Commenting.** Every line of `ladder/0-hex0/x86_64-linux/hex0.hex0` that carries bytes ends with a comment naming the instruction or field
   those bytes encode, as `ladder/0-hex0/tests/exit42.hex0` does. The header comment carries the exit-status table and the register
   conventions.
 
@@ -75,7 +75,7 @@ Registers and layout are yours to choose. Small and readable beat clever: one by
 ## BLAST RADIUS
 
 This repository only, in `docs/LAYOUT.md`'s places:
-- `ladder/0-hex0/`: `README.md`, `hex0.hex0`, `hex0`, and `tests/` for the fixtures;
+- `ladder/0-hex0/`: `README.md`, `tests/`, and `x86_64-linux/` (`hex0.hex0`, `hex0`);
 - `tools/verify.sh`, `tools/layout.sh`, `tools/check/hex-check.py`, `tools/check/fuzz-hex0.py` and `tools/check/fault.c`;
 - `docs/excursus/2026/10/001-the-ladder/SCORE-hex0.md`.
 
@@ -85,7 +85,7 @@ Nothing goes anywhere else.
 
 - **STOP-1** — the format wants something beyond digits, comments and whitespace, such as labels or addresses. That
   belongs to a later rung (hex1, then hex2). Say what, and why.
-- **STOP-2** — `hex0` built from its own source differs from `ladder/0-hex0/hex0` and the cause cannot be named.
+- **STOP-2** — `hex0` built from its own source differs from `ladder/0-hex0/x86_64-linux/hex0` and the cause cannot be named.
 - **STOP-3** — any rung output would have to come from a tool other than a rung (an assembler, `xxd -r`, Python).
   Those check; they never build.
 

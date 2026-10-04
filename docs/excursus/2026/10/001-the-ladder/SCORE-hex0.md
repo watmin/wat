@@ -2,7 +2,7 @@
 
 2026-10-04. Nothing here is landed. Nothing was committed. The tree is dirty on purpose.
 
-Current seed, after the round-4 section below: `ladder/0-hex0/hex0` is 537 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
+Current seed, after the R21 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/x86_64-linux/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The round-4 section records that same seed at `ladder/0-hex0/hex0`, before the target directory. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -424,6 +424,100 @@ fuzz: 2000 agree
 fuzz mutant: 2 disagreements
 fuzz letter-offset mutant: 1369 disagreements, 1369 on bytes
 row 12: fuzz ok
+verify: ok
+```
+
+Wards were not cast. Nothing was committed. The rung is not landed.
+
+## R21 — one contract, per-target implementations
+
+The contract stays on the rung: `ladder/0-hex0/README.md` and `ladder/0-hex0/tests/`. The source and the seed moved to `ladder/0-hex0/x86_64-linux/`. The header and the README say the contract is the rung's and the machine code is the target's. The header change is comments only. Row 1 still matches the 537-byte seed, mode `755`.
+
+The host target is `uname -m` and `uname -s` in lower case, here `x86_64-linux`. The contract rows ran for that target. A name other than the host prints `not executed on this host` and does not run those rows. The tree has no second target. The line below is that branch, called with `aarch64-linux`.
+
+`tools/verify.sh` was then run once. Stderr was empty. It exited 0. It printed:
+
+```
+mutant rule 1 (stray top-level file): red
+mutant rule 1 (brand non-image): red
+mutant rule 2 (second ELF): red
+mutant rule 2 (seed outside a target): red
+mutant rule 2 (second binary inside a target): red
+mutant rule 2 (NUL binary): red
+mutant rule 3 (brief inside a rung): red
+mutant rule 3 (target with no source): red
+mutant rule 3 (badly named target): red
+mutant rule 4 (rung number gap): red
+mutant rule 5 (readme without an exit table): red
+mutant rule 5 (readme missing a status): red
+mutant rule 5 (readme extra status): red
+mutant rule 6 (archived byte): red
+mutant rule 7 (redirect into out/): red
+mutant rule 7 (copy into out/): red
+mutant rule 8 (colon path): red
+mutant rule 9 (stray directory under docs/): red
+mutant rule 9 (counter gap): red
+mutant rule 9 (non-document in an excursus): red
+mutant rule 9 (bad slug): red
+mutant rule 9 (bare numbered reference): red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open fstat fchmod ftruncate read write close exit
+mutant row 8 (extra syscall): red
+row 4: cmp identical, exit 42
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 6: comment-nibble exit 0
+row 6: comment-cr exit 0
+row 6: comment-tab exit 0
+row 6: comment-high exit 0
+row 6: crlf-two exit 0
+row 7: argc 1 exit 1
+row 7: argc 0 exit 1
+row 7: argc 4 exit 1
+row 7: missing IN exit 2
+row 7: G exit 4
+row 7: vt exit 4
+row 7: ff exit 4
+row 7: reject-2f exit 4
+row 7: reject-40 exit 4
+row 7: reject-80 exit 4
+row 7: reject-ff exit 4
+row 7: odd exit 5
+row 7: odd-after exit 5
+row 7: missing OUT directory exit 3, absent stays absent
+row 7: non-regular exit 3, mode unchanged
+row 7: read-only same file exit 3, unchanged
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+row 7: absent same path exit 2
+row 7: directory IN exit 6
+row 13: fstat IN exit 2, control 0
+row 13: fstat OUT exit 3, control 0
+row 13: fchmod exit 3, control 0
+row 13: read exit 6, control 0
+row 13: write exit 6, control 0
+row 13: close exit 6, control 0
+row 13: ftruncate exit 6, control 0
+mutant trunc-before-fchmod: red (rc 3)
+row 9: 156 instructions match
+mutant row 9 (comment): red
+row 10: 537 bytes
+row 11: lint ok
+fuzz: 2000 agree
+fuzz mutant: 2 disagreements
+fuzz letter-offset mutant: 1369 disagreements, 1369 on bytes
+row 12: fuzz ok
+aarch64-linux: not executed on this host
 verify: ok
 ```
 

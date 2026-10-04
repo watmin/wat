@@ -1,5 +1,5 @@
 # probe-exit42.hex0 -- the smallest honest program: exit(42).
-# Format: hex digit pairs; '#' or ';' starts a comment that runs to end of line; whitespace ignored.
+# The input language is the one in ladder/0-hex0/README.md.
 # One ELF64 header, one PT_LOAD program header, twelve bytes of code. Loaded at 0x400000.
 
 ## ELF header (64 bytes)
