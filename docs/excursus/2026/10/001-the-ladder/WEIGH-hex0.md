@@ -1014,3 +1014,48 @@ the builder's outward call, so it is asked, not briefed. The builder chose the n
 libc."
 
 After round 5: my re-run, with every module broken in turn; a checkpoint; then vigilia again.
+
+## Round 5 received — weighed and checkpointed as `3e54e66` (2026-10-04)
+
+Grok's run was red, and its SCORE named the cause: the clone rows clone HEAD, which did not yet have the new
+`.gitattributes` line. I did not re-run that red.
+- **Probing the cause:** I committed the candidate tree inside a scratch copy (`/var/tmp/r5-weigh`) and ran verify
+  there. rc 0.
+- **Breaking it, in that copy.** Each injection went red and named its cause:
+
+  | injection | what the gate printed |
+  |---|---|
+  | `seed-audit.sh` → `exit 1` | `verify: tools/check/seed-audit.sh rc 1` |
+  | `hex0-contract.sh` → `exit 1` | `verify: tools/check/hex0-contract.sh rc 1` |
+  | `layout-mutants.sh` → `exit 1` | `verify: tools/check/layout-mutants.sh rc 1` |
+  | seed byte 300 flipped | `verify: row 1 cmp` |
+  | a top-level `STRAY` | `layout: rule 1: top-level name not in the layout: STRAY`. The diagnostic now survives. |
+  | seed-audit run from `/var/tmp` with `--size 999` | rc 1 at row 10. It fails closed from another cwd. |
+  | `HEX0_SANDBOX=.` | `HEX0_SANDBOX must be under /var/tmp`. The repo is intact. |
+- **In the code:**
+  - modules run without a timer; only steps are timed;
+  - `mktemp` sandbox;
+  - fuzz keeps a disagreement in the sandbox;
+  - no `py.bin`;
+  - no `out/fault` allowance;
+  - absolute root and `|| exit 2` on the source.
+- **After the checkpoint:** live `tools/verify.sh` exits 0, `git status` is identical before and after, and no
+  sandbox is left behind.
+
+## R34 — the gate is green before the commit, and leaves nothing behind (2026-10-04)
+
+- **The clone rows test the candidate, not HEAD.** The question they answer is "does this tree survive a clone".
+  Today they clone HEAD, so the gate cannot be green before the commit it is meant to approve.
+  - Copy the working tree into the sandbox (`cp -a`).
+  - Run `git add -A` and a commit there, using the sandbox's own index and never the live one.
+  - Clone that commit plainly and with `core.autocrlf=true`, then run the layout check on each.
+  - The final line says "working tree, committed in the sandbox and cloned".
+  - Prove it: a `.gitattributes` change in the working tree only makes the autocrlf row pass before any live
+    commit, and reverting it makes the row go red.
+- **No core dump per run.** The default-SIGXFSZ row writes a core into the journal on every gate run (three today,
+  in `coredumpctl`). Run that row with `ulimit -c 0`; it is still killed, rc 153. The `File size limit exceeded` line
+  that bash prints for the deliberate kill goes into that row's captured output, not the gate's stderr.
+- **Replayed nested output keeps its line breaks.** Grok's red printed
+  `verify: non-host target: driver rc 1 verify: autocrlf clone rewrote a tools script` on one line.
+
+After R34: my re-run, a checkpoint, then the third vigilia.
