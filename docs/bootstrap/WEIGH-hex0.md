@@ -91,3 +91,15 @@ row 9's disassembly is where a hand-counted offset shows itself.
   fixed seed. `tools/verify.sh` runs a fast slice (2,000 cases) as a row. Each disagreement is kept as a fixture and
   printed. Prove the instrument discriminates with a mutant seed: one byte flipped in the classifier, for example
   `cmp $0x46` → `cmp $0x47`, must produce disagreements. Then revert it.
+
+## Round 2, received (2026-10-04) — R1 and R2 in; R3, R4, R5 still open
+
+`SCORE-hex0.md`'s "Weigh round 1" section shows R1 (`close` checked; status 6 reworded in the source header, the
+README and the brief) and R2 (rule 5 derives each rung's statuses from its own `Exit status:` block, with two new
+mutants). The seed is 475 bytes; `verify: ok`.
+
+**R3, R4 and R5 were added to this document AFTER the first round-2 knock, and they are not in the tree yet.** They are
+"Round 1, continued", above, and they are the rest of round 2: `fchmod` on OUT; status 7 for IN == OUT, with
+`fstat` before truncating; and the fuzz as a tracked instrument with a discriminating mutant. Round 2 is scored once
+they are in. Then the orchestrator re-runs every row and the fuzz, and casts the wards (`docs/WARDS.md`) on the
+finished seed.
