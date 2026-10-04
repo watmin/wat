@@ -2332,3 +2332,21 @@ each rune's reason. circumspicere is cast last.
     - the decode provenance;
     - dead layout code;
     - layout allows a `$prog` file in any rung.
+- **vocare: 0 L1, 3 L2.** All 21 fixtures run from the caller's side. Every status row has fixtures or faults. Row 2
+  runs the README's own pipeline. The third-vigilia vocare items hold: row 1's mutant, LC_ALL, the RLIMIT_CORE label,
+  the header pointer, and the x86 facts out of the README.
+  - **L2:** the README's capability case (7) has no fixture, although an unprivileged user can reproduce it under
+    `unshare -U --keep-caps`. The refusal tests EUID, not the effective capability (red on a correct seed, measured).
+    The refusal itself is never run by the gate.
+  - **L2:** inline checks are invisible to row-proof: rows 14 and 15, the FIFO rows, the missing directory, the
+    `/dev/null` mode, the read-only mode, the link modes, the absent path and row 5's mode. Measured: with the row 14
+    and row 15 checks always passing, the module printed their success lines with rc 0.
+  - **L2:** nothing checks either tier's final line or the unknown-argument refusal. With the two echo lines swapped,
+    the fast tier printed `proved`, rc 0.
+  - **L3 (not counted):**
+    - the CRLF pin rests on one fixture;
+    - row 15 skips bytes and mode;
+    - `/dev/null /dev/null` has no mode check;
+    - the README's objdump line is never run;
+    - `HEAD is now at …` leaks;
+    - "empty argv exit 1" claims a case it cannot observe.
