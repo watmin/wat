@@ -41,8 +41,8 @@ Every list head, by kind:
   `wat.kernel/println`
 - **failure:** `wat.kernel/assertion-failed!` and a test equality assertion
 
-**Open questions for the builder** (asked 2026-10-04, `LAYOUT.md` rule 8: asked, never guessed). They are settled
-before wat0's brief is drawn, which is where they are first needed:
+**Questions put to the builder** (asked 2026-10-04, `LAYOUT.md` rule 8: asked, never guessed). All five are RULED;
+see "The builder's rulings" below. What is still open is the list of dilemmas after the Q4 crawl.
 - **Q1.** How code reads a record field.
 - **Q2.** Whether records and enum variants construct with one shape. Today records take keyword arguments and variants
   take a map.

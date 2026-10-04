@@ -1984,3 +1984,44 @@ each rune's reason. circumspicere is cast last.
     - the expected results live only in the contract script;
     - README:24's capability sentence is opaque;
     - "the three ways out of the loop".
+- **cohaerere: 0 L1, 7 L2 (INCOHERENT).** These hold:
+  - WARDS' casting procedure;
+  - RECOVERY's green line;
+  - "total" bounded;
+  - "one per target";
+  - the exit table matching BRIEF;
+  - the rule-5 pointer.
+
+  Findings:
+  - **L2:** who decoded the seed. LAYOUT:44-47 says `hex-check.py` decoded it ONCE, and builds rule 7's `tools/`
+    exception on that. BRIEF:43, the README, the header, DESIGN and MACHINE say `sed|xxd` decoded it and `hex-check.py`
+    is "a second reader". The third vigilia's L2 is not closed. Settle one provenance.
+  - **L2:** layout scope. Rules 6 and 8 say "tracked", but the gate examines untracked files (shown red on an
+    untracked colon file and an untracked archived file). Rules 2, 3, 4 and 9 state no scope in LAYOUT. R42 does
+    not hold.
+  - **L2:** DESIGN's Targets table lists `aarch64-linux` and `riscv64-linux` as "not a target until a machine is in
+    hand", yet layout reads every name in it as admitted. An `aarch64-linux` target with no machine is green and
+    "not executed". R38's class is not removed.
+  - **L2:** the header's `--adjust-vma` sentence (as nesciens found).
+  - **L2:** the rung README still holds x86 facts: the usage line says "on x86-64 Linux", plus the objdump recipe and
+    the 144-byte stat slot. R35 does not hold.
+  - **L2:** RECOVERY and CRAWL called Q1–Q5 open after they were ruled. These are my files. **Fixed in the commit
+    that records this entry:** CRAWL marks them ruled, and RECOVERY names the open dilemmas, the sequencer and the
+    GitHub items.
+  - **L2:** EXPECTATIONS has no rows for:
+    - the git isolation lines;
+    - "outer repository unchanged";
+    - the driver proofs (setsid escape, scale refusal, interrupt, replay, non-host);
+    - "second target with a pointer";
+    - row-proof itself.
+    R42 does not hold.
+  - **L3 (not counted):**
+    - DESIGN's TSV column order is still wrong;
+    - `.gitignore:3`;
+    - LAYOUT:33's rule-2 scope;
+    - BRIEF:33 lacks the capability qualifier;
+    - "proved" sits beside "proves self-consistency";
+    - 0755 against umask before fchmod;
+    - MACHINE's list of gcc uses;
+    - no wards were cast at the R45–R47 weighs (vigilia 4 covers them);
+    - 255 s for the fast tier under load.

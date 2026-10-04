@@ -47,8 +47,10 @@ orientation, prune it.
   The **fourth vigilia** is in flight, cast at `8201e8d`, with scratch under `/var/tmp/vigilia4-hex0/<ward>/`.
 - **Next:** record each report in WEIGH as it arrives, then cast circumspicere last. If it converges, land the seed
   (a separate commit). If not, draw the next round by class.
-- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief. Also open: what sequences the rungs (bash given, or a seed-built shell);
-  the GitHub description and homepage overclaim (circumspicere C3-5).
+- **Open for the builder:**
+  - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
+  - what sequences the rungs (bash given, or a seed-built shell), needed before hex1's brief;
+  - the GitHub description and homepage overclaim (circumspicere C3-5).
 
 ## How work moves
 
