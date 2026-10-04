@@ -10,8 +10,9 @@ amend this document and the gate together, in one commit, on purpose.
 wat/
   README.md  LICENSE  NOTICE  .gitignore  .gitattributes
   ladder/               the bootstrap, one directory per rung, in build order
-    0-hex0/             README.md · hex0.hex0 (source) · hex0 (THE seed binary) · tests/
-    1-hex1/ …           each rung: README.md · its source, in the language of the rung below · tests/
+    0-hex0/             README.md (the contract) · tests/ (contract fixtures, shared by every target)
+      x86_64-linux/     hex0.hex0 (source, in this target's code) · hex0 (the seed for this target)
+    1-hex1/ …           each rung: README.md · tests/ · one <arch>-<os>/ per target, holding its source
   watc/                 the compiler, when the ladder reaches it
   tools/                CHECKS only, never builds a rung (one declared exception: the seed, below): verify.sh, layout.sh, check/
   docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE); everything else in an excursus
@@ -25,13 +26,18 @@ wat/
 
 1. **The top level is exactly the list above.** `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
    `ladder/`, `watc/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. Any other
-   tracked top-level name is a red.
-2. **One committed binary: `ladder/0-hex0/hex0`.** A tracked file anywhere else that begins with the ELF magic
-   (`7F 45 4C 46`) is a red. Every other binary is built into `out/`.
-3. **A rung directory holds code, never process.** `ladder/<n>-<name>/` contains `README.md`, its source files and
-   `tests/`. Briefs, expectations, scores and notes live in `docs/`.
+   tracked top-level name is a red. The image-only check on `brand/` is part of this rule: a file there must be
+   `.png`, `.ico` or `.svg`.
+2. **One committed binary per target: `ladder/0-hex0/<arch>-<os>/hex0`.** A file anywhere else, outside `brand/`, that begins with the ELF
+   magic (`7F 45 4C 46`) or contains a NUL byte is a red. `brand/` holds images, which are binaries on purpose.
+   Every other binary is built into `out/`.
+3. **A rung directory holds code, never process.** `ladder/<n>-<name>/` contains `README.md` (the contract, one per
+   rung), `tests/` (contract fixtures, shared by every target), and one directory per target named `<arch>-<os>` in
+   `uname` spelling (`x86_64-linux`, `aarch64-linux`). A target directory holds that target's source, plus the seed in
+   rung 0. A rung is one contract with per-target implementations: a new architecture or OS lands as a new target
+   directory and is held to the same README and the same tests. Briefs, expectations, scores and notes live in `docs/`.
 4. **Rung directories are numbered in build order.** `<n>-<name>`, where `n` counts from 0 with no gaps. Rung `n` is
-   built only by rung `n-1`. Rung 0, the seed, is the one declared exception: it was decoded ONCE from its commented
+   built only by rung `n-1`. Rung 0, the seed, is the one declared exception: each target's seed was decoded ONCE from its commented
    hex by `tools/check/hex-check.py`, and from then on it reproduces itself byte for byte from that source (the
    fixpoint, checked on every verify). That decode is the bootstrap of the root of trust, and the only RUNG build any tool
    ever performs.

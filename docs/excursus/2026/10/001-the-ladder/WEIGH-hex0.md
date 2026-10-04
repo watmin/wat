@@ -446,3 +446,42 @@ it. The section above holds every finding in full.
 
 After round 4: my re-run, then `vigilia` again with every ward, until it converges or each remaining finding carries a
 rune whose reason earns it. Then the seed lands.
+
+## Round 4 received; reproduced on my runs (2026-10-04)
+
+- **Read.** R19 is in: `verify.sh` copies the tree to `/var/tmp/hex0-verify-tree` and runs every mutant there through
+  `layout.sh ROOT`; `PYTHONDONTWRITEBYTECODE=1`; `timeout --verbose`. R20 is in: `fault.c` uses `strtol` and reopens
+  `/dev/null` onto any closed fd among 0–2. R16 and R17 are in: a missing OUT is `None`, the fixture path comes from
+  `__file__`, and `hex-check.py` decodes bytes, returns statuses 0, 4 and 5, and its `--lint` prints line numbers.
+- **My runs.**
+  - `tools/verify.sh`: ok, rc 0.
+  - `git status --porcelain` and the index are byte-identical before and after verify, and no `__pycache__` appears.
+  - My decode is identical to the 537-byte seed, and two generations are identical.
+  - My fuzz, generator seed 4, 20,000 cases: 0 disagreements.
+- **Credited.** peragrare's truncate-before-fchmod mutant is red. The seed refuses a non-regular OUT with status 3,
+  leaving it unchanged.
+
+## R21 — one contract, per-target implementations (2026-10-04)
+
+The builder: *"should we have this organized such that other architectures can land later?... yeah - after grok returns
+let's get this prepped"*. hex0's input language and statuses are architecture-free; its code and syscalls are
+x86-64 Linux. `docs/LAYOUT.md` rules 2 and 3 and `DESIGN-the-ladder.md` "Targets" now say:
+`ladder/<n>-<name>/{README.md, tests/, <arch>-<os>/}`, one committed seed per target, `uname` spelling.
+
+- **Move** the source and the seed to `ladder/0-hex0/x86_64-linux/` (`hex0.hex0`, `hex0`). The rung keeps `README.md`
+  and `tests/`. The README and the header say the contract is the rung's and the code is the target's.
+- **The gate selects targets.** The host target is `$(uname -m)-$(uname -s | tr A-Z a-z)`.
+  - **Every target directory present:** decode and byte identity (rows 1, 2), the fixpoint where executable (row 3),
+    lint, row 9 (with the disassembler for that architecture), and row 10's header check.
+  - **Every target the host can execute:** the contract rows (fixtures, the fuzz, faults, OUT staging).
+  - **A target the host cannot execute** is reported as "not executed on this host", never silently green.
+- **Layout.** Rule 2: one committed binary per target, at `ladder/0-hex0/<arch>-<os>/hex0`. Rule 3: a rung holds
+  README, `tests/`, and `<arch>-<os>/` directories only. Add mutants:
+  - a seed at `ladder/0-hex0/hex0`, outside a target;
+  - a target directory with no source;
+  - a badly named target (`X86-64`);
+  - a second committed binary inside a target.
+- **Every path** under `tools/` and in the excursus documents moves with it; the rule-9 bare-reference and syntax rules
+  still hold. Rung 0's README remains the contract's only home.
+
+Then the orchestrator re-runs everything and casts `vigilia` on the final layout.

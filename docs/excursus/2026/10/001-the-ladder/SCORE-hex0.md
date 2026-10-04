@@ -2,7 +2,7 @@
 
 2026-10-04. Nothing here is landed. Nothing was committed. The tree is dirty on purpose.
 
-Current seed, after the round-3 section below: `ladder/0-hex0/hex0` is 514 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The 511-byte seed was the previous weigh, before the stat slot grew to 144 bytes.
+Current seed, after the round-4 section below: `ladder/0-hex0/hex0` is 537 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -337,3 +337,94 @@ verify: ok
 ```
 
 It exited 0. Wards were not cast. Nothing was committed. The rung is not landed.
+
+## Round 4 — the gate proves the seed
+
+The only behaviour change is the regular-file check. After the same-file test, and before `fchmod`, the seed masks OUT's `st_mode` (offset 24 of the 144-byte slot) with `0xF000` and refuses with status 3 unless the result is `0x8000`. A device is left unchanged. A read-only same file is status 3, because the open fails before that check, and the bytes and mode stay as they were. Status 7 still applies only once OUT has opened and the two files are the same inode.
+
+The file is 537 bytes, mode `755`. Row 10 reads `p_filesz` and `p_memsz` from the program header and requires both to equal that length. The code is 417 bytes (`0x78 + 417 = 537`). Row 9 matched 156 instructions, and a one-word comment mutant of the argc compare went red.
+
+The README, the header and the brief state the comment rule (to the next LF or end of input), the mode rule (0755 only after the checks that precede `fchmod`), the signal and FIFO bounds, and that 144 bytes is the x86-64 ABI `struct stat`. Jump targets in the instruction comments are offsets from the first code byte. The register table names `rbp`, `r8` and `rcx`. `tests/exit42.hex0` points at the README.
+
+`tools/verify.sh` was then run once. Stderr was empty. It exited 0. It printed:
+
+```
+mutant rule 1 (stray top-level file): red
+mutant rule 1 (brand non-image): red
+mutant rule 2 (second ELF): red
+mutant rule 2 (NUL binary): red
+mutant rule 3 (brief inside a rung): red
+mutant rule 4 (rung number gap): red
+mutant rule 5 (readme without an exit table): red
+mutant rule 5 (readme missing a status): red
+mutant rule 5 (readme extra status): red
+mutant rule 6 (archived byte): red
+mutant rule 7 (redirect into out/): red
+mutant rule 7 (copy into out/): red
+mutant rule 8 (colon path): red
+mutant rule 9 (stray directory under docs/): red
+mutant rule 9 (counter gap): red
+mutant rule 9 (non-document in an excursus): red
+mutant rule 9 (bad slug): red
+mutant rule 9 (bare numbered reference): red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open fstat fchmod ftruncate read write close exit
+mutant row 8 (extra syscall): red
+row 4: cmp identical, exit 42
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 6: comment-nibble exit 0
+row 6: comment-cr exit 0
+row 6: comment-tab exit 0
+row 6: comment-high exit 0
+row 6: crlf-two exit 0
+row 7: argc 1 exit 1
+row 7: argc 0 exit 1
+row 7: argc 4 exit 1
+row 7: missing IN exit 2
+row 7: G exit 4
+row 7: vt exit 4
+row 7: ff exit 4
+row 7: reject-2f exit 4
+row 7: reject-40 exit 4
+row 7: reject-80 exit 4
+row 7: reject-ff exit 4
+row 7: odd exit 5
+row 7: odd-after exit 5
+row 7: missing OUT directory exit 3, absent stays absent
+row 7: non-regular exit 3, mode unchanged
+row 7: read-only same file exit 3, unchanged
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+row 7: absent same path exit 2
+row 7: directory IN exit 6
+row 13: fstat IN exit 2, control 0
+row 13: fstat OUT exit 3, control 0
+row 13: fchmod exit 3, control 0
+row 13: read exit 6, control 0
+row 13: write exit 6, control 0
+row 13: close exit 6, control 0
+row 13: ftruncate exit 6, control 0
+mutant trunc-before-fchmod: red (rc 3)
+row 9: 156 instructions match
+mutant row 9 (comment): red
+row 10: 537 bytes
+row 11: lint ok
+fuzz: 2000 agree
+fuzz mutant: 2 disagreements
+fuzz letter-offset mutant: 1369 disagreements, 1369 on bytes
+row 12: fuzz ok
+verify: ok
+```
+
+Wards were not cast. Nothing was committed. The rung is not landed.
