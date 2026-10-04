@@ -50,6 +50,43 @@ before wat0's brief is drawn, which is where they are first needed:
 - **Q4.** The compliant spellings of the I/O and Bytes operations, the type alias, the file load and the test assertion.
 - **Q5.** Whether wat-rs main's arc-251 surface is the grammar watmin/wat follows.
 
+**The builder's rulings (2026-10-04).** wat-rs is the thing watmin/wat mirrors.
+
+- **Q1, field access.** It is already in wat-rs: the record's name, a slash, and the field.
+
+  ```clojure
+  (wat.core/defrecord u/rec
+    [n :- wat.type/i64])
+
+  (wat.core/let [r (u/rec {:n 42})]
+    (wat.kernel/println (u/rec/n r)))
+  ```
+
+- **Q2, construction.** Records and enum variants are both built from maps, and match destructures the same map
+  shape:
+
+  ```clojure
+  (wat.core/defenum u/box :- [T]
+    full  [x :- T]
+    empty [])
+
+  (wat.core/let [box (u/box.full {:x 42})]
+    (wat.core/match box
+      [u/box.full  {:x x} (wat.kernel/println x)]
+      [u/box.empty {}     (wat.kernel/println nil)]))
+  ```
+
+- **Q3, namespaces.** `user/` is for rendezvous: the explicit places where wat looks to invoke user-defined code.
+  `user/main` is one of several (services, brackets and others); wat-rs knows the current set. `wat.*` is reserved
+  for wat itself. Users are free to use any other namespace.
+- **Q4, the I/O and Bytes spellings.** wat-rs has the references. They are crawled from wat-rs `main`, and any
+  dilemma is raised with the builder, never guessed.
+- **Q5, the grammar.** wat-rs is the thing watmin/wat mirrors. Any dilemma is raised.
+
+**A dilemma to raise (Q1).** `u/rec/n` holds two slashes. Clojure's reader accepts it: `clj` reads it as namespace
+`u`, name `rec/n`. The EDN spec allows `/` once in a symbol. LAYOUT rule 8 says "Clojure/EDN-compliant", so the
+repository either names Clojure's reader as the standard, or asks for a different accessor spelling.
+
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
 `Option` (one `Some`, one `None`).
 
