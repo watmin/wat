@@ -1669,3 +1669,146 @@ The seed has converged:
 The gate has not. Several round-5 claims do not hold (R25, R27, R28, R29, R31), and the new round-5 surface carries
 the new L1s (git environment, worktrees, hooks, clone rows). The builder ruled on 2026-10-04: L2s may be runed with
 reasons, and tooling comes first, until it is sufficient. Round 6 is drawn as consolidation, not as line items.
+
+## Round 6 — consolidation: remove the classes, prove every row, rune the rest (2026-10-04)
+
+The builder, 2026-10-04: *"what's important to me here is that we have strong guardrails before we begin serious
+work"*, and *"L2 can be runed with reasons"*.
+
+The seed's behaviour is done; the only seed edits are to comments. Every item below removes a CLASS, not an instance.
+Each names the wards behind it; the third-vigilia entries above hold every finding in full. **Each item's proof is a
+mutant that breaks the thing and goes red.** My weigh will break each one myself.
+
+- **R35 — the seed header is a pointer, and the README says exactly what holds** (probare, solvere, vocare, cernere,
+  excusare, conferre, struere, nesciens, experiri, cohaerere).
+  - `hex0.hex0` keeps what the bytes need: registers, offsets, syscalls, the ELF layout and the trust phrase. It
+    points to the README for the input language and the statuses, and restates neither.
+  - The register table lists each register's values in order, with the offset that sets each one (rsi holds four).
+  - Fix the headings: `keep IN's st_dev and st_ino`, `read setup`, `comment start`.
+  - The README moves its x86 facts (registers, the 144-byte stat, offsets) into the target header.
+  - **README wording:**
+    - the order: a failed open/fstat of OUT is 3, then same file is 7, then not regular is 3;
+    - the same-file read-only case is 3 unless the open succeeds, which needs CAP_DAC_OVERRIDE effective over that
+      inode on a writable mount;
+    - SIGXFSZ is shell status 153;
+    - "total" carries DESIGN's bound (a signal or a block is not a status);
+    - opening a device can have driver side effects, with the O_NOCTTY clause removed.
+  - The README gives the stranger a disassembly line:
+    `objdump -D -b binary -m i386:x86-64 --start-address=0x78 hex0`.
+  - BRIEF:31 and :70 stop asking for a second copy of the table.
+  - **Proof:** layout goes red on a target source that states any status meaning. The rule reads `status N` and any
+    line under `Exit status:`, so a rule-5 mutant for each form excusare showed green.
+  - **Proof:** a lint row that the source is ASCII.
+- **R36 — one step primitive, and no command outside it** (conformare, mora, struere, sequi, complectens, purgare,
+  peragrare, conferre).
+  - gate-lib has two helpers, and only two: `step LABEL SECS -- cmd`, which must succeed, and
+    `expect LABEL SECS WANT -- cmd`, which must give that status or text.
+    - Both capture output, replay it with the label on failure, and print got and want.
+    - Both decide "timed out" from timeout's own `sending signal KILL` line, never from the rc.
+  - Every command in every module and in the driver goes through one of them. That includes the heredoc pythons,
+    `cp`, git, `cmp`, `stat`, the FIFO reader and the mutant generators, with their "found nothing" exits read.
+  - **Proof:** a lint row that goes red on a bare command in a module, with a mutant.
+  - **Time:**
+    - `HEX0_TIME_SCALE` must match `^[1-9][0-9]*$`, validated once at source time;
+    - fuzz takes its per-case limit from gate-lib;
+    - the FIFO reader opens with `exec 3<>fifo` before the row;
+    - the stated basis matches a measurement.
+  - **Interrupt:** INT and TERM kill every live step group before exit.
+  - **Proof:** a hang stub that kills itself (`kill -KILL $$`) is NOT "timed out". A step with a `setsid` child
+    reports the escape. After Ctrl-C, no step is alive.
+  - fault.c re-injects signals on the ptrace path, range-checks its arguments before narrowing them (93), and uses
+    `close_range`.
+- **R37 — the gate cannot touch any repository but its own sandbox** (sequi, peragrare, circumspicere).
+  - Every git call goes through one function. It unsets `GIT_*` and sets:
+    - `GIT_CONFIG_GLOBAL=/dev/null` and `GIT_CONFIG_NOSYSTEM=1`;
+    - `-c core.hooksPath=/dev/null` and `--no-verify`;
+    - a fixed `user.name`/`user.email`;
+    - `commit.gpgsign=false` and `core.fsmonitor=false`;
+    - `--template=` on clone.
+  - The candidate is built with `git init` plus a copy of the visible files, never a `cp -a` of `.git`.
+  - The clone rows run the clone's OWN `tools/layout.sh`, and check every text file for CR.
+  - **Proof:** the gate is green, and the outer repository is byte-identical (HEAD, index, config, refs) when it
+    runs:
+    - in a linked worktree;
+    - with `GIT_DIR` and `GIT_INDEX_FILE` set;
+    - with a failing pre-commit hook and a global hooksPath;
+    - with no git identity.
+  - **Proof:** `tools/check/*.sh text eol=crlf` added to `.gitattributes` is red.
+- **R38 — per-target facts live only in `gate.tsv`, and a target is a machine in hand** (solvere, purgare, excusare,
+  conferre, circumspicere).
+  - `gate.tsv` holds the size, the objdump machine, `--insn-width=15`, `code_base`, the row-9 mutant text, and the
+    fuzz bound and letter patterns.
+  - Modules take the target DIRECTORY, as one calling convention, and every fact read is checked for presence.
+  - `verify.sh` passes no per-target values.
+  - A target directory not named in DESIGN's Targets table is red, and DESIGN's table is the list layout reads. This
+    removes the name-keyed skip class: the `x86_64-freebsd` seed cannot be "not executed".
+  - Relative arguments are refused; modules take absolute paths.
+  - The gate refuses to run as root, with a message naming why, and MACHINE says so.
+- **R39 — every row is a function, and every mutant calls it** (complectens, intueri, vocare, peragrare, purgare,
+  temperare).
+  - Each comparison is a named function. Its mutant calls that same function on broken input and requires that
+    function's own refusal text.
+  - Delete `row1-diff.py`.
+  - Mutants are added or rebuilt for these rows, each failing for its own reason:
+    - rows 1, 2 and 10;
+    - contract rows 3 and 4;
+    - the clone rows;
+    - the status self-test, which requires kind 3;
+    - rule 3a (a target `plan.md`);
+    - rule 7's quoted forms;
+    - a tools write into `ladder/*/*/hex0`.
+  - Driver: one hang proof. "No module can hang" is carried by R36's lint, not by three identical stubs.
+  - The fuzz forces its boundary cases first.
+  - Delete the post-mutant re-checks that cannot fail.
+- **R40 — failure evidence survives the failure** (mora, conformare, struere, sequi, peragrare, cernere).
+  - The fuzz prints the input bytes in its message, for a hang and for every disagreement kind; it keeps no files.
+  - Every Python check has one wrapper: an unexpected exception exits 99. Each header lists its codes.
+  - layout's rule-2 scanner reports a crash as a crash.
+  - The "no core" row asserts what it can observe (rc 153 and RLIMIT_CORE 0), labelled honestly.
+  - It does not grep bash's localized note: pin `LC_ALL=C` or assert the rc only.
+- **R41 — layout's exemptions are no wider than their reasons** (excusare, conferre, peragrare, struere, temperare).
+  - `brand/`: image magic (PNG, ICO, SVG) and no ELF magic anywhere in the file.
+  - Hidden names are examined, not skipped.
+  - `tests/` is not exempt from the process-document checks.
+  - Rule 3: a target's source is the rung's source name, not "any file but hex0".
+  - Rule 9 is case-insensitive.
+  - Rule 7 also catches quoted and variable `out/` paths.
+  - The gate empties `out/` at the start of each run (it owns `out/`).
+  - layout's temp directory comes from `mktemp -d`.
+  - Each rule scans with builtins over one list fetched once.
+  - `HEX0_DRIVER_TEST` is honoured only together with the marker the parent driver-test sets.
+- **R42 — the documents agree with the tree** (cohaerere, exigere, intueri, conferre, circumspicere).
+  - **LAYOUT:**
+    - each rule states its real scope ("every name on disk" or "every file not git-ignored");
+    - the standing list names RECOVERY;
+    - rule 7's wording;
+    - "There is no CI.";
+    - watc has one home.
+  - **WARDS:** describe the casting in use (the agent fetches its own signed text).
+  - **EXPECTATIONS:** "amended through round 6; see WEIGH", and a row for every check the gate prints. SIGXFSZ, the
+    refusals, the clone rows and driver-test get their own row numbers; no row label is reused.
+  - **BRIEF:45:** `hex-check.py` is "a second reader".
+  - **"The one binary not built from source"** becomes "one per target: that target's seed", everywhere.
+  - **MACHINE:**
+    - split "the gate runs these" from measurement tools bound to a named rung;
+    - list gcc's real use;
+    - the gate needs: a non-root user, a git working tree (not "a worktree"), exec on `/var/tmp`,
+      `ptrace_scope` ≤ 1;
+    - the knobs (`HEX0_SANDBOX`, `HEX0_TIME_SCALE`).
+  - **DESIGN:** the TSV column order, and the alignment check bound to hex1's EXPECTATIONS.
+  - **`.gitattributes`:** the CR comment.
+  - **README:** link RECOVERY as "the agent-session recovery map", not as how to restore the tree.
+- **R43 — a wall for every paid-for failure** (curare; the builder's "sufficient").
+  - Add a table to this excursus with one row per failure mode in RECOVERY's list and per class above. Each row
+    names the check that goes red, and the mutant that proves it.
+  - A row with no wall is open work, shown as such.
+- **R44 — every remaining L2 is fixed or runed.**
+  - For each third-vigilia L2 not closed by R35–R43, either fix it, or add
+    `rune:<ward>(<category>) — <reason>` at the site.
+  - SCORE lists every L2 with its disposition: fixed, runed (with the rune's line), or covered by R-n.
+
+**Not in this round. These are open for the builder:**
+- what sequences the rungs (circumspicere C3-4), needed before hex1's brief;
+- the GitHub description and homepage (C3-5).
+
+After round 6: my re-run, breaking every row through its own function, then a checkpoint, then vigilia 4.
