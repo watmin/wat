@@ -14,7 +14,8 @@ wat/
     1-hex1/ …           each rung: README.md · its source, in the language of the rung below · tests/
   watc/                 the compiler, when the ladder reaches it
   tools/                CHECKS only, never builds a rung: verify.sh, layout.sh, check/
-  docs/                 design, crawls, briefs, expectations, scores; MACHINE.md; this file
+  docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE); everything else in an excursus
+    excursus/YYYY/MM/NNN-<slug>/   one excursus: its design, crawls, briefs, expectations, scores, weighs
   archived/             frozen: the 2024–26 repository
   out/                  build output: gitignored, never committed
 ```
@@ -38,3 +39,8 @@ wat/
    symbols (`wat.core/+`), and types are ascribed with `:-`. The builder, 2026-10-04: *"we are not going to support
    any of the non-clojure/edn compliant syntax... our new tooling must not inherit any of this syntax... if there's
    any doubts... ask me"*. A spelling that is not settled is asked about, never guessed.
+9. **`docs/` has one shape.** Its top level holds only standing documents (`*.md`) and the directory `excursus/`.
+   Every excursus is `docs/excursus/YYYY/MM/NNN-<slug>/`. The counter `NNN` is three digits, starts at `001` in each
+   month and has no gaps, and `<slug>` is lowercase words joined by `-`. An excursus directory holds documents only:
+   no source, no fixtures, no binaries. Those live in their rung. The builder, 2026-10-04: *"i prefer monthly
+   resolution with new counters per month... we use excursus instead of arc"*.

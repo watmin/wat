@@ -1,6 +1,6 @@
 # The machine — what a fresh box needs
 
-wat builds from its own seed. Nothing below is used to BUILD any rung of the ladder (`docs/bootstrap/DESIGN-the-ladder.md`).
+wat builds from its own seed. Nothing below is used to BUILD any rung of the ladder (`docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md`).
 These tools CHECK and MEASURE: they decode hex independently, disassemble, trace syscalls, and compare against C.
 
 Verified on the builder's machine, 2026-10-03: Omarchy (Arch), x86-64, kernel 7.2.
@@ -33,7 +33,7 @@ On Ubuntu, `linux-perf` is `linux-tools-common linux-tools-$(uname -r)`. On olde
 | `perf` | `perf` | `linux-perf` | instruction and cycle counts (reported separately) |
 | `valgrind`, `ltrace` | `valgrind`, `ltrace` | `valgrind`, `ltrace` | memory and cache profiles; library calls in C comparisons |
 | `gcc`, `make` | `gcc`, `make` | `gcc`, `make` | the C programs watc's output is measured against |
-| `python3` | `python` | `python3` | small check scripts (`docs/bootstrap/vocab.py`) |
+| `python3` | `python` | `python3` | the check scripts under `tools/check/` |
 | `git`, `gh` | `git`, `github-cli` | `git`, `gh` | the repositories; GitHub is the disaster-recovery site |
 
 `/tmp` is a tmpfs on this machine and a reboot wipes it. Long-lived sandboxes go under `/var/tmp`.

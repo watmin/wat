@@ -103,3 +103,33 @@ mutants). The seed is 475 bytes; `verify: ok`.
 `fstat` before truncating; and the fuzz as a tracked instrument with a discriminating mutant. Round 2 is scored once
 they are in. Then the orchestrator re-runs every row and the fuzz, and casts the wards (`docs/WARDS.md`) on the
 finished seed.
+
+## Round 2 complete; the docs reorganized (2026-10-04)
+
+**My runs on the 511-byte seed** (sha256 `190c7129…b24785f8`):
+- `tools/verify.sh`: ok.
+- My decode is identical to the seed, and two generations are identical.
+- My fuzz, generator seed 2, 20,000 cases: 0 disagreements.
+- The environment:
+
+  | case | exit |
+  |---|---|
+  | existing OUT at `600` | 0, and it becomes `755` with the right bytes |
+  | same path, hard link, symlink | 7, IN untouched |
+  | IN = OUT = `/dev/null` | 7 |
+  | OUT = `/dev/null` or `/dev/full` | 3 |
+
+  The last row is `fchmod` refusing a device. Status 3's wording names `fchmod`, so the refusal is honest.
+
+**The builder moved the docs layout to excursus directories** (*"docs/<category>/YYYY/MM/NNN-<slug>... we use excursus
+instead of arc"*). This excursus is now `docs/excursus/2026/10/001-the-ladder/`. The exit-42 probe is a test input, so
+it moved to `ladder/0-hex0/tests/exit42.hex0`, and `tools/verify.sh`'s three paths moved with it. Verify is green
+after the move.
+
+- **R6 — gate the docs shape.** `docs/LAYOUT.md` now has rule 9: `docs/` holds standing `*.md` files and
+  `excursus/YYYY/MM/NNN-<slug>/` only; the counter is per month, from `001`, with no gaps; an excursus holds documents
+  only. Implement it in `tools/layout.sh`, with mutants for each of these: a stray directory under `docs/`; a counter
+  gap (`003` with `002` absent); a `.hex0` inside an excursus; a badly formed slug. Each must go red naming rule 9.
+
+When R6 is in, the orchestrator casts the wards (`docs/WARDS.md`) on the seed, its README and header, and the gate,
+and then the rung lands.
