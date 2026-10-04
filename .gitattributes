@@ -2,5 +2,7 @@
 *.wat linguist-language=clojure
 # the seed is bytes, never text: no line-ending conversion, no diff as text (circumspicere C-5)
 ladder/0-hex0/*/hex0 binary
-# every rung source keeps LF line ends whatever a clone's autocrlf says; a CR changes what hex0 decodes
-*.hex0 text eol=lf
+# a rung's source keeps LF line ends whatever a clone's autocrlf says: a CR changes what the rung decodes
+ladder/*/*/*.hex0 text eol=lf
+# fixtures are stored byte for byte: a CR in a test is the thing under test (crlf.hex0), so git never converts them
+ladder/*/tests/* -text diff
