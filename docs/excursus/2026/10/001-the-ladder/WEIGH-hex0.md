@@ -805,3 +805,20 @@ circumspicere is cast last. Reports are recorded here as they arrive.
     returns 123 for both no-match and error).
   - **L2:** the two fuzz self-tests run all 2000 cases after the first qualifying disagreement (case 1043 and case
     49). Stopping early saves about 3.7 s. Otherwise, rune the counts as evidence.
+- **mora: 4 L1, 4 L2.** One wait primitive, `timeout -s KILL`: an event wait with a timer arm. The seed has no waits;
+  its read loop ends on EOF.
+  - **L1:** a module killed by its timeout leaves its nested guards running after the verdict. Each `timeout` takes its
+    own process group. Reproduced with `CONTRACT_GUARD=5`: a fuzz run was alive after verify exited. Survivors can
+    write into the tree, race the sandbox `rm -rf`, and leak `hex0-fuzz-*`. The honest shape is to run each module
+    in a group or cgroup it cannot leave and wait until that group is empty.
+  - **L1:** the nested budgets are inverted. Each outer guard is smaller than the worst case of the guards inside
+    it (layout-mutants 180 against 1500 s; contract 180 against 1200 s). So the inner literals never decide anything,
+    and the outer kill is what triggers the escape above.
+  - **L1:** a timer kill counts as "mutant red" for row 9 and for trunc-first. Reject rc 137 and require the refusal
+    text.
+  - **L1:** the driver-test hang proof never observes the kill. With the stub changed to `exit 3`, it still printed
+    "hang is killed". Assert rc 137 and the KILL message.
+  - **L2:** no duration carries a reason or a measured basis; headroom is 8x to 80x.
+  - **L2:** the environment knobs move only the outer timers.
+  - **L2:** the fuzz has one 120 s deadline over 2000 cases. A hang does not name its input, and a KILL skips cleanup.
+  - **L2:** the hang stub is `sleep 300`, itself a guessed duration. Block on an event that never arrives instead.
