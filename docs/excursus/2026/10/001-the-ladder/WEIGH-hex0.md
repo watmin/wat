@@ -1150,3 +1150,23 @@ arrive.
     - rcx is not named as the digit scratch register;
     - `exit42.hex0:1` carries its stale name;
     - the gate prints "no core" and then replays timeout's "dumped core" line.
+- **experiri: 0 L1, 3 L2.** All 62 cells were driven and discriminated with its own ptrace injector. Calibration
+  passed, and a `je`→`jmp` mutant proves the driver can fail.
+  - Every cause was driven against an absent and an existing OUT, including failures after 2 bytes, and each matched
+    the README table.
+  - R24 holds: a FIFO with no reader gives ENXIO then 3; with a reader, S_IFIFO then 3, with no fchmod.
+  - Precedence with a FIFO, a pty or `/dev/null` as the same file gives 7.
+
+  The three L2s are drove-but-wrong-value divergences against the round-5 wording:
+  - **L2:** the CAP_DAC_OVERRIDE sentence overclaims. With the capability, a root-owned file whose owner is not
+    mapped (`unshare -r`) gives 3, and a read-only bind mount gives 3 (EROFS). The capability must be effective over
+    that inode, and the mount must be writable.
+  - **L2:** "7 is tested before 3" is false for fstat OUT. An injected fstat-OUT failure on the same file gives 3. The
+    order is: open/fstat OUT (3), then same file (7), then not regular (3).
+  - **L2:** the header's "wait status 153" (as nesciens and probare found). Driven: with RLIMIT_CORE=1 the wait status
+    is `0x19`; the 153 seen here comes from the systemd-coredump pipe.
+  - **L3 (not counted):**
+    - a FIFO reader is released with EOF;
+    - a lease holder gets SIGIO;
+    - FIFO IN==OUT discards pending data;
+    - row 6's "no core" checks only the cwd, while WCOREDUMP is still set.
