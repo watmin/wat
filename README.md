@@ -1,59 +1,35 @@
-# Wat
+# wat
 
-An s-expression language for algebraic cognition.
+A Lisp for Linux programming, compiled to native x86-64 code. It aims to meet or beat C's performance, and to always
+beat Rust's.
 
-Two algebras. Everything else composes.
+> *"its a lisp for linux programming... (maybe more OS later... linux for now)... like c is .... i want watc to emit
+> code that meets or exceeds c's perf (always better than rust's perf)"* — the builder, 2026-10-03
 
-```scheme
-(atom "momentum")                              ; name a concept
-(bind role filler)                             ; compose two concepts
-(bundle fact1 fact2 fact3)                     ; superimpose into one thought
-(cosine thought discriminant)                  ; measure similarity
-(journal "name" 20000 500)                     ; accumulate labeled observations
-(curve journal)                                ; evaluate prediction quality
-```
+wat started as two things: a way for LLMs to *think in Lisp*, so that a thought can be evaluated, and a Lisp that feels
+like Clojure but is built for LLMs to operate on at system speed. Fully qualified names everywhere are one property of
+that.
 
-## What Wat Is
+## What this repository is now
 
-Wat is the intermediate representation between human intuition and machine execution.
-The human writes wat. The Rust implements it. The Rust runs.
-The ledger records. The cycle continues.
+The home of the native, Rust-free wat:
+- **watc**, the compiler, which compiles itself;
+- **the bootstrap ladder** that builds it from source with no binary taken on faith. A hand-auditable seed comes
+  first, then an assembler, then a minimal interpreter for the subset watc is written in. That interpreter runs
+  watc's source once, and from there watc rebuilds itself.
 
-Wat IS Lisp, shaped for algebraic cognition and the programs that use it.
+The work starts at the bottom of that ladder.
 
-## Structure
+## Lineage
 
-```
-wat/
-├── core/primitives.wat           — vector algebra + journal coalgebra
-├── core/structural.wat           — product types (struct, projection, update)
-├── std/
-│   ├── scalars.wat               — continuous value encoding (log, linear, circular)
-│   ├── vectors.wat               — derived vector operations (permute, difference, attend)
-│   ├── memory.wat                — online subspace (Template 2: reaction)
-│   ├── statistics.wat            — numeric helpers (mean, variance, stddev, skewness)
-│   └── fields.wat                — derived values on product types (field declarations)
-├── examples/enterprise.wat       — the first complete wat program
-├── LANGUAGE.md                   — formal grammar
-└── CONTRIBUTING.md               — wat-to-Rust implementation guide
-```
+- **2024**, "OG wat": an English-like, strongly typed Lisp. Its spec and Ruby reference live in
+  [watmin/scratch](https://github.com/watmin/scratch), `2026/05/002-og-wat-lineage/`.
+- **2026**, an s-expression language for algebraic cognition, implemented in Rust:
+  [watmin/wat-rs](https://github.com/watmin/wat-rs). That era's contents of this repository are preserved under
+  [`archived/`](archived/).
+- **2026-09**: watc, a self-hosting compiler written in wat, emitting x86-64 ELF. It was grown in
+  [watmin/the-little-wat](https://github.com/watmin/the-little-wat), and it is what this repository builds from here on.
 
-Domain vocabulary modules (trading indicators, game concepts, etc.)
-belong in the APPLICATION repo, not here. The language provides the
-algebra. Applications provide the vocabulary.
+## License
 
-## See Also
-
-- `LANGUAGE.md` — formal grammar, core forms, stdlib, control forms
-- `core/primitives.wat` — vector algebra + journal coalgebra
-- `std/` — derived operations, scalars, memory, patterns
-- `examples/enterprise.wat` — the first complete wat program
-
-## Origin
-
-Wat began as an English-like Lisp for natural language processing (2024).
-It evolved into an algebraic cognition language through the holon trading
-enterprise project (2026). The s-expression structure survived. The domain
-matured from language to mathematics.
-
-The architecture is the language. The language is the architecture.
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
