@@ -1870,3 +1870,36 @@ four rows plus one proof this round. Remove the class by construction:
   `row-proof` red.
 
 After R45: my re-run, the battery again (now the gate's own row), a checkpoint, then vigilia 4.
+
+## R45 received — weighed (2026-10-04)
+
+- **Live:** `tools/verify.sh` rc 0 in **1,754 s**, with empty stderr. Every file under `.git` (sha256 of the
+  contents) and `git status` are identical before and after.
+- **Breaking it:** in a copy with `row4_bytes` forced to `return 0`, `row-proof.sh` went red with
+  `verify: row 4 bytes did not compare`. Each row now records that it compared (`row_did`), and the caller dies when
+  the record is missing. That is a second wall under row-proof's own.
+- **The SCORE's other proofs:**
+  - every row function is red under row-proof, including the four the battery left green and `clone_layout`;
+  - the self-kill proof is an `expect 137`, and it is shown red against a `rc == 137` timer decision;
+  - an unruned function that stays green makes row-proof red;
+  - the four exempt helpers carry `rune:complectens(helper)`.
+- **The cost:** row-proof re-runs a whole module per function, and the driver-level functions re-run `verify.sh`. The
+  gate went from about 40 s to about 30 min. That works against the builder's aim, guardrails for faster iteration.
+
+Checkpointed. R46 splits the tiers.
+
+## R46 — two tiers, and the gate always says which ran (2026-10-04)
+
+- **`tools/verify.sh`** runs everything except row-proof. Its final line names the skip: `verify: … row-proof not
+  run`. It is for every edit and every executor strike.
+- **`tools/verify.sh --prove`** runs the same, plus row-proof. Its final line says `proved`. It is required before
+  every checkpoint, landing and vigilia; my weigh runs it.
+- No environment variable selects the tier. The flag is the only switch, and an unknown argument is refused.
+- **Proof:**
+  - the fast tier's final line names the skip, and the fast tier finishes in under 2 minutes on this laptop
+    (measured and recorded in SCORE);
+  - `--prove` with one row function forced to `return 0` is red;
+  - the fast tier with the same break is red too, through `row_did`, or the SCORE says why not;
+  - an unknown argument is refused.
+- **Documents:** LAYOUT, RECOVERY ("Green is …") and EXPECTATIONS name both tiers, and say which one each checkpoint
+  requires.

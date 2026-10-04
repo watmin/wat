@@ -32,6 +32,7 @@ else
 fi
 trap 'rm -rf "$LTMP"' EXIT
 
+# rune:complectens(helper) — fail reports a decision the caller already made.
 fail() {
   echo "layout: rule $1: $2"
   exit 1
@@ -471,8 +472,11 @@ scan_tools() {
       esac
     done <"$ROOT/$rel"
   done
+  scan_did=1
 }
+scan_did=0
 scan_tools "a tools file redirects into out/"
+[ "$scan_did" -eq 1 ] || die "scan_tools did not compare"
 
 # 8 and 9. Token scans over the one visible list. Built so this file does not contain the tokens.
 colon_re=':'

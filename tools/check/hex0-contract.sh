@@ -55,7 +55,8 @@ same_file() {
   local blob rc
   blob=$(carry "cmp $1" "$DUR_FAST" cmp -s "$2" "$3")
   rc=$(payload_rc "$blob")
-  [ "$rc" = 0 ]
+  [ "$rc" = 0 ] || return 1
+  row_did=same_file
 }
 
 assert_out() {
@@ -65,6 +66,7 @@ assert_out() {
       echo "$label exists" >&2
       exit 1
     fi
+    row_did=assert_out
     return 0
   fi
   [ -f "$path" ] || die "$label is not a file"
@@ -72,20 +74,24 @@ assert_out() {
   if [ "$exp" = same ]; then
     [ "$mode" = 640 ] || die "$label mode $mode"
     same_file "$label" "$path" "$SANDBOX/olddata" || die "$label bytes"
+    row_did=assert_out
     return 0
   fi
   if [ "$exp" = "samebytes:755" ]; then
     [ "$mode" = 755 ] || die "$label mode $mode"
     same_file "$label" "$path" "$SANDBOX/olddata" || die "$label bytes"
+    row_did=assert_out
     return 0
   fi
   [ "$mode" = 755 ] || die "$label mode $mode"
   if [ "$exp" = empty ]; then
     [ ! -s "$path" ] || die "$label not empty"
+    row_did=assert_out
     return 0
   fi
   local want=${exp#file:}
   same_file "$label" "$path" "$want" || die "$label bytes"
+  row_did=assert_out
 }
 
 pair() {
@@ -99,6 +105,7 @@ pair() {
   assert_out "$label absent" "$abs" "$abs_exp"
   want_rc "row 7 $label pre" "$want" "$HEX0" "$src" "$pre"
   assert_out "$label pre" "$pre" "$pre_exp"
+  row_did=pair
   echo "row 7: $label exit $want"
 }
 
@@ -132,6 +139,7 @@ row4_bytes() {
     echo "row 4: bytes differ" >&2
     exit 1
   fi
+  row_did=row4_bytes
 }
 
 row8_check() {
@@ -155,7 +163,9 @@ row3_same "$product/h1" "$HEX0"
 capture_red "mutant row 3 (bytes)" "row 3: bytes differ" row3_same "$HEX0" "$SANDBOX/olddata"
 
 step "row 8 strace" "$DUR_CMD" -- strace -f -o "$SANDBOX/trace" "$HEX0" "$SRC" "$product/h1str"
+row_did=""
 same_file "row 8" "$product/h1str" "$HEX0" || die "row 8 cmp"
+[ "$row_did" = same_file ] || die "same_file did not compare"
 row8_check "$SANDBOX/trace" "$CALLS"
 step "row 8 socket copy" "$DUR_FAST" -- cp "$SANDBOX/trace" "$SANDBOX/trace-socket"
 step "row 8 socket append" "$DUR_FAST" -- bash -c 'printf "%s\n" "0 socket(2, 1, 0) = 3" >> "$1"' bash "$SANDBOX/trace-socket"
@@ -167,7 +177,9 @@ capture_red "mutant row 8 (second execve)" "row 8: execve count" row8_check "$SA
 step "row 4 digits" "$DUR_CMD" -- python3 "$PY/hex-check.py" --digits "$TESTS/exit42.hex0" >"$SANDBOX/probe.hex"
 step "row 4 xxd" "$DUR_FAST" -- xxd -r -p "$SANDBOX/probe.hex" >"$SANDBOX/probe.bin"
 want_rc "row 4 build" 0 "$HEX0" "$TESTS/exit42.hex0" "$product/exit42"
+row_did=""
 row4_bytes "$product/exit42" "$SANDBOX/probe.bin"
+[ "$row_did" = row4_bytes ] || die "row 4 bytes did not compare"
 row4_status "$product/exit42"
 capture_red "mutant row 4 (status)" "row 4: status" row4_status /bin/true
 
@@ -190,6 +202,7 @@ fix_ok() {
   same_file "row 6 $name" "$SANDBOX/$name" "$exp" || die "row 6 $name bytes"
   mode=$(file_mode "row 6 $name" "$SANDBOX/$name")
   [ "$mode" = "755" ] || die "row 6 $name mode $mode"
+  row_did=fix_ok
   echo "row 6: $name exit 0"
 }
 
@@ -198,7 +211,9 @@ printf 'J' > "$SANDBOX/exp-upper"
 printf 'B' > "$SANDBOX/exp-comments"
 printf 'A' > "$SANDBOX/exp-one"
 printf 'AB' > "$SANDBOX/exp-two"
+row_did=""
 fix_ok "$TESTS/lower.hex0" "$SANDBOX/exp-lower" lower
+[ "$row_did" = fix_ok ] || die "row 6 lower did not compare"
 fix_ok "$TESTS/upper.hex0" "$SANDBOX/exp-upper" upper
 fix_ok "$TESTS/crlf.hex0" "$SANDBOX/exp-one" crlf
 fix_ok "$TESTS/eof-comment.hex0" "$SANDBOX/exp-one" eof
@@ -247,12 +262,16 @@ step "argc4 rm" "$DUR_FAST" -- rm -f "$SANDBOX/abs-argc4"
 step "argc4 cp" "$DUR_FAST" -- cp "$SANDBOX/olddata" "$SANDBOX/pre-argc4"
 step "argc4 mode" "$DUR_FAST" -- chmod 640 "$SANDBOX/pre-argc4"
 want_rc "row 7 argc 4 absent" 1 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/abs-argc4" extra
+row_did=""
 assert_out "argc 4 absent" "$SANDBOX/abs-argc4" missing
+[ "$row_did" = assert_out ] || die "assert_out did not compare"
 want_rc "row 7 argc 4 pre" 1 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/pre-argc4" extra
 assert_out "argc 4 pre" "$SANDBOX/pre-argc4" same
 echo "row 7: argc 4 exit 1"
 
+row_did=""
 pair "missing IN" 2 "$SANDBOX/missing-in" missing same
+[ "$row_did" = pair ] || die "pair did not compare"
 pair G 4 "$TESTS/bad-g.hex0" empty empty
 pair vt 4 "$TESTS/vt.hex0" empty empty
 pair ff 4 "$TESTS/ff.hex0" empty empty
@@ -388,10 +407,13 @@ fault_both() {
   step "fault ctl mode $label" "$DUR_FAST" -- chmod 640 "$ctl"
   want_rc "row 13 $label control" 0 "$HEX0" "$src" "$ctl"
   assert_out "row 13 $label control" "$ctl" "file:$SANDBOX/exp-two"
+  row_did=fault_both
   echo "row 13: $label exit $want, control 0"
 }
 
+row_did=""
 fault_both "fstat IN" "$(nr_of "$CALLS" fstat)" "$IN_FD" 1 2 empty same
+[ "$row_did" = fault_both ] || die "fault_both did not compare"
 fault_both "fstat OUT" "$(nr_of "$CALLS" fstat)" "$OUT_FD" 1 3 empty same
 fault_both fchmod "$(nr_of "$CALLS" fchmod)" "$OUT_FD" 1 3 empty same
 fault_both read "$(nr_of "$CALLS" read)" -1 1 6 empty empty

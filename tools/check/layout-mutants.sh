@@ -35,10 +35,13 @@ mutant_expect() {
   local label=$2
   expect "mutant $label" "$DUR_LONG" "text:$needle" -- "$root/tools/layout.sh" "$TREE"
   echo "mutant $label: red"
+  row_did=mutant_expect
 }
 
 step "stray" "$DUR_FAST" -- bash -c 'printf stray > "$1/STRAY"' bash "$TREE"
+row_did=""
 mutant_expect "top-level name not in the layout: STRAY" "stray top-level file"
+[ "$row_did" = mutant_expect ] || die "mutant_expect did not compare"
 step "unstray" "$DUR_FAST" -- rm -f "$TREE/STRAY"
 
 step "brand dir" "$DUR_FAST" -- mkdir -p "$TREE/brand/subdir"
@@ -194,6 +197,7 @@ step "archived untracked" "$DUR_FAST" -- bash -c 'printf "x\n" > "$1/archived/un
 mutant_expect "untracked file under archived/" "untracked archived file"
 step "archived untracked rm" "$DUR_FAST" -- rm -f "$TREE/archived/untracked.txt"
 
+# rune:complectens(helper) — write_tool writes a mutant file and is not a comparison.
 write_tool() {
   local name=$1
   local body=$2

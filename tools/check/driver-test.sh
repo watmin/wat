@@ -28,18 +28,16 @@ if [ "${HEX0_DRIVER_TEST:-}" = 1 ] && [ -n "${HEX0_DRIVER_MARK:-}" ] && [ -f "$H
   fi
 fi
 
+# rune:complectens(helper) — write_stub writes a stub file and is not a comparison.
 write_stub() {
   local path=$1
   local body=$2
   step "stub $path" "$DUR_FAST" -- bash -c 'printf "%s\n" "$2" > "$1"; chmod 755 "$1"' bash "$path" "$body"
 }
 
-blob=$(carry "self-kill" "$DUR_FAST" bash -c 'kill -KILL $$')
-case $blob in
-  *timed\ out*|*timed-out*) die "self-kill was timed out: $blob" ;;
-esac
-rc=$(payload_rc "$blob")
-[ "$rc" = 137 ] || die "self-kill rc $rc blob $blob"
+# The child's own SIGKILL is status 137. expect leaves that status in the step.
+# A timer decision on rc 137 treats this line as timed out.
+expect "self-kill" "$DUR_FAST" 137 -- bash -c 'kill -KILL $$'
 echo "driver: self-kill is not timed out"
 
 # timeout kills its direct child by pid, and bash execs a lone command.
@@ -97,6 +95,7 @@ case $replay in
 esac
 echo "driver: replay kept the token"
 
+# rune:complectens(helper) — prove_tree copies a sandbox tree and is not a comparison.
 prove_tree() {
   local id=$1
   COPY=$WORK/$id

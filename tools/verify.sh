@@ -39,8 +39,9 @@ outer_sum() {
   step "outer sum" "$DUR_FAST" -- bash -c 'tar -C "$1" -cf - HEAD index config refs | sha256sum' bash "$root/.git"
 }
 
-outer_before=$(outer_sum)
+outer_before=$(outer_sum) || die "outer sum failed"
 outer_before=${outer_before%% *}
+[ "${#outer_before}" -eq 64 ] || die "outer sum length ${#outer_before}"
 
 product=out
 step "empty out" "$DUR_FAST" -- bash -c 'rm -rf -- "$1/$2" && mkdir -- "$1/$2"' bash "$root" "$product"
@@ -117,6 +118,7 @@ clone_layout() {
   local text
   text=$(step "clone layout" "$DUR_LONG" -- "$1/tools/layout.sh" "$1")
   [ "$text" = "layout: ok" ] || die "clone layout $text"
+  row_did=clone_layout
 }
 
 candidate=$SANDBOX/candidate
@@ -144,15 +146,19 @@ step "worktree gitdir" "$DUR_FAST" -- bash -c '[ -d "$1/.git" ]' bash "$SANDBOX/
 echo "git: linked worktree did not copy the gitdir"
 
 step "plain clone" "$DUR_CMD" -- "$GIT" clone --quiet "$candidate" "$SANDBOX/clone"
+row_did=""
 clone_layout "$SANDBOX/clone"
+[ "$row_did" = clone_layout ] || die "clone layout did not compare"
 plain=$(cr_check "$SANDBOX/clone") || die "plain clone cr"
-[ "$plain" = "text files: lf" ] || die "plain clone $plain"
+[ "$plain" = "text files: lf" ] || die "cr_check did not compare: $plain"
 echo "plain clone: layout ok"
 
 step "crlf clone" "$DUR_CMD" -- "$GIT" -c core.autocrlf=true clone --quiet "$candidate" "$SANDBOX/crlf-clone"
+row_did=""
 clone_layout "$SANDBOX/crlf-clone"
+[ "$row_did" = clone_layout ] || die "clone layout did not compare"
 crlf=$(cr_check "$SANDBOX/crlf-clone") || die "autocrlf clone cr"
-[ "$crlf" = "text files: lf" ] || die "autocrlf clone $crlf"
+[ "$crlf" = "text files: lf" ] || die "cr_check did not compare: $crlf"
 echo "autocrlf clone: lf"
 
 step "noattr clone" "$DUR_CMD" -- "$GIT" clone --quiet "$candidate" "$SANDBOX/noattr"
@@ -163,8 +169,16 @@ step "noattr autocrlf" "$DUR_CMD" -- "$GIT" -c core.autocrlf=true clone --quiet 
 capture_red "mutant autocrlf attribute" "text file contains CR" cr_check "$SANDBOX/crlf-noattr"
 echo "mutant autocrlf without lf: red"
 
-outer_after=$(outer_sum)
+# A nested gate proves one function. It must not start this proof again.
+if [ "${HEX0_ROW_PROOF:-}" = 1 ] || [ "${HEX0_DRIVER_TEST:-}" = 1 ]; then
+  echo "row-proof: skipped"
+else
+  step "row-proof" "$DUR_MODULE" -- tools/check/row-proof.sh "$SANDBOX/rows"
+fi
+
+outer_after=$(outer_sum) || die "outer sum failed"
 outer_after=${outer_after%% *}
+[ "${#outer_after}" -eq 64 ] || die "outer sum length ${#outer_after}"
 [ "$outer_before" = "$outer_after" ] || die "outer repository changed"
 echo "verify: sandbox candidate, clone layout, outer repository unchanged"
 exit 0
