@@ -41,10 +41,9 @@ orientation, prune it.
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
 - **State:** rounds 1–4 and R21–R23 are weighed and checkpointed. The latest checkpoint is `1e41957`; the gate fails
   closed (proven by breaking each module). A **second vigilia** is in flight: 19 wards, then circumspicere last.
-  Results are recorded in WEIGH "The second vigilia". Six of 19 are in so far: probare, nesciens, exigere, cernere,
-  conferre, intueri, solvere. The headliners: a FIFO OUT hangs (`O_NONBLOCK` is missing; four wards); modules lose
-  `gate-lib.sh` when called from another directory and exit 0 (solvere); rule 5 breaks with a second target; the
-  fuzz writes into the repository.
+  Results are recorded in WEIGH "The second vigilia"; which wards are in is listed there, not here. The headliners
+  so far: a FIFO OUT hangs (`O_NONBLOCK` is missing); modules exit 0 when `gate-lib.sh` fails to load from another
+  cwd; rule 5 breaks with a second target; the fuzz writes into the repository; layout failures are silent.
 - **Next:** collect the remaining ward reports into WEIGH; cast circumspicere; draw round 5 from the deduplicated
   findings; Grok strikes; the orchestrator re-runs and checkpoints; vigilia again. **The seed lands only when vigilia
   converges.**

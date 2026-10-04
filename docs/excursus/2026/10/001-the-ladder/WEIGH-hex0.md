@@ -694,3 +694,23 @@ circumspicere is cast last. Reports are recorded here as they arrive.
   - **L2:** the `py.bin` channel; the seed layout written in four places; the target-name grammar written three
     times; the decoder's scan loop duplicated; the stale `out/fault` exception; the driver self-testing in the driver;
     `argc0.c` as a heredoc.
+- **cohaerere: 1 L1, 4 L2.** The earlier five fixes hold.
+  - **L1:** EXPECTATIONS row 13, BRIEF:49 and LAYOUT rule 2 put the fault injector in `out/`; rule 7 (new) puts it
+    in `/var/tmp`. Fix row 13 and scope rule 2 to "binaries a rung produces".
+  - **L2:** rule 7, MACHINE:3 and BRIEF:12 state "never builds" absolutely, without pointing to the seed exception
+    (rule 4).
+  - **L2:** DESIGN:46-47 speaks of `syscalls.tsv` in the present tense, and rule 3 does not admit a TSV in a target.
+  - **L2:** DESIGN:32 and :131 say "the one committed binary"; LAYOUT says one per target.
+  - **L2:** DESIGN:26 "Given: Linux on x86-64" predates Targets. It should read "each target's architecture".
+- **complectens: 2 L1, 7 L2.**
+  - **L1:** layout failures are silent. `layout-mutants.sh:20,173` sends layout's output to scratch files, guard dies
+    first, and the sandbox is deleted, so the broken rule is never named.
+  - **L1:** the `py.bin` cross-module channel misattributes cause ("row 12 seed changed").
+  - **L2:** about 19 row-labelled `die` messages are unreachable after `guard`, so failures name the command, never
+    the row. Row 11's lint line numbers are deleted with the sandbox.
+  - **L2:** two argc checks cannot fail, and one is mislabelled.
+  - **L2:** the "status mutant" accepts any kind of disagreement.
+  - **L2:** the row-9 mutant never reads why it went red.
+  - **L2:** "then reverted" is unproven; the leftover checks look at the live tree, which mutants never touch.
+  - **L2:** the argc and same-file trios are inlined.
+  - **L2:** lint has never been shown failing.
