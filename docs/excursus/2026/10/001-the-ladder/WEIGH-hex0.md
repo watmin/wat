@@ -797,3 +797,11 @@ circumspicere is cast last. Reports are recorded here as they arrive.
   - **L2:** `skip_execution` is a predicate that prints.
   - **L2:** the seed comments use two address spaces (file offset and target). The fix is objdump `--adjust-vma`.
   - **L2:** `HEX0_SANDBOX` is passed to `rm -rf` unchecked.
+- **temperare: 1 L1, 1 L2.** The gate takes 34 s; layout.sh runs 26 times at 1.25 s each. The seed's byte-at-a-time
+  I/O is exempt by design: self-build is 11,728 syscalls in 0.01 s. It lacks a stated cost ceiling (not counted).
+  - **L1:** layout.sh spawns processes per file, in rule 2 (`tr|cmp`), rule 8 (two greps) and rule 9 (one grep),
+    and lists files three times. That is about 0.88 of 1.33 s per run, and it grows with the file count; batching
+    measures about 0.02 s per scan. The estimate is about 40% of the gate. Keep grep's error codes distinct (xargs
+    returns 123 for both no-match and error).
+  - **L2:** the two fuzz self-tests run all 2000 cases after the first qualifying disagreement (case 1043 and case
+    49). Stopping early saves about 3.7 s. Otherwise, rune the counts as evidence.
