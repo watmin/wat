@@ -1,7 +1,7 @@
 # BRIEF — rung 0: hex0, the seed
 
-> wat takes material form this day. This is the first rung of the ladder (`DESIGN-the-ladder.md`): the one binary taken
-> on faith, small enough that a person can audit every byte against the instruction it encodes.
+> wat takes material form this day. This is the first rung of the ladder (`DESIGN-the-ladder.md`): the one binary not built
+> from source, small enough that a person can audit every byte against the instruction it encodes.
 
 ## YOU ARE NEW TO THIS REPOSITORY — read first
 
@@ -9,7 +9,7 @@
    not (no libc, no loader, no borrowed assembler), and the four rules every rung follows.
 2. `ladder/0-hex0/tests/exit42.hex0`. It is the input format, and a complete 132-byte static ELF you can copy the
    headers from. It was decoded by Python and by `xxd` to the same bytes, and it ran with exit code 42.
-3. `docs/MACHINE.md`: the tools on this machine. All of them CHECK; none of them BUILD.
+3. `docs/MACHINE.md`: the tools on this machine. All of them CHECK; none of them builds a rung.
 4. Reference material from watc, read-only: watmin/the-little-wat at `/home/watmin/Work/holon/the-little-wat`.
    - `elf/hello.wat` is a hand-built 166-byte ELF.
    - `elf/lib/x86.wat` holds instruction encodings.
@@ -23,22 +23,23 @@
 - **Its contract.**
   - **Invocation.** It runs as `hex0 IN OUT`.
   - **Input.** It reads IN byte by byte.
-    - `#` or `;` starts a comment that runs to the end of the line.
-    - Space, tab, CR and LF are skipped.
+    - `#` or `;` starts a comment that runs to the next LF; a CR does not end it.
+    - Whitespace (exactly space, tab, CR, LF) is skipped.
+    - A byte's two digits may be split by whitespace or a comment.
     - `0-9`, `a-f` and `A-F` are hex digits, two per output byte, high nibble first.
   - **Output.** It writes each byte to OUT, created or truncated with mode `0755`, so the output runs directly.
-- **Refusals.** Every refusal is total and has its own exit status, documented in the source's header comment:
+- **Refusals.** Total means every failure stops with a named status. hex0 does not report done after a failure. Each status says what OUT holds. The same table is in the source header and the rung README.
 
-  | exit | meaning |
-  |---|---|
-  | 0 | done |
-  | 1 | wrong argument count |
-  | 2 | IN cannot be opened, or fstat on IN failed |
-  | 3 | OUT cannot be opened, or fchmod failed, or fstat on OUT failed |
-  | 4 | a byte that is not a digit, a comment, or whitespace |
-  | 5 | an odd number of digits at end of input |
-  | 6 | a read, write, close or truncate failed |
-  | 7 | IN and OUT are the same file |
+  | exit | meaning | OUT |
+  |---|---|---|
+  | 0 | done | the decoded bytes, mode 0755 |
+  | 1 | wrong argument count | not created |
+  | 2 | IN cannot be opened, or fstat on IN failed | not created when the open of IN failed. When fstat on IN failed: not truncated, so a new file is empty and an existing file still holds its old bytes |
+  | 3 | OUT cannot be opened, or fchmod failed, or fstat on OUT failed | not created when the open failed. When fstat on OUT or fchmod failed: not truncated, so a new file is empty and an existing file still holds its old bytes |
+  | 4 | a byte that is not a digit, a comment, or whitespace (exactly space, tab, CR, LF) | truncated, then the bytes decoded before the bad byte |
+  | 5 | an odd number of digits at end of input | truncated, then the bytes decoded before the trailing nibble |
+  | 6 | a read, write, close or truncate failed | a failed truncate leaves the old bytes, mode already 0755. A failed read or write leaves the bytes written before that failure, after the truncate. A failed close leaves the full decoded bytes |
+  | 7 | IN and OUT are the same file | untouched |
 
 - **The seed.** `ladder/0-hex0/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/hex0.hex0` with an
   independent decoder: a Python script you write at `tools/check/hex-check.py`. That one decode is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the script only checks. hex0 then has to
@@ -75,7 +76,7 @@ Registers and layout are yours to choose. Small and readable beat clever: one by
 
 This repository only, in `docs/LAYOUT.md`'s places:
 - `ladder/0-hex0/`: `README.md`, `hex0.hex0`, `hex0`, and `tests/` for the fixtures;
-- `tools/verify.sh`, `tools/layout.sh`, `tools/check/hex-check.py` and `tools/check/fuzz-hex0.py`;
+- `tools/verify.sh`, `tools/layout.sh`, `tools/check/hex-check.py`, `tools/check/fuzz-hex0.py` and `tools/check/fault.c`;
 - `docs/excursus/2026/10/001-the-ladder/SCORE-hex0.md`.
 
 Nothing goes anywhere else.

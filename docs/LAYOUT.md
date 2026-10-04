@@ -33,11 +33,13 @@ wat/
 4. **Rung directories are numbered in build order.** `<n>-<name>`, where `n` counts from 0 with no gaps. Rung `n` is
    built only by rung `n-1`. Rung 0, the seed, is the one declared exception: it was decoded ONCE from its commented
    hex by `tools/check/hex-check.py`, and from then on it reproduces itself byte for byte from that source (the
-   fixpoint, checked on every verify). That decode is the bootstrap of the root of trust, and the only build any tool
+   fixpoint, checked on every verify). That decode is the bootstrap of the root of trust, and the only RUNG build any tool
    ever performs.
 5. **Every rung's `README.md` states its contract:** its input language, what it outputs, and every exit status.
 6. **`archived/` is frozen.** Its tracked files must equal the list at `c45603e`, the archive commit, byte for byte.
-7. **`tools/` checks; it never builds.** No rung's output in `out/` may be produced by anything under `tools/`.
+7. **`tools/` checks; it never builds a rung.** No rung's output in `out/` may be produced by anything under `tools/`.
+   A check may build its own instruments into `out/` (the fault injector, built by `gcc`) and stage fixtures there.
+   Those are not rungs.
 8. **Only Clojure/EDN-compliant syntax.** No tracked file outside `archived/` and `docs/` contains a token with `::`
    (a colon path such as `:wat::core::+`), or a bare `<-` or `->` used as a type annotation. Names are namespaced
    symbols (`wat.core/+`), and types are ascribed with `:-`. The builder, 2026-10-04: *"we are not going to support

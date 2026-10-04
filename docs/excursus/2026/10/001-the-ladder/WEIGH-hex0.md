@@ -313,3 +313,136 @@ the imm32 form of `sub`. Correctness came first; the number was mine.
 
 Next: `vigilia`, the full watch, on the rung. Every ward musters by the target's kind, each with its COMPLETE signed
 text, and `circumspicere` comes last.
+
+## vigilia on the 514-byte seed (2026-10-04) — DIVERGES: 36 L1 + 63 L2 across 19 wards
+
+Cast per the spell: 18 inward wards in parallel, then `circumspicere` last. Each agent fetched its COMPLETE ward from
+the signed channel (spawned agents were first probed and proven able to reach it), reading the rung cold. The wards
+mustered by kind:
+- the universal code set: intueri, solvere, conformare, purgare, struere, sequi, temperare;
+- exigere;
+- the conditional wards whose triggers fired: mora, experiri, peragrare;
+- spec: cernere, probare, conferre;
+- tests: complectens, vocare;
+- docs: nesciens, cohaerere;
+- circumspicere.
+
+Not mustered: secare (no parallel primitives), excusare (no suppressions or runes), perspicere (no typed code),
+partire (solvere reported no conflicting braids).
+
+```
+vigilia on ladder/0-hex0 + its gate
+  experiri     : CONVERGED
+  probare      : 1 L2        conferre    : 1 L2        cernere   : 2 L2        nesciens : 2 L2
+  temperare    : 1 L2        mora        : 1 L1, 1 L2  sequi     : 4 L2        solvere  : 4 L2
+  purgare      : 1 L1, 5 L2  complectens : 1 L1, 2 L2  vocare    : 3 L1, 1 L2  cohaerere: 3 L1, 3 L2
+  conformare   : 3 L1, 4 L2  struere     : 3 L1, 8 L2  exigere   : 4 L1, 1 L2  intueri  : 4 L1, 9 L2
+  peragrare    : 13 L1, 10 L2                          circumspicere : 4 L2
+Aggregate: 36 L1 + 63 L2; DIVERGES.
+```
+
+**Where the findings live:**
+- **No L1 is against the seed's bytes.** Every ward that drove or read them found the bytes right: encodings,
+  reachability (150 of 150 instructions), register threading, the `fstat` bounds under gdb, and every status at every
+  site, including what OUT holds.
+- **The L1s are:**
+  - **The gate's blindness, shown with mutants.** A seed with `ftruncate` moved before `fchmod` passes the whole gate
+    (peragrare built it). No row stages a pre-existing OUT before a failure, or compares OUT after one. CR inside a
+    comment, VT/FF, an odd digit count after real bytes, and argc 0 or 4 are all never exercised.
+  - **The tools.** `hex-check.py` decodes in text mode, so it disagrees with hex0 on CR and crashes on non-UTF-8: found
+    by four wards. Layout rule 7 fails open when grep returns 2. The fault injector assumes fds 0–2 are open and uses
+    unchecked `atoi`. `verify.sh`'s header claims it builds only the seed and leaves the tree alone. A stale comment.
+    The mutant failure messages are ambiguous.
+  - **My documents.** The trust wording contradicted itself; F8 was unfixed in DESIGN; there were stale `seed/` paths;
+    "checked in beside the binary"; "the only build"; CRAWL's deferrals.
+
+**Fixed by me, in my own documents and repository files, before round 4:**
+- **The trust wording,** now one phrase everywhere: "the one binary not built from source: the seed, written as
+  commented hex so every byte can be audited by hand".
+- **DESIGN-the-ladder.md.** Rungs 0, 1 and 2 are distinct. The seed's path is `ladder/0-hex0/hex0`. A rung's binary
+  goes to `out/`. The syntax translation is a named ladder step. Totality's kernel bounds are stated (a signal, a
+  blocking FIFO).
+- **LAYOUT.md.** "Only RUNG build"; rule 7 admits a check's own instruments in `out/`.
+- **BRIEF-hex0.md.** Its scope adds `fault.c`, and the wording is "none of them builds a rung".
+- **CRAWL-the-subset.md.** Its deferrals become open questions Q1–Q5, bounded to before wat0's brief. Arena against
+  counts is wat0's brief's row. The ladder section points to DESIGN.
+- **`.gitattributes` and `.gitignore`.** `ladder/0-hex0/hex0 binary`, `*.hex0 text eol=lf`, `__pycache__/`.
+
+## Round 4 — make the gate prove what the seed already does (2026-10-04)
+
+The seed is right. What is not yet exemplary is the gate's ability to show it. Each item cites the wards that found
+it. The section above holds every finding in full.
+
+- **R13 — the seed refuses a non-regular OUT** (circumspicere C-2). `fchmod` changes a device's or FIFO's mode before
+  hex0 refuses it; as root, `hex0 x /dev/null` would make `/dev/null` 0755. Test `S_ISREG` on OUT's `st_mode` (offset
+  24 of the `fstat` slot) before `fchmod`, and refuse with status 3, leaving it unchanged. This is the only change to
+  the seed's behaviour this round. Re-audit every offset and jump.
+- **R14 — the contract states what it does not cover** (circumspicere C-1, C-6, C-7; conferre; cernere; nesciens;
+  sequi; intueri; probare).
+  - **Wording** in the README, the header and the brief:
+    - status 7 applies only once OUT opened, and a read-only same file is status 3, unchanged;
+    - a comment runs "to the next LF or end of input";
+    - mode 0755 holds whenever OUT was opened, on every row;
+    - a signal (SIGXFSZ under `ulimit -f`) ends hex0 with no status, and a FIFO or terminal IN can block;
+    - 144 bytes is the x86-64 ABI's `struct stat`, not "this machine";
+    - "every jump target" is relative to the code.
+  - **Labels and register tables:**
+    - register table in the header and the README: `rbp`/`r8` (IN's `st_dev`/`st_ino`) and `rcx`;
+    - the three exit entry points;
+    - the loop head;
+    - the in-comment handler;
+    - the success path;
+    - the status-4 push.
+  - **Provenance:** the README names `hex0.hex0` and how anyone verifies the binary from it.
+  - **Trust wording:** use the trust phrase above in the README and the header.
+  - **Fixtures:** `tests/exit42.hex0`'s comments point to the README rather than restating the language.
+- **R15 — the gate stages and compares OUT everywhere** (peragrare, vocare, sequi, struere, conformare).
+  - Every refusal and fault row runs against a pre-existing OUT with known bytes, and also against an absent OUT. It
+    compares OUT's existence, bytes and mode against the README row.
+  - **Prove it:** peragrare's truncate-before-fchmod mutant, `/var/tmp/vigilia-hex0/peragrare/mutant-trunc-first`,
+    must be red.
+  - **New fixtures:**
+    - a CR inside a comment;
+    - VT and FF (exit 4);
+    - a TAB and non-ASCII bytes inside a comment;
+    - `41\r\n42`;
+    - `414` (exit 5, OUT `A`);
+    - argc 0 and 4 (exit 1, OUT not created);
+    - a read-only same file (3, unchanged).
+- **R16 — the fuzz.**
+  - A missing OUT is `None`, distinct from empty, and the reference states existence.
+  - The generator reaches CR, TAB and non-ASCII inside comments, VT/FF, and odd counts after decoded bytes.
+  - Drop the subprocess `timeout=30`; it polls with sleeps (mora), and the outer guard bounds it.
+  - Resolve the fixture path from `Path(__file__)`.
+  - Rename the mutant to a "letter offset", and make `NEAR` say what it is near.
+  - Give each failure kind its own exit code, and print the BYTES on a bytes-only disagreement.
+- **R17 — `hex-check.py` decodes as hex0 does** (four wards). Read bytes; `decode` returns rather than exits; statuses
+  4 and 5 mirror hex0's; `--lint` prints the line numbers. The two `verify.sh` strippers become one helper on the same
+  byte-exact decoder.
+- **R18 — `layout.sh` cannot fail open** (conformare, circumspicere, solvere, purgare, temperare, intueri).
+  - Every probe's return code is checked: grep 2, `od` on unreadable files, `find` inside process substitution.
+  - Rule 7 states and checks what it means (cp, mv, dd, install, `-o` into `out/`, not only redirects), with the
+    declared allowance for a check's own instruments.
+  - Rule 2 refuses any tracked binary outside `brand/` and the seed, not only ELF.
+  - It takes a ROOT argument.
+  - The brand check is named as part of rule 1 in LAYOUT.
+  - Remove the dead branches.
+  - Read magic bytes with a builtin, not one `od` per file.
+- **R19 — `verify.sh` never touches the live tree or index** (sequi, solvere, struere, complectens, intueri).
+  - Run every layout mutant against a scratch COPY of the tree (`cp -a` under `/var/tmp`; no worktrees, by standing
+    rule), through `layout.sh ROOT`.
+  - Each mutant has a label printed in its failure.
+  - A truthful header.
+  - `PYTHONDONTWRITEBYTECODE=1`.
+  - Row 9's comparator moves into `tools/check/`, checks the `+offset` prefixes, and is proven red by a comment mutant.
+  - Row 8 gets a mutant too.
+  - Row 10 reads `p_filesz`/`p_memsz` from the binary and requires both to equal the file's length (solvere showed a
+    stale header passes today).
+  - `timeout --verbose`.
+  - Delete the stale comment.
+  - Fault artifacts live in the sandbox.
+- **R20 — `fault.c`.** Open `/dev/null` onto any closed fd among 0–2 (struere reproduced the misfire). `strtol` with
+  end checks, and refuse errno 0. Remove the dead includes; rename the shadowed `fd`.
+
+After round 4: my re-run, then `vigilia` again with every ward, until it converges or each remaining finding carries a
+rune whose reason earns it. Then the seed lands.

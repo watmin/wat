@@ -1,2 +1,4 @@
 # build output: every rung above the seed is built here, never committed (docs/LAYOUT.md)
 /out/
+# Python bytecode from the check scripts; one committed binary means one (circumspicere C-4)
+__pycache__/

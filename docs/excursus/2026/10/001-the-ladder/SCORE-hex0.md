@@ -2,7 +2,7 @@
 
 2026-10-04. Nothing here is landed. Nothing was committed. The tree is dirty on purpose.
 
-Current seed, after the refute section below: `ladder/0-hex0/hex0` is 511 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The 475-byte seed was the previous weigh, before `fchmod`, status 7, and the fuzz.
+Current seed, after the round-3 section below: `ladder/0-hex0/hex0` is 514 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The 511-byte seed was the previous weigh, before the stat slot grew to 144 bytes.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -257,3 +257,83 @@ verify: mutant rule 9 said layout: rule 1: top-level name not in the layout: bra
 ```
 
 `wat/brand/` is a directory of logo and icon files. It is not one of the top-level names in `docs/LAYOUT.md`. It was not created by this strike, and it was not removed. Rule 1 fires before rule 9, so this run did not reach the bare-reference mutant or any later row. The seed is still 511 bytes. Wards were not cast. Nothing was committed.
+
+## Round 3 — brand, the stat slot, and the gate
+
+`brand/` is now on rule 1's allowed list. Files under it must be `.png`, `.ico` or `.svg`. Rules 2 and 8 still scan it. A file `brand/x.md`, created for the check and then removed, printed:
+
+```
+layout: rule 1: brand/ holds a non-image: brand/x.md
+```
+
+The `fstat` slot is 144 bytes, the size of the kernel `struct stat` on this machine. `sub rsp, 144` does not fit in an imm8, so the instruction is three bytes wider than `sub rsp, 127`. The code is 394 bytes. `p_filesz` is the sum `0x78 + 394 = 514`. The seed was decoded once from `ladder/0-hex0/hex0.hex0` and is 514 bytes, mode `755`. Row 10's 512 ceiling moved for that reason.
+
+The source header and `ladder/0-hex0/README.md` now say whitespace is exactly space, tab, CR and LF, and that a comment runs to the next LF and a CR does not end it. They name the ladder, the rung and the seed, and they say what OUT holds after each status. The same OUT column is in the brief's table. Each instruction comment begins with its file offset. Row 9 strips that prefix and compares the rest with objdump.
+
+`tests/lower.hex0` is the lowercase digits `ab`. New fixtures cover a comment between two digits, and a reject byte after a pending nibble. The fuzz compares OUT on every status. Its generator seed is still `20261004`.
+
+`tools/verify.sh` was then run once. It printed:
+
+```
+mutant rule 1: red
+mutant rule 1: red
+mutant rule 2: red
+mutant rule 3: red
+mutant rule 4: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 6: red
+mutant rule 7: red
+mutant rule 8: red
+mutant rule 9: red
+mutant rule 9: red
+mutant rule 9: red
+mutant rule 9: red
+mutant rule 9: red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open fstat fchmod ftruncate read write close exit
+row 4: cmp identical, exit 42
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 6: comment-nibble exit 0
+row 7: argc exit 1
+row 7: missing IN exit 2
+row 7: missing OUT directory exit 3
+row 7: G exit 4
+row 7: reject-2f exit 4
+row 7: reject-40 exit 4
+row 7: reject-80 exit 4
+row 7: reject-ff exit 4
+row 7: odd digits exit 5
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+note: IN is a directory, exit 6
+row 9: 150 instructions match
+row 10: 514 bytes
+row 11: lint ok
+fuzz: 2000 agree
+fuzz mutant: 2 disagreements
+fuzz byte mutant: 1395 disagreements, 1395 on bytes
+row 12: fuzz ok
+row 13: fstat IN exit 2, control 0
+row 13: fstat OUT exit 3, control 0
+row 13: fchmod exit 3, control 0
+row 13: read exit 6, control 0
+row 13: write exit 6, control 0
+row 13: close exit 6, control 0
+row 13: ftruncate exit 6, control 0
+verify: ok
+```
+
+It exited 0. Wards were not cast. Nothing was committed. The rung is not landed.

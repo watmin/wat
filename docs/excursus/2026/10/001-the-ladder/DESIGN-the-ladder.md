@@ -5,14 +5,16 @@ highest rung?"* and *"wat takes material form this day"*.
 
 ## What it is
 
-A full-source bootstrap. The only binary taken on faith is a seed of a few hundred bytes. It is written as commented
+A full-source bootstrap. The one binary not built from source is a seed of a few hundred bytes. It is written as commented
 hex, so a person can audit it byte against instruction. Each rung is built by the rung below it, from source in this
 repository, until watc exists. From there watc compiles itself, as it does today in watmin/the-little-wat.
 
 ```
-seed/hex0         hand-auditable; turns commented hex into bytes          ← rung 0 (this strike)
-  hex1 / hex2     hex plus labels, then relative addresses               ← rung 1
+ladder/0-hex0     the seed: hand-auditable; turns commented hex into bytes ← rung 0
+  hex1            hex plus labels                                        ← rung 1
+  hex2            hex plus labels and relative addresses                 ← rung 2
   M0              a macro assembler: mnemonics are DEFINEs that expand to bytes
+  (translation)   watc's source restated in the Clojure/EDN-compliant syntax, checked by wat-rs reading both
   wat0            an interpreter for the subset watc is written in        ← CRAWL-the-subset.md
   watc            wat0 runs watc's source once → stage 1; stage 1 == stage 2
 ```
@@ -35,9 +37,12 @@ The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap
 
 ## The rules every rung follows
 
-1. **Each rung is its own source.** A rung's program is written in the language of the rung below it, and is checked
-   in beside the binary that rung produces.
-2. **Each rung reaches a fixpoint where it can.** hex0 assembling `hex0.hex0` reproduces `seed/hex0` byte for byte.
+1. **Each rung is its own source.** A rung's program is written in the language of the rung below it and checked in
+   under `ladder/<n>-<name>/`. Its binary is built into `out/`, never committed. The seed is the one committed binary
+   (`docs/LAYOUT.md`).
+2. **Each rung reaches a fixpoint where it can.** hex0 assembling `hex0.hex0` reproduces `ladder/0-hex0/hex0` byte for byte.
 3. **Every refusal is total and named.** Bad input stops with a distinct, nonzero, documented exit status; it is never
-   ignored. That is wat's totality ruling, applied from the first byte.
+   ignored. That is wat's totality ruling, applied from the first byte. Its stated bounds are what the kernel decides,
+   not the program: a signal ends a process without a status, and a read from a FIFO or terminal can block. Each
+   rung's README states them.
 4. **Every rung is small enough to read in one sitting.** The ladder exists because a person can follow it.

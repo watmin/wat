@@ -24,7 +24,7 @@ Every list head, by kind:
 |---|---:|---|
 | a language operation (`wat.core/…`, `wat.string/…`, …) | 8,893 | the 53 operations below |
 | a call to a user function | 8,673 | `wat.core/defn` (1,121 functions); calls, and self tail calls as loops |
-| a record field read | 738 | `wat.core/defrecord` (29 records); how a field is read is to be settled |
+| a record field read | 738 | `wat.core/defrecord` (29 records); how a field is read is open question Q1 below |
 | an enum variant (`u/Box.Full` in the compliant spelling) | 205 | `wat.core/defenum` (3 enums: the reader's node kind and fault, and the compiler's read kind) |
 | `:else` | 153 | `wat.core/cond`'s last clause |
 | a record constructor (`(u/some-rec :something 42 :another 32)`) | 99 | keyword-argument construction |
@@ -41,9 +41,14 @@ Every list head, by kind:
   `wat.kernel/println`
 - **failure:** `wat.kernel/assertion-failed!` and a test equality assertion
 
-Where the compliant spelling of an operation is not settled yet (the I/O and Bytes operations, the type alias, the file
-load, the test assertion), it is described rather than spelled. Those names come from wat-rs main's surface, or from
-the builder. They are not guessed here.
+**Open questions for the builder** (asked 2026-10-04, `LAYOUT.md` rule 8: asked, never guessed). They are settled
+before wat0's brief is drawn, which is where they are first needed:
+- **Q1.** How code reads a record field.
+- **Q2.** Whether records and enum variants construct with one shape. Today records take keyword arguments and variants
+  take a map.
+- **Q3.** Whether `u/` and `user/` are one namespace, and how a namespace is declared.
+- **Q4.** The compliant spellings of the I/O and Bytes operations, the type alias, the file load and the test assertion.
+- **Q5.** Whether wat-rs main's arc-251 surface is the grammar watmin/wat follows.
 
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
 `Option` (one `Some`, one `None`).
@@ -59,7 +64,8 @@ floats. The interpreter wat0 has to be is a small, strict Scheme with records an
    source contains, `quot`/`rem`/`/` on negatives, and the i64-to-string conversion.
 2. **Memory.** wat0 runs once, so an arena that never frees is the simplest heap. But an interpreter allocates far
    more than compiled code does: watc compiling itself natively peaked at ~446 MB before freeing existed. Measure
-   before choosing between an arena and counts. wat-rs's stage-0 peak RSS is a first, rough reference.
+   before choosing between an arena and counts. wat-rs's stage-0 peak RSS is a first, rough reference. This crawl
+   does not decide it: wat0's brief carries the measurement as a row.
 3. **Recursion depth.** watc's source is written for a compiler that turns SELF tail calls into loops (F-211: mutual
    ones are not). So wat0 needs self tail calls as loops, and a native stack deep enough for its non-tail recursion.
 4. **Time.** Today's stage 0 interprets watc compiling 103 programs (~31–48 min on wat-rs). The bootstrap needs only
@@ -67,15 +73,8 @@ floats. The interpreter wat0 has to be is a small, strict Scheme with records an
 5. **The syntax translation.** watc's ~15,000 lines must be translated to the compliant syntax before wat0 can run
    them, and watc's reader must accept only that syntax. The translation is mechanical. A tool reads the old form and
    prints the new one, and wat-rs (which still reads the old form) checks that both spellings mean the same program.
-   But it is real work, and it comes before wat0.
+   It is a named step on the ladder (`DESIGN-the-ladder.md`), before wat0.
 
-## The ladder below wat0 — to be drawn next
+## The ladder below wat0
 
-The shape bootstrappable-builds proved, with our own code:
-- **hex0:** a seed of a few hundred bytes that turns commented hex into a binary. It is hand-auditable.
-- **a macro assembler in the M0 style:** mnemonics are DEFINEs that expand to bytes, plus labels. It needs no real
-  instruction encoder; watc's own `elf/lib/x86.wat` already holds the encodings it needs.
-- **wat0**, written in that assembly, to this crawl's specification.
-
-Then: wat0 runs watc's source to produce stage 1, stage 1 compiles itself to stage 2, and stage 1 == stage 2, the
-fixpoint already checked today.
+It is drawn in `DESIGN-the-ladder.md`: the seed, hex1, hex2, M0, the syntax translation, wat0, then watc.
