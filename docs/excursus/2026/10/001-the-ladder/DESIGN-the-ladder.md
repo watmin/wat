@@ -84,22 +84,43 @@ watc already designed (the-little-wat, `elf/lib/x86.wat`, the comment above `:c:
 |---|---|---|
 | arguments | `rdi rsi rdx rcx r8 r9 r10 r11` (eight) | `x0`–`x7` (eight) |
 | return | `rax` | `x0` |
-| preserved across a call | `rbx r12 r13 rbp` | chosen with the target |
-| reserved, never allocated | `rsp`; `r14` runtime header; `r15` heap top | chosen with the target |
+| preserved across a call | `rbx r12 r13` | chosen with the target |
+| frame pointer, always | `rbp` | `x29` |
+| reserved, never allocated | `rsp`; `r14` runtime header; `r15` heap top | `sp`; chosen with the target |
 
 **Discarded, deliberately:**
-- **16-byte stack alignment at every call.** That is SysV's, inherited from SSE. The stack is aligned only where an
-  instruction needs it.
-- **Mandatory frame pointers and prologue rituals.** A routine keeps what it uses.
 - **A red zone.**
 - **varargs.**
 - **Callee-saved registers chosen for C's sake.**
+- **Any libc or errno global.**
 
-**Each is decided once, here, before the first rung with routines (wat0, and M0 if it has any):**
-- **Q6.** The syscall shim on x86-64. The kernel takes its fourth argument in `r10` and clobbers `rcx` and `r11`, which
-  are wat argument registers. Where is the one place the shim moves them?
-- **Q7.** Frame pointers. Keep them for gdb backtraces in the ladder's rungs, or drop them everywhere?
-- **Q8.** Stack alignment. Where it is actually needed: AVX2 loads, if wat0 uses them.
+**Decided 2026-10-04.** The builder: *"we must be exemplars in linux systems programming - we adhere to what linux
+requires"*, *"we need you and grok to debug effortlessly"*, and *"we are the best and we prove it relentlessly"*.
+
+- **The syscall boundary follows Linux exactly.**
+  - A `syscall` (x86-64) or `svc #0` (aarch64) instruction appears only in one per-target set of syscall routines,
+    never in general code.
+  - Each routine moves wat's arguments into the kernel's registers: `rdi rsi rdx r10 r8 r9` with the number in `rax`
+    on x86-64, and `x0`–`x5` with the number in `x8` on aarch64.
+  - Each routine declares `rcx` and `r11` clobbered on x86-64, because the kernel clobbers them.
+  - The result is the kernel's: a value, or `-errno` in −4095..−1, tested where it is used.
+
+  The collision with wat's argument registers lives in that one audited place.
+- **Frame pointers are always on, with no flag.**
+  - A flag is two shapes of every routine and two things to test; the binary you run is the binary you debug.
+  - It is the modern choice: Fedora, Ubuntu 24.04 and Arch re-enabled frame pointers distro-wide for `perf`, eBPF and
+    gdb stack walks, at a measured cost of about 1%.
+  - `rbp` (and `x29`) is the frame pointer, so it is not in the preserved pool.
+  - Debugging by name needs names too: every rung above the seed emits an ELF symbol table, so gdb and `perf` show
+    routines, not addresses. The seed stays a program audited by offset.
+- **The stack pointer is 16-byte aligned at every call, on every target.** This reverses what this section first
+  listed under "discarded", for these reasons:
+  - aarch64 hardware faults on a memory access through an unaligned `sp`;
+  - x86-64 does not require alignment, but aligned AVX2 spills want it, and values straddling a cache line cost time;
+  - one invariant across targets is simpler than two, and on x86-64 it costs a few bytes of padding per frame.
+
+  "We prove it relentlessly": the invariant is checked by the gate as the rungs grow, never assumed. A routine that
+  needs 32-byte alignment for AVX2 aligns locally, for a measured reason.
 
 The seed (rung 0) has no routines at all: 0 `call`, `ret`, `enter` or `leave` instructions. It meets only the kernel's
 contracts. Its `push imm; pop reg` is a 3-byte constant load, not a frame.
