@@ -1448,3 +1448,33 @@ arrive.
     - `__pycache__`;
     - `--size` is a per-target fact;
     - rule 9's regex is case-sensitive.
+- **conferre: 0 L1, 11 L2.** The seed matches its contract on every point compared:
+  - all 156 instruction comments, every jump, S_ISREG, `0x841`/`0x1ed`, `p_filesz`, the register table, the classify
+    ranges and the status order;
+  - the strace order.
+  Every finding is in the gate or the documents.
+
+  Findings:
+  - **L2:** as root the gate is red on a correct seed. The README says 7; the row always expects 3 (measured under
+    `unshare -r`). MACHINE does not state the non-root requirement.
+  - **L2:** the header restates the contract (the seventh report).
+  - **L2:** rule 5 misses an `Exit status: 0 1 2 9` heading line and a `status N:`-form block.
+  - **L2:** rule 9 is case-sensitive ("Excursus 001" is green).
+  - **L2:** rule 3 passes a target holding only `syscalls.tsv`.
+  - **L2:** the status mutant accepts any kind; R31 claimed it fixed.
+  - **L2:** R27's exit codes do not hold (tracebacks give rc 1).
+  - **L2:** R27/R28's "every step is guarded" does not hold, and failures are misattributed.
+  - **L2:** the per-target design is not what the gate does. DESIGN:41-45's "checks every target's bytes … no
+    execution" dies for any non-x86 architecture. The fuzz hard-codes x86 opcodes, and verify writes 537.
+  - **L2:** EXPECTATIONS and the output do not line up. The SIGXFSZ checks print as "row 6", and there are no rows for
+    the refusals, the trunc mutant, the clone rows or driver-test.
+  - **L2:** LAYOUT:18 omits RECOVERY.
+  - **L3 (not counted):**
+    - row 8 ignores syscall order;
+    - "no core" beside "dumped core";
+    - rule 2 reads byte-0 magic only;
+    - stale `out/`;
+    - the stated fuzz basis against `DUR_LONG`;
+    - the fuzz's unscaled `timeout=5`;
+    - 7-before-3 for fstat OUT.
+  - It withdrew the RECOVERY green-line finding, already fixed.
