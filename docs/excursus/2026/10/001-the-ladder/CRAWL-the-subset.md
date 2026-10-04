@@ -89,9 +89,14 @@ after it is the name:
 - `u/rec/n` is `{:ns u, :name rec/n}`;
 - `u/pathological/foo//bar/` is `{:ns u, :name pathological/foo//bar/}`.
 
-Measured against `clj` 1.12: the first two read identically in Clojure. Clojure rejects the third (`Invalid token`).
-wat's rule is therefore a deliberate superset of Clojure's reader, a dialect choice and not a Clojure bug. A
-symbol Clojure reads, wat reads the same way. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
+Measured with `clj` 1.12, under both `clojure.core/read-string` (the Clojure reader) and `clojure.edn/read-string`
+(the EDN reader), with identical results from each:
+- the first two read exactly as the rule says, and so does `u/box.full`, as `{:ns u, :name box.full}`;
+- both readers reject the third (`Invalid token`).
+
+The EDN spec's prose ("`/` … used once in the middle of a symbol") is stricter than its reference reader, which
+accepts `u/rec/n`. wat's rule is therefore a deliberate superset of both readers, a dialect choice and not a bug.
+Any symbol either reader accepts, wat reads the same way. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
 state this rule once it is next edited.
 
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
