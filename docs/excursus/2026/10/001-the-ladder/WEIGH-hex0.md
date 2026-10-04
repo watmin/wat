@@ -2176,3 +2176,48 @@ each rune's reason. circumspicere is cast last.
     guards (the xor pair is dead on Linux; NOPed, the seed still rebuilds identical).
   - **L3 (not counted):** about 25 small dead arms across gate-lib, verify, the contract, fault.c, the Python checks
     and layout-mutants.
+- **solvere: 2 L1, 9 L2.** These hold: the header as a pointer, the facts in `gate.tsv`, and every git call through
+  `git-sandbox`.
+  - **L1:** row-proof's "red" proves a function was REACHED, not that its comparison works. `return 0` kills two
+    strands at once: running the command and judging it. Most needles are "did not compare" (`row_did`), and
+    `want_rc`'s needle is row 3's text.
+    - Probe p2:
+      - `want_rc`'s test was made `[ "$rc" != "$rc" ]`;
+      - the seed was mutated so the same-file case exits **9**;
+      - the contract printed `row 7: same path exit 7` and rc 0;
+      - row-proof printed `want_rc red` and `row-proof: ok`.
+    - So `--prove` would print `proved` for a seed that breaks status 7. The same mechanism covers about ten row
+      functions.
+    - **This is the hollow-proof class at the root.** A row function must only judge; the caller runs the command.
+  - **L1:** `expect`'s WANT is "a status OR a text", so every text-mode "red" never checks that anything failed (as
+    intueri found).
+    - Probe p5: layout's `fail()` was made `exit 0`, and layout-mutants printed 53 `mutant …: red` lines, rc 0.
+    - `fail()`'s complectens(helper) rune ("reports a decision the caller already made") is false: `fail()` IS where
+      layout's status is decided.
+    - The step-lint mutant and driver-test's replay proof have the same shape.
+    - The fix is one judge that takes status AND needle together.
+  - **L2:** seed-audit hard-codes `+0078` (code_base). R38 does not hold here.
+  - **L2:** README:11's `-m i386:x86-64 --start-address=0x78` and the header's syscall numbers duplicate `gate.tsv`
+    and `syscalls.tsv`, and nothing compares them. Changed in probe p3, layout and seed-audit stayed green.
+  - **L2:** row-proof keeps a second copy of the driver's module table: MODULES, the runners, host detection, the tar
+    excludes, and a 22-entry `needle_for`. A new module's row functions are linted but never proven (probe p4).
+  - **L2:** the target-name grammar is in five places, three ways. Third vigilia; neither fixed nor runed.
+  - **L2:** the fixtures' expectations live only in the contract script, so a new `tests/unrun.hex0` is silently
+    never run.
+  - **L2:** the step vocabulary has five judges, not two: `step`, `expect`, `carry`, `want_rc` and `capture_red`.
+    `fact`, `nr_of` and `abs_req` run commands bare, and gate-lib is skipped by step-lint.
+  - **L2:** four TSV parsers with diverging semantics. A duplicated key gives two values in one and the last value in
+    another; none refuses it.
+  - **L2:** the rune `verify.sh:5 rune:solvere(scratch)` does not earn its exemption. The category is invented, and
+    `out/` is written by the contract through a path it derives itself.
+  - **L2:** the rune `fuzz-hex0.py:14 rune:solvere(duplication)` does not earn its exemption. The category is
+    invented, and the "independent" reference is a copy of hex-check's algorithm, so it cannot disagree.
+  - **L3 (not counted):**
+    - DESIGN's TSV column order;
+    - EXPECTATIONS restates x86 facts;
+    - rune placement;
+    - the trunc patterns embed unchecked syscall numbers;
+    - `SANDBOX` and `HEX0_SCRATCH` are one value with two names;
+    - the trunc mutant uses its own assertions;
+    - step-lint braids two checks;
+    - a loop with no effect.
