@@ -1009,6 +1009,8 @@ finding in full. The seed changes in ONE place (R24). Everything else is the gat
   - Fix `fuzz-hex0.py:31` ("'x' follows 'f'").
 
 **Not in this round:** the GitHub repository description, which is stale ("algebraic cognition"). Changing it is
-the builder's outward call, so it is asked, not briefed.
+the builder's outward call, so it is asked, not briefed. The builder chose the new wording, and it was set on
+2026-10-04: "A Lisp for Linux programming, bootstrapped from a hand-auditable hex seed, with no Rust, no C and no
+libc."
 
 After round 5: my re-run, with every module broken in turn; a checkpoint; then vigilia again.

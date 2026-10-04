@@ -44,8 +44,7 @@ orientation, prune it.
   OUT open, so a FIFO OUT is refused.
 - **Next:** read Grok's SCORE. Re-run the gate myself, breaking every module and a seed byte. Checkpoint, push, then
   vigilia again. **The seed lands only when vigilia converges.**
-- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief. The GitHub
-  repository description is stale ("algebraic cognition"); changing it is the builder's call.
+- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief.
 
 ## How work moves
 
