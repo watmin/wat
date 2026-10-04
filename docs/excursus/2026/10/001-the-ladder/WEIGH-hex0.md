@@ -2270,3 +2270,27 @@ each rune's reason. circumspicere is cast last.
     - rcx's scratch role is unnamed;
     - layout-mutants mutates one shared tree in a chain;
     - 302 s for the fast tier under load.
+- **struere: 1 L1, 5 L2.** The seed is clean:
+  - all 50 branch targets were recomputed by hand;
+  - every register was traced (its "rsi four values" agrees with the table's own count; three other wards measured
+    six);
+  - the stack is balanced;
+  - the statuses match.
+
+  Findings:
+  - **L1:** `$(step …)` does not stop its caller. With `fuzz-hex0.py` made to exit 1 at import, the full verify was rc
+    0 with no error line, since a green module's stderr is discarded. Layout rules fail open the same way. R23 and R36
+    do not hold. (This is the third report, independent of conformare and solvere.)
+  - **L2:** Ctrl-C leaves nested steps alive. Bash resets the traps in `$(…)`, and the inner groups are out of the
+    outer trap's reach. Measured with both topologies.
+  - **L2:** the index-copy leak (the third report; 11,797 files, 326 MB at its count).
+  - **L2:** fault.c's NTH differs between its paths. NTH 1 (seccomp) fails EVERY matching call; NTH ≥ 2 fails only
+    that call (measured). It is masked only because every hex0 failure is fatal.
+  - **L2:** text-mode `expect` and the step-lint mutant (the third report).
+  - **L2:** a relative `HEX0_SCRATCH` writes into the repo (`relx/` was left behind).
+  - **L3 (not counted):**
+    - `exec 9<&0` persists;
+    - the "setsid escape" label;
+    - fault.c's header gaps and arch check;
+    - `fact` and `nr_of` duplicate each other;
+    - "pop into edi".
