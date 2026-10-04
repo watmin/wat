@@ -5,7 +5,7 @@ highest rung?"* and *"wat takes material form this day"*.
 
 ## What it is
 
-A full-source bootstrap. The one binary not built from source is a seed of a few hundred bytes. It is written as commented
+A full-source bootstrap. One per target: that target's seed, a few hundred bytes. It is written as commented
 hex, so a person can audit it byte against instruction. Each rung is built by the rung below it, from source in this
 repository, until watc exists. From there watc compiles itself, as it does today in watmin/the-little-wat.
 
@@ -29,7 +29,7 @@ The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap
   - no libc;
   - no dynamic loader;
   - no assembler or compiler from elsewhere;
-  - no binary except the seed.
+  - no binary except that target's seed.
 
   Every artifact above the seed is built by the rung below it.
 - **Checking is not building.** Shell, `xxd` and Python may CHECK a rung. `sed` and `xxd` decode the seed
@@ -47,6 +47,8 @@ bytes (decode and byte identity), which needs no execution.
 Syscall numbers are per target. The table is `ladder/<n>-<name>/<arch>-<os>/syscalls.tsv`: one row for each call
 that target makes, the number and the name. That file exists for the x86-64 Linux seed, and the fault rows and the
 syscall allow-list read it.
+
+Per-target facts the gate reads live in `gate.tsv` in that same directory. One row is a key, a tab, and a value. The x86-64 Linux file holds the seed size, the objdump machine, the instruction width, the code base, the row-9 mutant text, the fuzz patterns, and the two truncate-order byte sequences. `trunc_fchmod_then_ftruncate` is fchmod then ftruncate. `trunc_ftruncate_then_fchmod` is the reverse: a faulted fchmod then leaves the file truncated.
 
 ## Which targets, and nothing more
 
@@ -77,8 +79,7 @@ convention, no AAPCS. The only outside contracts are the kernel's, at the bounda
 - **the process entry state `execve` builds:** argc at `[rsp]`, then argv and envp;
 - **the ELF file format.**
 
-Everything inside is wat's. One convention per target, written down once, follows. The x86-64 row is the partition
-watc already designed (the-little-wat, `elf/lib/x86.wat`, the comment above `:c::nargregs`):
+Everything inside is wat's. One convention per target, written down once, follows. The x86-64 row is the partition described for watc (the-little-wat, `elf/lib/x86.wat`). rune:exigere(prose) — watc's register partition is described here, not checked by the hex0 gate.
 
 | role | `x86_64-linux` | `aarch64-linux` |
 |---|---|---|
@@ -119,7 +120,7 @@ requires"*, *"we need you and grok to debug effortlessly"*, and *"we are the bes
   - x86-64 does not require alignment, but aligned AVX2 spills want it, and values straddling a cache line cost time;
   - one invariant across targets is simpler than two, and on x86-64 it costs a few bytes of padding per frame.
 
-  "We prove it relentlessly": the invariant is checked by the gate as the rungs grow, never assumed. A routine that
+  The first rung that contains a `call` carries an alignment row in its EXPECTATIONS. hex0 has no `call`, so this gate does not check alignment. A routine that
   needs 32-byte alignment for AVX2 aligns locally, for a measured reason.
 
 The seed (rung 0) has no routines at all: 0 `call`, `ret`, `enter` or `leave` instructions. It meets only the kernel's

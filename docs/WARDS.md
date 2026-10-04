@@ -8,9 +8,7 @@ WEIGH, after an executor scores a strike and before anything lands. A ward fits 
 
 ## How a ward is cast
 
-- **A fresh agent per ward.** The orchestrator fetches the ward from the signed datamancy channel and pastes it,
-  verbatim, into the prompt of a fresh subagent: one ward per agent, never a bundle, never a file the agent is told to
-  go read. The agent reads the target cold and returns a verdict with file:line evidence.
+- **A fresh agent per ward.** That agent fetches the ward's own signed text from the datamancy channel and reads it: one ward per agent, never a bundle, never a file the agent is told to go read. The agent reads the target cold and returns a verdict with file:line evidence.
 - **Weigh the ward's verdict too.** The orchestrator weighs it against its own reading of the disk. A finding without
   a citation is discarded. A finding with one becomes a round item, or a recorded reason why it is not one.
 - **Record the cast.** The ward's name, its verdict, and what was done with each finding go into that strike's WEIGH

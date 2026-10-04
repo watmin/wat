@@ -1,7 +1,6 @@
 # BRIEF — rung 0: hex0, the seed
 
-> wat takes material form this day. This is the first rung of the ladder (`DESIGN-the-ladder.md`): the one binary not built
-> from source, small enough that a person can audit every byte against the instruction it encodes.
+> wat takes material form this day. This is the first rung of the ladder (`DESIGN-the-ladder.md`): one per target, that target's seed, small enough that a person can audit every byte against the instruction it encodes.
 
 ## YOU ARE NEW TO THIS REPOSITORY — read first
 
@@ -27,8 +26,8 @@
     - Whitespace (exactly space, tab, CR, LF) is skipped.
     - A byte's two digits may be split by whitespace or a comment.
     - `0-9`, `a-f` and `A-F` are hex digits, two per output byte, high nibble first.
-  - **Output.** It writes each byte to OUT, created or truncated with mode `0755`, so the output runs directly. The mode is 0755 once `fchmod` has succeeded. With the default `SIGXFSZ` disposition a file-size limit kills hex0. With `SIGXFSZ` ignored, the failed write is status 6 and the bytes written are kept. A FIFO OUT is status 3. A FIFO or terminal IN can block. The stat buffer is 144 bytes because that is the x86-64 ABI's `struct stat`.
-- **Refusals.** Total means every failure stops with a named status. hex0 does not report done after a failure. Each status says what OUT holds. The same table is in the source header and the rung README.
+  - **Output.** It writes each byte to OUT, created or truncated with mode `0755`, so the output runs directly. The mode is 0755 once `fchmod` has succeeded. With the default `SIGXFSZ` disposition a file-size limit kills hex0 (shell status 153). With `SIGXFSZ` ignored, the failed write is status 6 and the bytes written are kept. A FIFO OUT is status 3. A FIFO or terminal IN can block.
+- **Refusals.** Total means every failure stops with a named status, within DESIGN's bound: a signal or a blocked read is not a status. hex0 does not report done after a failure. Each status says what OUT holds. The table lives in the rung README. The source header points at it and does not restate it.
 
   | exit | meaning | OUT |
   |---|---|---|
@@ -41,8 +40,7 @@
   | 6 | a read, write, close or truncate failed | a failed truncate leaves the old bytes, mode already 0755. A failed read or write leaves the bytes written before that failure, after the truncate, mode 0755. A failed close leaves the full decoded bytes, mode 0755 |
   | 7 | IN and OUT are the same file, and OUT opened | untouched |
 
-- **The seed.** The one binary not built from source: the seed, written as commented hex so every byte can be audited by hand. `ladder/0-hex0/x86_64-linux/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/x86_64-linux/hex0.hex0` with an
-  independent decoder: a Python script you write at `tools/check/hex-check.py`. That one decode is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the script only checks. hex0 then has to
+- **The seed.** One per target: that target's seed, written as commented hex so every byte can be audited by hand. `ladder/0-hex0/x86_64-linux/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/x86_64-linux/hex0.hex0` with `sed` and `xxd`. `tools/check/hex-check.py` is a second reader of the same source. That one decode is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the script only checks. hex0 then has to
   reproduce `ladder/0-hex0/x86_64-linux/hex0` from its own source.
 - **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
   rule 5).
@@ -67,8 +65,7 @@
     one byte (status 6 on a short write, a failed close, or a failed truncate).
   - Anything else: status 4.
 - **Commenting.** Every line of `ladder/0-hex0/x86_64-linux/hex0.hex0` that carries bytes ends with a comment naming the instruction or field
-  those bytes encode, as `ladder/0-hex0/tests/exit42.hex0` does. The header comment carries the exit-status table and the register
-  conventions.
+  those bytes encode, as `ladder/0-hex0/tests/exit42.hex0` does. The header comment points at the rung README for the input language and the statuses, and it keeps the registers, the offsets, the syscalls and the ELF layout.
 
 Registers and layout are yours to choose. Small and readable beat clever: one byte at a time is fast enough.
 

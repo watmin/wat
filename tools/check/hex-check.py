@@ -118,6 +118,9 @@ def main(argv):
         sys.stderr.write("hex-check: missing file\n")
         return 2
     if mode == "lint":
+        if any(byte > 127 for byte in data):
+            sys.stdout.write("lint: not ascii\n")
+            return 1
         bare = lint_bytes(data)
         if bare:
             for lineno in bare:

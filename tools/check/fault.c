@@ -26,10 +26,15 @@
 #include <sys/prctl.h>
 #include <sys/ptrace.h>
 #include <sys/resource.h>
+#include <sys/syscall.h>
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <linux/seccomp.h>
 #include <linux/filter.h>
+
+#ifndef SYS_close_range
+#define SYS_close_range 436
+#endif
 
 static long need_long(const char *text, const char *what) {
   char *end = NULL;
@@ -45,8 +50,6 @@ static long need_long(const char *text, const char *what) {
 
 static int prepare_fds(void) {
   int slot;
-  int maxfd;
-  struct rlimit lim;
   for (slot = 0; slot < 3; slot++) {
     int got;
     if (fcntl(slot, F_GETFD) != -1) {
@@ -65,12 +68,9 @@ static int prepare_fds(void) {
       close(got);
     }
   }
-  maxfd = 256;
-  if (getrlimit(RLIMIT_NOFILE, &lim) == 0 && lim.rlim_cur < 65536) {
-    maxfd = (int)lim.rlim_cur;
-  }
-  for (slot = 3; slot < maxfd; slot++) {
-    close(slot);
+  if (syscall(SYS_close_range, 3, ~0U, 0) != 0) {
+    perror("close_range");
+    return 94;
   }
   return 0;
 }
@@ -102,17 +102,21 @@ static int trace_nth(int nr, int watch_fd, int err, int nth, char **argv) {
   if (waitpid(pid, &status, 0) < 0) {
     return 96;
   }
-  if (ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD) < 0) {
+  if (ptrace(PTRACE_SETOPTIONS, pid, 0,
+             PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXEC) < 0) {
     return 96;
   }
   entering = 1;
   seen = 0;
   armed = 0;
+  int inject = 0;
   for (;;) {
     struct user_regs_struct regs;
-    if (ptrace(PTRACE_SYSCALL, pid, 0, 0) < 0) {
+    int sig;
+    if (ptrace(PTRACE_SYSCALL, pid, 0, inject) < 0) {
       return 96;
     }
+    inject = 0;
     if (waitpid(pid, &status, 0) < 0) {
       return 96;
     }
@@ -122,7 +126,17 @@ static int trace_nth(int nr, int watch_fd, int err, int nth, char **argv) {
     if (WIFSIGNALED(status)) {
       return 128 + WTERMSIG(status);
     }
-    if (!WIFSTOPPED(status) || WSTOPSIG(status) != (SIGTRAP | 0x80)) {
+    if (!WIFSTOPPED(status)) {
+      continue;
+    }
+    sig = WSTOPSIG(status);
+    /* Exec stops as SIGTRAP. Delivering it kills the child (status 133). */
+    if ((status >> 16) != 0 || sig == SIGTRAP) {
+      inject = 0;
+      continue;
+    }
+    if (sig != (SIGTRAP | 0x80)) {
+      inject = sig;
       continue;
     }
     if (ptrace(PTRACE_GETREGS, pid, 0, &regs) < 0) {
@@ -188,12 +202,20 @@ int main(int argc, char **argv) {
   fd_l = need_long(argv[2], "FD");
   err_l = need_long(argv[3], "ERRNO");
   nth_l = need_long(argv[4], "NTH");
+  if (nr_l < 0 || nr_l > 511) {
+    fprintf(stderr, "fault: nr out of range\n");
+    return 93;
+  }
+  if (fd_l < -1 || fd_l > 65535) {
+    fprintf(stderr, "fault: fd out of range\n");
+    return 93;
+  }
   if (err_l < 1 || err_l > 4095) {
     fprintf(stderr, "fault: errno must be 1..4095\n");
     return 93;
   }
-  if (nth_l < 1) {
-    fprintf(stderr, "fault: nth must be at least 1\n");
+  if (nth_l < 1 || nth_l > 1000000) {
+    fprintf(stderr, "fault: nth out of range\n");
     return 93;
   }
   nr = (int)nr_l;

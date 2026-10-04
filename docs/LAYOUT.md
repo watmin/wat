@@ -3,7 +3,7 @@
 The builder, 2026-10-03: *"we've been burned many times working on holon and wat with letting llms run wild... we just
 need to be mindful"*. Mindfulness alone is a convention, and conventions rot. So this layout is CHECKED:
 `tools/layout.sh` runs first in `tools/verify.sh`, and a file in the wrong place, or written in a retired syntax, is
-red when `tools/verify.sh` runs, which is before every checkpoint. There is no CI yet. To change the layout,
+red when `tools/verify.sh` runs, which is before every checkpoint. There is no CI. To change the layout,
 amend this document and the gate together, in one commit, on purpose.
 
 ```
@@ -13,9 +13,8 @@ wat/
     0-hex0/             README.md (the contract) · tests/ (contract fixtures, shared by every target)
       x86_64-linux/     hex0.hex0 (source, in this target's code) · hex0 (the seed for this target)
     1-hex1/ …           each rung: README.md · tests/ · one <arch>-<os>/ per target, holding its source
-  watc/                 the compiler, when the ladder reaches it
   tools/                CHECKS only, never builds a rung (one declared exception: the seed, below): verify.sh, layout.sh, check/
-  docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE); everything else in an excursus
+  docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE, RECOVERY); everything else in an excursus
     excursus/YYYY/MM/NNN-<slug>/   one excursus: its design, crawls, briefs, expectations, scores, weighs
   brand/                the logo and icons, image files only, copied verbatim from watmin/algebraic-intelligence.dev
   archived/             frozen: the 2024–26 repository
@@ -24,10 +23,10 @@ wat/
 
 ## The rules `tools/layout.sh` enforces
 
-1. **The top level is exactly the list above.** `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
-   `ladder/`, `watc/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. A
-   tracked path under `out/` is a red. Any other tracked top-level name is a red. The image-only check on `brand/` is
-   part of this rule: a file there must be `.png`, `.ico` or `.svg`.
+1. **The top level is exactly the list above.** Every name on disk at the top, except `.git`. `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
+   `ladder/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. The compiler's home is its rung, when that rung exists. A
+   tracked path under `out/` is a red. Any other top-level name is a red. The image-only check on `brand/` is
+   part of this rule: a file there must be a PNG, ICO or SVG by its bytes, and no file there may contain ELF magic.
 2. **One committed binary per target: `ladder/0-hex0/<arch>-<os>/hex0`.** This rule is about binaries a rung produces.
    ELF magic (`7F 45 4C 46`) anywhere else, including `brand/`, is a red. A NUL byte anywhere else except `brand/` is a
    red: `brand/` holds images, which are binaries on purpose, and only the NUL check is exempt there. The fault injector
@@ -44,11 +43,10 @@ wat/
    fixpoint, checked on every verify). That decode is the bootstrap of the root of trust, and the only RUNG build any tool
    ever performs.
 5. **Every rung's `README.md` states its contract:** its input language, what it outputs, and every exit status. The
-   README's status numbers are the contract. A target file whose `Exit status:` block lists numbers must list that same
-   set. A pointer with no numbers adds nothing, so a second target that only points at the README stays green.
+   README's status numbers are the contract. A target source that states a status meaning is red: the words `Exit status:` or `status` and a digit. A pointer that names the README and states no status meaning stays green.
 6. **`archived/` is frozen.** Its tracked files must equal the list at `c45603e`, the archive commit, byte for byte.
-7. **`tools/` checks; it never builds a rung.** The seed decode in rule 4 is the one exception. No script under
-   `tools/` may write a rung's output into `out/`. `out/` holds only what a rung produces when the gate runs it (for
+7. **`tools/` checks; it never builds a rung.** Every file under `tools/` that is not git-ignored. The seed decode in rule 4 is the one exception. No script under
+   `tools/` may write a rung's output into `out/`, including a quoted path, a variable path, or a write of a target seed. `out/` holds only what a rung produces when the gate runs it (for
    example, the seed decoding its own source). A check's own scratch and instruments (the fault injector built by
    `gcc` into the sandbox, staged OUT files, the copied tree the layout mutants run on) live under `/var/tmp`, never
    in the repository. Every instrument a check needs is built from tracked source during the run: the gate depends on

@@ -6,9 +6,12 @@ Most cases decode successfully. The reference states whether OUT exists,
 and a missing OUT is None, distinct from an empty file. Bytes are
 compared on every status.
 
-A disagreement is written into the sandbox passed on the command line.
-Each kind has its own exit code: 3 status, 4 existence, 5 bytes.
+A disagreement is printed, including the input bytes, and no file is kept.
+Each kind has its own exit code: 3 status, 4 existence, 5 bytes, 1 a hang.
+Exit codes also include 2 usage and 99 an unexpected failure.
 A bytes-only disagreement prints the bytes.
+
+rune:solvere(duplication) — the fuzz reference restates hex-check's scan because the two checks must be able to disagree.
 
 --expect-disagree flips the a-f bound in a copy and requires a status
 disagreement. --expect-letter-offset flips the letter value offset
@@ -16,17 +19,15 @@ disagreement. --expect-letter-offset flips the letter value offset
 comparison can see. Neither flag modifies the seed.
 """
 
+import os
 import random
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 SEED = 20261004
-BOUND = bytes.fromhex("3c0577")
-BOUND_FLIPPED = bytes.fromhex("3c0677")
-LETTER = bytes.fromhex("040aeb02")
-LETTER_FLIPPED = bytes.fromhex("040beb02")
 # NEAR: the bytes just outside the digit classes, plus the ends of a byte.
 # ':' follows '9', '@' precedes 'A', 'G' follows 'F', '`' precedes 'a',
 # 'g' follows 'f', '/' precedes '0'. 'x' is a reject byte, not a neighbor.
@@ -155,18 +156,39 @@ def cases(count, rng):
     return out
 
 
-def run_one(hex0, data, folder):
+def case_limit():
+    raw = os.environ.get("HEX0_CASE_SECS", "")
+    if re.fullmatch(r"[1-9][0-9]*", raw) is None:
+        sys.stderr.write("fuzz: HEX0_CASE_SECS missing\n")
+        sys.exit(2)
+    return int(raw)
+
+
+def patterns_of(path):
+    keys = {}
+    for line in open(path, encoding="utf-8"):
+        if "\t" not in line:
+            continue
+        key, value = line.split("\t", 1)
+        keys[key] = value.strip()
+    wanted = ("fuzz_bound", "fuzz_bound_flip", "fuzz_letter", "fuzz_letter_flip")
+    for key in wanted:
+        if key not in keys or not keys[key]:
+            sys.stderr.write("fuzz: missing fact %s\n" % key)
+            sys.exit(2)
+    return tuple(bytes.fromhex(keys[key]) for key in wanted)
+
+
+def run_one(hex0, data, folder, limit):
     src = folder / "in"
     dst = folder / "out"
     src.write_bytes(data)
     if dst.exists():
         dst.unlink()
     try:
-        proc = subprocess.run([str(hex0), str(src), str(dst)], timeout=5)
+        proc = subprocess.run([str(hex0), str(src), str(dst)], timeout=limit)
     except subprocess.TimeoutExpired:
-        hung = folder / "hung.hex0"
-        hung.write_bytes(data)
-        sys.stderr.write("fuzz: hung on %s\n" % hung)
+        sys.stderr.write("fuzz: hung on %s\n" % data.hex())
         return None
     if dst.exists():
         return proc.returncode, True, dst.read_bytes()
@@ -201,11 +223,13 @@ def main(argv):
             expect = "letter"
         else:
             args.append(arg)
-    if len(args) != 3:
+    if len(args) != 4:
         sys.stderr.write(
-            "usage: fuzz-hex0.py [--expect-disagree | --expect-letter-offset] HEX0 COUNT SANDBOX\n"
+            "usage: fuzz-hex0.py [--expect-disagree | --expect-letter-offset] HEX0 COUNT SANDBOX GATE.TSV\n"
         )
         return 2
+    limit = case_limit()
+    bound, bound_flip, letter, letter_flip = patterns_of(args[3])
     hex0 = Path(args[0]).resolve()
     count = int(args[1])
     sandbox = Path(args[2])
@@ -215,50 +239,37 @@ def main(argv):
     target = hex0
     if expect == "status":
         target = work / "mutant"
-        target.write_bytes(flip(hex0.read_bytes(), BOUND, BOUND_FLIPPED))
+        target.write_bytes(flip(hex0.read_bytes(), bound, bound_flip))
         target.chmod(0o755)
     elif expect == "letter":
         target = work / "mutant"
-        target.write_bytes(flip(hex0.read_bytes(), LETTER, LETTER_FLIPPED))
+        target.write_bytes(flip(hex0.read_bytes(), letter, letter_flip))
         target.chmod(0o755)
-    disagreements = 0
-    byte_only = 0
     try:
         for data in sample:
             want_rc, want_exists, want_body = reference(data)
-            got = run_one(target, data, work)
+            got = run_one(target, data, work, limit)
             if got is None:
                 return 1
             got_rc, got_exists, got_body = got
             kind = disagree(got_rc, got_exists, got_body, want_rc, want_exists, want_body)
             if kind == 0:
                 continue
-            disagreements += 1
-            if kind == 5:
-                byte_only += 1
-            if expect == "status" and disagreements >= 1:
-                sys.stdout.write("fuzz mutant: stopped at first disagreement\n")
+            if expect == "status" and kind == 3:
+                sys.stdout.write("fuzz mutant: stopped at first status disagreement\n")
                 return 0
-            if expect == "letter" and byte_only >= 1:
+            if expect == "letter" and kind == 5:
                 sys.stdout.write(
                     "fuzz letter-offset mutant: stopped at first byte disagreement\n"
                 )
                 return 0
             if expect:
                 continue
-            if kind == 5:
-                sys.stderr.write(
-                    "fuzz: bytes %s vs %s\n"
-                    % (
-                        got_body.hex() if got_body is not None else "missing",
-                        want_body.hex() if want_body is not None else "missing",
-                    )
-                )
-            fixture = sandbox / "fuzz-disagree.hex0"
-            fixture.write_bytes(data)
+            got_hex = got_body.hex() if got_body is not None else "missing"
+            want_hex = want_body.hex() if want_body is not None else "missing"
             sys.stderr.write(
-                "fuzz: disagree kind %d status %d vs %d, kept %s\n"
-                % (kind, got_rc, want_rc, fixture)
+                "fuzz: disagree kind %d status %d vs %d bytes %s vs %s input %s\n"
+                % (kind, got_rc, want_rc, got_hex, want_hex, data.hex())
             )
             return kind
     finally:
@@ -266,7 +277,7 @@ def main(argv):
             child.unlink()
         work.rmdir()
     if expect == "status":
-        sys.stderr.write("fuzz: flipped seed agreed on every case\n")
+        sys.stderr.write("fuzz: flipped seed had no status disagreement\n")
         return 1
     if expect == "letter":
         sys.stderr.write("fuzz: letter-offset mutant had no byte-only disagreement\n")
@@ -276,4 +287,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception as exc:
+        sys.stderr.write("fuzz: %s\n" % exc)
+        sys.exit(99)

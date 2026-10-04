@@ -1,61 +1,80 @@
 #!/usr/bin/env bash
 # tools/verify.sh -- the hex0 gate.
-# Host detection and the loop over rungs and targets. Steps are timed
-# inside the modules. This driver does not put a second timer around them.
+# Host detection and the loop over rungs and targets.
 # Scratch and instruments live under /var/tmp. Rung output goes to out/.
+# rune:solvere(scratch) — out/ is the rung product directory and one gate owns it per run; two concurrent gates on one tree still share it.
 set -u
 export PYTHONDONTWRITEBYTECODE=1
-cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 2
+here=${BASH_SOURCE[0]%/*}
+case $here in
+  /*) ;;
+  *) here=$PWD/$here ;;
+esac
+root=${here%/*}
+cd "$root" || exit 2
 # shellcheck source=tools/check/gate-lib.sh
 . tools/check/gate-lib.sh || exit 2
 umask 0022
 
 if [ -n "${HEX0_SANDBOX:-}" ]; then
-  case $HEX0_SANDBOX in
-    /var/tmp/*) ;;
-    *) die "HEX0_SANDBOX must be under /var/tmp" ;;
-  esac
-  if [ -e "$HEX0_SANDBOX" ]; then
+  SANDBOX=$(under_tmp "$HEX0_SANDBOX")
+  if [ -e "$SANDBOX" ]; then
     die "HEX0_SANDBOX already exists"
   fi
-  mkdir "$HEX0_SANDBOX" || die "HEX0_SANDBOX mkdir"
-  SANDBOX=$HEX0_SANDBOX
+  step "sandbox mkdir" "$DUR_FAST" -- mkdir "$SANDBOX"
 else
-  SANDBOX=$(mktemp -d /var/tmp/hex0-verify.XXXXXX)
+  SANDBOX=$(step "sandbox temp" "$DUR_FAST" -- mktemp -d /var/tmp/hex0-verify.XXXXXX)
+  SANDBOX=$(under_tmp "$SANDBOX")
 fi
-export SANDBOX
-export HEX0_SCRATCH=$SANDBOX
-HOST=$(uname -m)-$(uname -s | tr '[:upper:]' '[:lower:]')
+export SANDBOX HEX0_SCRATCH=$SANDBOX
 trap 'rm -rf "$SANDBOX"' EXIT
 
-is_host() {
-  [ "$1" = "$HOST" ]
+machine=$(step "uname m" "$DUR_FAST" -- uname -m)
+sysname=$(step "uname s" "$DUR_FAST" -- uname -s)
+sysname=${sysname,,}
+HOST=$machine-$sysname
+GIT=$root/tools/check/git-sandbox
+
+outer_sum() {
+  step "outer sum" "$DUR_FAST" -- bash -c 'tar -C "$1" -cf - HEAD index config refs | sha256sum' bash "$root/.git"
 }
 
-tools/check/layout-mutants.sh "$SANDBOX" || die "tools/check/layout-mutants.sh rc $?"
+outer_before=$(outer_sum)
+outer_before=${outer_before%% *}
+
+product=out
+step "empty out" "$DUR_FAST" -- bash -c 'rm -rf -- "$1/$2" && mkdir -- "$1/$2"' bash "$root" "$product"
+
+for rel in tools/verify.sh tools/layout.sh tools/check/*.sh; do
+  case $rel in
+    tools/check/gate-lib.sh) continue ;;
+  esac
+  step "step-lint $rel" "$DUR_FAST" -- python3 tools/check/step-lint.py "$rel"
+done
+echo "row 18: step-lint ok"
+printf '%s\n' '#!/usr/bin/env bash' 'cmp /dev/null /dev/null' > "$SANDBOX/bare-module.sh"
+expect "step-lint mutant" "$DUR_FAST" "text:bare command:" -- python3 tools/check/step-lint.py "$SANDBOX/bare-module.sh"
+echo "mutant step-lint: red"
+
+step "tools/check/layout-mutants.sh" "$DUR_MODULE" -- tools/check/layout-mutants.sh "$SANDBOX/layout"
 
 shopt -s nullglob
 found_host=0
 for rung in ladder/*/; do
-  rname=$(basename "$rung")
+  rname=${rung%/}
+  rname=${rname##*/}
   for dir in "$rung"*/; do
-    tgt=$(basename "$dir")
+    tgt=${dir%/}
+    tgt=${tgt##*/}
     [ "$tgt" = tests ] && continue
     [[ $tgt =~ ^[a-z0-9_]+-[a-z0-9_]+$ ]] || die "not a target: $rname/$tgt"
     case $rname in
       0-hex0)
-        if [ "$tgt" = x86_64-linux ]; then
-          tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" --size 537 \
-            || die "tools/check/seed-audit.sh rc $?"
-        else
-          tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" \
-            || die "tools/check/seed-audit.sh rc $?"
-        fi
-        if is_host "$tgt"; then
+        target=$(abs_req "$root/$rung$tgt")
+        step "tools/check/seed-audit.sh $tgt" "$DUR_MODULE" -- tools/check/seed-audit.sh "$target" "$SANDBOX"
+        if [ "$tgt" = "$HOST" ]; then
           found_host=1
-          tools/check/hex0-contract.sh \
-            "${rung}${tgt}/hex0" "${rung}${tgt}/hex0.hex0" "${rung}tests" "$SANDBOX" \
-            || die "tools/check/hex0-contract.sh rc $?"
+          step "tools/check/hex0-contract.sh" "$DUR_MODULE" -- tools/check/hex0-contract.sh "$target" "$SANDBOX"
         else
           echo "$tgt: not executed on this host"
         fi
@@ -66,47 +85,86 @@ for rung in ladder/*/; do
 done
 [ "$found_host" -eq 1 ] || die "no target for this host: $HOST"
 
-if [ "${HEX0_DRIVER_TEST:-}" = 1 ]; then
+skip_driver=0
+if [ "${HEX0_DRIVER_TEST:-}" = 1 ] && [ -n "${HEX0_DRIVER_MARK:-}" ]; then
+  case $HEX0_DRIVER_MARK in
+    /*) ;;
+    *) die "relative path refused: HEX0_DRIVER_MARK" ;;
+  esac
+  if [ -f "$HEX0_DRIVER_MARK" ] && [ "$(<"$HEX0_DRIVER_MARK")" = hex0-driver-mark ]; then
+    skip_driver=1
+  fi
+fi
+if [ "$skip_driver" -eq 1 ]; then
   echo "driver-test: skipped"
 else
-  tools/check/driver-test.sh "$SANDBOX" || die "tools/check/driver-test.sh rc $?"
+  step "driver-test" "$DUR_MODULE" -- tools/check/driver-test.sh "$SANDBOX/driver"
 fi
 
-# The clone rows test this working tree, not HEAD. The commit is in the
-# sandbox copy. The live index is never touched.
+cr_check() {
+  local blob rc body
+  blob=$(carry "text cr" "$DUR_LONG" python3 "$1/tools/check/text-cr.py" "$1")
+  rc=$(payload_rc "$blob")
+  body=$(payload_body "$blob")
+  if [ "$rc" != 0 ]; then
+    printf '%s\n' "$body" >&2
+    exit 1
+  fi
+  printf '%s\n' "$body"
+}
+
+clone_layout() {
+  local text
+  text=$(step "clone layout" "$DUR_LONG" -- "$1/tools/layout.sh" "$1")
+  [ "$text" = "layout: ok" ] || die "clone layout $text"
+}
+
 candidate=$SANDBOX/candidate
-check "candidate copy" "$DUR_LONG" -- cp -a . "$candidate"
-git -C "$candidate" config commit.gpgsign false
-check "candidate add" "$DUR_CMD" -- git -C "$candidate" add -A
-if git -C "$candidate" diff --cached --quiet; then
-  echo "candidate: worktree matches HEAD"
-else
-  check "candidate commit" "$DUR_CMD" -- git -C "$candidate" commit -q -m "hex0 gate candidate"
-fi
-export HEX0_SCRATCH=$SANDBOX
-check "plain clone" "$DUR_CMD" -- git clone --quiet "$candidate" "$SANDBOX/clone"
-check "plain clone layout" "$DUR_CMD" -- tools/layout.sh "$SANDBOX/clone" >"$SANDBOX/clone.layout"
-cat "$SANDBOX/clone.layout"
+sandbox_tree "$root" "$candidate"
+
+step "hostile dir" "$DUR_CMD" -- bash -c 'GIT_DIR=/var/tmp/hex0-no-such-git GIT_INDEX_FILE=/var/tmp/hex0-no-such-index "$1" -C "$2" status --porcelain >/dev/null' bash "$GIT" "$candidate"
+echo "git: caller GIT_DIR ignored"
+
+step "hook dir" "$DUR_FAST" -- mkdir -p "$SANDBOX/hostile-hooks"
+printf '%s\n' '#!/bin/sh' 'exit 1' > "$SANDBOX/hostile-hooks/pre-commit"
+step "hook mode" "$DUR_FAST" -- chmod 755 "$SANDBOX/hostile-hooks/pre-commit"
+step "hook install" "$DUR_FAST" -- cp "$SANDBOX/hostile-hooks/pre-commit" "$candidate/.git/hooks/pre-commit"
+printf '[core]\n\thooksPath = %s\n' "$SANDBOX/hostile-hooks" > "$SANDBOX/hostile.gitconfig"
+step "hook commit" "$DUR_CMD" -- bash -c 'GIT_CONFIG_GLOBAL="$3" "$1" -C "$2" commit --allow-empty -q -m "hooks stay off"' bash "$GIT" "$candidate" "$SANDBOX/hostile.gitconfig"
+echo "git: hooks ignored"
+
+step "empty home" "$DUR_FAST" -- mkdir -p "$SANDBOX/empty-home"
+step "identity commit" "$DUR_CMD" -- bash -c 'HOME="$3" XDG_CONFIG_HOME="$3" "$1" -C "$2" commit --allow-empty -q -m "fixed identity"' bash "$GIT" "$candidate" "$SANDBOX/empty-home"
+echo "git: fixed identity"
+
+step "worktree add" "$DUR_CMD" -- "$GIT" -C "$candidate" worktree add --detach "$SANDBOX/linked" HEAD
+step "worktree file" "$DUR_FAST" -- bash -c '[ -f "$1/.git" ]' bash "$SANDBOX/linked"
+sandbox_tree "$SANDBOX/linked" "$SANDBOX/from-worktree"
+step "worktree gitdir" "$DUR_FAST" -- bash -c '[ -d "$1/.git" ]' bash "$SANDBOX/from-worktree"
+echo "git: linked worktree did not copy the gitdir"
+
+step "plain clone" "$DUR_CMD" -- "$GIT" clone --quiet "$candidate" "$SANDBOX/clone"
+clone_layout "$SANDBOX/clone"
+plain=$(cr_check "$SANDBOX/clone") || die "plain clone cr"
+[ "$plain" = "text files: lf" ] || die "plain clone $plain"
 echo "plain clone: layout ok"
-check "autocrlf clone" "$DUR_CMD" -- git -c core.autocrlf=true clone --quiet "$candidate" "$SANDBOX/crlf-clone"
-if grep -q $'\r' "$SANDBOX/crlf-clone/tools/verify.sh"; then
-  die "autocrlf clone rewrote a tools script"
-fi
-check "autocrlf clone layout" "$DUR_CMD" -- tools/layout.sh "$SANDBOX/crlf-clone" >"$SANDBOX/crlf.layout"
-cat "$SANDBOX/crlf.layout"
+
+step "crlf clone" "$DUR_CMD" -- "$GIT" -c core.autocrlf=true clone --quiet "$candidate" "$SANDBOX/crlf-clone"
+clone_layout "$SANDBOX/crlf-clone"
+crlf=$(cr_check "$SANDBOX/crlf-clone") || die "autocrlf clone cr"
+[ "$crlf" = "text files: lf" ] || die "autocrlf clone $crlf"
 echo "autocrlf clone: lf"
 
-noattr=$SANDBOX/candidate-noattr
-check "noattr copy" "$DUR_LONG" -- cp -a "$candidate" "$noattr"
-grep -v -x -F '* text=auto eol=lf' "$noattr/.gitattributes" > "$noattr/.gitattributes.tmp"
-mv "$noattr/.gitattributes.tmp" "$noattr/.gitattributes"
-check "noattr add" "$DUR_CMD" -- git -C "$noattr" add -A -- .gitattributes
-check "noattr commit" "$DUR_CMD" -- git -C "$noattr" commit -q -m "hex0 gate candidate without the attribute line"
-check "noattr autocrlf clone" "$DUR_CMD" -- git -c core.autocrlf=true clone --quiet "$noattr" "$SANDBOX/crlf-noattr"
-if ! grep -q $'\r' "$SANDBOX/crlf-noattr/tools/verify.sh"; then
-  die "reverted attribute stayed lf"
-fi
-echo "mutant autocrlf without the attribute: red"
+step "noattr clone" "$DUR_CMD" -- "$GIT" clone --quiet "$candidate" "$SANDBOX/noattr"
+step "noattr edit" "$DUR_FAST" -- bash -c 'printf "%s\n" "$2" >> "$1/.gitattributes"' bash "$SANDBOX/noattr" 'tools/check/*.sh text eol=crlf'
+step "noattr add" "$DUR_CMD" -- "$GIT" -C "$SANDBOX/noattr" add -A -- .gitattributes
+step "noattr commit" "$DUR_CMD" -- "$GIT" -C "$SANDBOX/noattr" commit -q -m "attribute forces crlf on tools"
+step "noattr autocrlf" "$DUR_CMD" -- "$GIT" -c core.autocrlf=true clone --quiet "$SANDBOX/noattr" "$SANDBOX/crlf-noattr"
+capture_red "mutant autocrlf attribute" "text file contains CR" cr_check "$SANDBOX/crlf-noattr"
+echo "mutant autocrlf without lf: red"
 
-echo "verify: working tree, committed in the sandbox and cloned"
+outer_after=$(outer_sum)
+outer_after=${outer_after%% *}
+[ "$outer_before" = "$outer_after" ] || die "outer repository changed"
+echo "verify: sandbox candidate, clone layout, outer repository unchanged"
 exit 0

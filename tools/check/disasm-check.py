@@ -5,7 +5,9 @@ Each comment begins with +FILEOFFSET. objdump is run with --adjust-vma
 so that address is already a file offset. The rest of the comment is the
 disassembly, whitespace collapsed. Headings are lines with no hex.
 
-Exit codes: 2 usage, 1 a row-9 mismatch, 99 an unexpected failure.
+Exit codes: 2 usage, 1 a row-9 mismatch, 99 a missing file or an unexpected failure.
+
+rune:circumspicere(spelling) — row 9 matches binutils 2.47's mnemonics; a different objdump is red on purpose.
 """
 
 import re
@@ -55,9 +57,13 @@ def main(argv):
     if len(argv) != 3:
         sys.stderr.write("usage: disasm-check.py SOURCE CODEBIN OBJDUMP\n")
         return 2
-    source = open(argv[0], encoding="utf-8").read()
-    code = open(argv[1], "rb").read()
-    dumped = open(argv[2], encoding="utf-8", errors="replace").read()
+    try:
+        source = open(argv[0], encoding="utf-8").read()
+        code = open(argv[1], "rb").read()
+        dumped = open(argv[2], encoding="utf-8", errors="replace").read()
+    except FileNotFoundError as exc:
+        sys.stderr.write("disasm-check: missing file: %s\n" % exc)
+        return 99
     err, rows = instructions(source)
     if err:
         sys.stderr.write(err + "\n")
@@ -86,4 +92,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception as exc:
+        sys.stderr.write("disasm-check: %s\n" % exc)
+        sys.exit(99)

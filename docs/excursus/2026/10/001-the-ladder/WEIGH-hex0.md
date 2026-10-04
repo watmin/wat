@@ -1812,3 +1812,61 @@ mutant that breaks the thing and goes red.** My weigh will break each one myself
 - the GitHub description and homepage (C3-5).
 
 After round 6: my re-run, breaking every row through its own function, then a checkpoint, then vigilia 4.
+
+## Round 6 received — weighed by breaking every row (2026-10-04)
+
+**Live:** `tools/verify.sh` rc 0, with empty stderr. `git status` and every file under `.git` (sha256 of the contents)
+are identical before and after. Grok's note that a tar of `.git` hashed differently is file metadata (mtimes), not
+content.
+
+**The break battery** (`/var/tmp/r6-weigh/battery.sh`). Each case ran in its own copy. A named row function was made
+to `return 0` first thing, so a mutant that really calls its row must then stay green and kill the gate.
+
+| broken | verify | the gate said |
+|---|---|---|
+| `row1_same` | red | `mutant row 1 (byte) stayed green` |
+| `row2_same` | red | `mutant row 2 (byte) stayed green` |
+| `row9_check` | red | `mutant row 9 (comment) stayed green` |
+| `row10_check` | red | `mutant row 10 (size) stayed green` |
+| `row11_lint` | red | `row 11 text` |
+| `row3_same` | red | `mutant row 3 (bytes) stayed green` |
+| `row4_status` | red | `mutant row 4 (status) stayed green` |
+| `row8_check` | red | `mutant row 8 (extra syscall) stayed green` |
+| `cr_check` | red | `plain clone` |
+| `row4_bytes` | **GREEN** | no mutant calls it |
+| `fix_ok` (row 6: all 21 format fixtures) | **GREEN** | no mutant calls it |
+| `assert_out` (what OUT holds, on every refusal and fault row) | **GREEN** | no mutant calls it; the trunc mutant uses its own assertions |
+| `clone_layout` | **GREEN** | no mutant calls it; the SCORE's "both clone rows' layout" is false |
+| header states `status 4: …` | red | `rule 5: target source states a status meaning` |
+| bare `cmp` in seed-audit | red | `step-lint … bare command: cmp line 34` |
+| "timed out" decided by rc 137 | **GREEN** | the self-kill proof is hollow: `carry`'s wrapper bash prints `rc:137` and exits 0, so the step's rc never reaches the timer decision. The shipped code (it greps timeout's `sending signal KILL`) is right but unproven. |
+| `HEX0_TIME_SCALE=0` | refused | `must match ^[1-9][0-9]*$` |
+| `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE` pointed at a victim copy | green | victim `.git` byte-identical |
+| failing pre-commit hook in `.git/hooks` | green | |
+| `env -i`, empty HOME and XDG, no system config (no identity) | green | |
+
+**Verdict:** round 6 holds for every class except one. **A comparison with no mutant that calls it** survives in four
+row functions, and one proof is hollow. These are the same class as the fake row-1 mutant, now found by mechanism,
+not by a ward. Checkpointed. R45 removes the class.
+
+## R45 — every named comparison is proven by mechanism, not by hand (2026-10-04)
+
+The class is "a named comparison no mutant exercises". Hand-written mutants keep missing rows: row 1 last round, and
+four rows plus one proof this round. Remove the class by construction:
+
+- **A gate module, `tools/check/row-proof.sh`,** run from `verify.sh`. For every row function the modules define
+  (step-lint already parses them), it makes a sandbox copy of the gate in which that one function's body is
+  `return 0`. It then runs only the module that owns the function, and requires the module to go red.
+  - A function exempt from this needs a `rune:complectens(<category>) — <reason>` at its definition. A helper that
+    is not a comparison is such a case.
+  - Every other row function must go red under this proof.
+  - This is the battery above, made a row.
+- **The four missing mutants come for free from that module:** `row4_bytes`, `fix_ok`, `assert_out` and
+  `clone_layout`. Each must go red under it. `clone_layout` lives in `verify.sh`, so the module must cover the
+  driver's own row functions too.
+- **The self-kill proof** runs through `step`/`expect` directly, with no `carry` wrapper in the way. Prove the
+  reason: in a gate copy with the timer decision changed to `rc == 137`, the proof goes red.
+- **Proof of the module itself:** a row function added without a rune, whose mutant never goes red, makes
+  `row-proof` red.
+
+After R45: my re-run, the battery again (now the gate's own row), a checkpoint, then vigilia 4.

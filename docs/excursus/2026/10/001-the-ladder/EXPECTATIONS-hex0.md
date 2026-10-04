@@ -1,6 +1,6 @@
 # EXPECTATIONS — rung 0: hex0
 
-Written 2026-10-03, before the strike. Every row must be a command in `tools/verify.sh`.
+Amended through round 6; see WEIGH. Every row is a check the gate prints.
 
 | # | what | the command that checks it | expected |
 |---|---|---|---|
@@ -12,12 +12,17 @@ Written 2026-10-03, before the strike. Every row must be a command in `tools/ver
 | 6 | Format edges | fixtures: lowercase and upper case hex digits; CRLF line ends; a comment at end of file with no newline; `;` and `#` comments; digits split across whitespace (`4 1` is one byte, `0x41`); a comment between a byte's two digits | each decodes to its expected bytes |
 | 7 | Every refusal, by its own status | fixtures: argc 2; a missing IN; OUT in a missing directory; a `G`; an odd digit count; a reject byte after a pending nibble (`0x2F`, `0x40`, `0x80`, `0xFF`); the same path; a hard link; a symlink | exits 1, 2, 3, 4, 5, 4, 7, 7, 7, each for the matching fixture and no other. The reject fixtures leave the bytes decoded before the pending nibble. The three same-file cases leave IN byte-identical |
 | 8 | Syscalls are only the honest ones | `strace -f ladder/0-hex0/x86_64-linux/hex0 …` on row 3 | only `execve` (the kernel's), then `open`, `fstat`, `fchmod`, `ftruncate`, `read`, `write`, `close`, `exit` |
-| 9 | Every encoded instruction is what its comment says | `objdump -D -b binary -m i386:x86-64` on the code bytes, compared mechanically against each line's instruction comment by `tools/verify.sh` | every instruction comment matches the disassembly |
+| 9 | Every encoded instruction is what its comment says | `objdump -D -b binary -m i386:x86-64 --insn-width=15` on the code bytes, compared by `tools/check/disasm-check.py` | every instruction comment matches the disassembly. A missing input file exits 99 |
 | 10 | Small enough to read | `wc -c ladder/0-hex0/x86_64-linux/hex0`, and `p_filesz` and `p_memsz` equal that length | 537 bytes. 514 moved because OUT is refused, before `fchmod`, when it is not a regular file |
 | 0 | The layout | `tools/layout.sh`, every rule of `docs/LAYOUT.md`, plus at least one mutant per rule, including: a stray top-level file, a second ELF, a brief inside a rung, a gap in rung numbers, a rung README without an exit table, an edit under `archived/`, a `tools/` script writing into `out/`, a tracked `.wat` file containing `:wat::core::+`, rule 9's docs-shape and bare-reference mutants, a non-image file in `brand/` | `layout: ok` on the tree; each mutant red, naming its rule, then reverted |
-| 11 | Commented throughout | every line of `hex0.hex0` that carries a hex digit also carries a comment (checked by `tools/check/hex-check.py --lint`) | 0 bare lines |
+| 11 | Commented throughout, and ASCII | every line of `hex0.hex0` that carries a hex digit also carries a comment, and every byte is ASCII (checked by `tools/check/hex-check.py --lint`) | `lint: ok` |
 | 12 | The fuzz discriminates | `tools/check/fuzz-hex0.py` runs 2,000 cases from a fixed seed against a reference that states whether OUT exists, comparing bytes on every status. It then repeats the slice on a seed whose a-f bound is flipped, and on a seed whose letter offset is flipped | 2,000 agreements; the status mutant disagrees; the letter-offset mutant disagrees on the decoded bytes; neither mutant is kept |
-| 13 | Fault paths | `tools/check/fault.c` built with `gcc` into the sandbox (`$SANDBOX/fault`). Each of `fstat` on IN, `fstat` on OUT, `fchmod`, `read`, `write`, `close` and `ftruncate` is forced to fail, then the same input is run with the fault removed | the forced call exits 2, 3, 3, 6, 6, 6, 6 respectively, and each control exits 0 with the decoded byte |
+| 13 | Fault paths | `tools/check/fault.c` built with `gcc` into the sandbox (`$SANDBOX/fault`). Each of `fstat` on IN, `fstat` on OUT, `fchmod`, `read`, `write`, `close` and `ftruncate` is forced to fail, then the same input is run with the fault removed | the forced call exits 2, 3, 3, 6, 6, 6, 6 respectively, and each control exits 0 with the decoded byte. An out-of-range NR, FD, errno or Nth exits 93. A real signal on the ptrace path is re-injected |
+| 14 | SIGXFSZ default | the seed writes past a 1024-byte file limit with `SIGXFSZ` at `SIG_DFL` and `RLIMIT_CORE` 0 | shell status 153, and the child inherited `RLIMIT_CORE` 0 |
+| 15 | SIGXFSZ ignored | the same write with `SIGXFSZ` ignored | status 6, and 1024 bytes kept |
+| 16 | Clone rows | a sandbox commit of the visible tree, cloned, including with `core.autocrlf` set | the clone's own `tools/layout.sh` prints `layout: ok`, and every text file is LF. A `tools/check/*.sh text eol=crlf` attribute is red |
+| 17 | Driver | one module that exits 1, and one module that blocks | both are fatal. A self-kill is not a timeout. `HEX0_DRIVER_TEST` alone does not skip this row |
+| 18 | Step lint | `tools/check/step-lint.py` on the gate's shell | `step-lint: ok`. A bare command is red |
 
 **Runtime prediction:** 1–3 hours.
 

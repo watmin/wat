@@ -1,3 +1,4 @@
+# A CR in a text file means a checkout rewrote line ends. Fixtures below stay unmarked as text, so a CR there is the fixture.
 * text=auto eol=lf
 # wat is s-expression — render as clojure on GitHub
 *.wat linguist-language=clojure

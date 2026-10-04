@@ -2,93 +2,46 @@
 # Invocation: hex0 IN OUT
 # Platform: x86-64 Linux. Syscalls only. No libc.
 #
-# The one binary not built from source: the seed, written as commented hex
-# so every byte can be audited by hand. The contract is the rung's
-# (ladder/0-hex0/README.md and tests/). The machine code and the syscalls
-# belong to this target, x86_64-linux. Its source is
-# ladder/0-hex0/x86_64-linux/hex0.hex0. Anyone verifies the binary by
-# stripping comments and packing the hex with sed and xxd, then comparing.
-# hex-check.py is a second reader. Running this seed on its own source
-# proves self-consistency, not trust.
-# A ladder is the sequence of programs that builds watc, each one built by
-# the one below it. A rung is one program in that sequence. The design is
-# docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md.
-#
-# Input, one byte at a time:
-#   '#' or ';' starts a comment that runs to the next LF or end of input.
-#   A CR does not end a comment.
-#   Whitespace (exactly space, tab, CR, LF) is skipped.
-#   A byte's two digits may be split by whitespace or a comment.
-#   0-9, a-f and A-F are hex digits, two per output byte, high nibble first.
-# Output: OUT is created or truncated with mode 0755, so it runs directly.
-# An existing OUT is truncated only after fchmod. fchmod runs before
-# ftruncate so a failed chmod leaves the previous bytes in place.
-# Once fchmod has succeeded, the mode is 0755 on every later status.
-# Status 7 is tested before status 3. hex0 /dev/null /dev/null exits 7.
-# A read-only same file does not open when the process lacks
-# CAP_DAC_OVERRIDE, so the status is 3 and the file is unchanged. With
-# that capability the open succeeds and the status is 7, still untouched.
-# A device or FIFO fails S_ISREG before fchmod, status 3. Opening a device
-# can change device state, because the open has no O_NOCTTY. Unchanged
-# means mode and bytes. A FIFO with no reader fails the open itself.
-# st_mode is the 32-bit field at offset 24. S_IFMT is 0xF000 and S_IFREG
-# is 0x8000.
-#
-# With the default SIGXFSZ disposition, a file-size limit kills hex0
-# (wait status 153) and may dump core. With SIGXFSZ ignored, the failed
-# write is status 6 and the bytes written before it are kept. A FIFO or
-# terminal used as IN can block.
-#
-# Total means every failure stops with a named status. hex0 does not report
-# done after a failure. What OUT holds:
-#   status 1: OUT was not created.
-#   status 2: OUT was not created when opening IN failed. When fstat on IN
-#     failed, OUT has been opened and not truncated: a new file is empty,
-#     and an existing file still holds its old bytes and its old mode.
-#   status 3: OUT was not created when the open failed. When fstat on OUT
-#     failed, or fchmod failed, or OUT is not a regular file, OUT is not
-#     truncated: a new file is empty, and an existing file or device still
-#     holds what it held, mode included.
-#   status 4: truncated, then the bytes decoded before the bad byte, mode 0755.
-#   status 5: truncated, then the bytes decoded before the trailing nibble, mode 0755.
-#   status 6: a failed truncate leaves the old bytes, and the mode is
-#     already 0755. A failed read or write leaves the bytes written before
-#     that failure, after the truncate, mode 0755. A failed close leaves
-#     the full decoded bytes, mode 0755.
-#   status 7: untouched. This status applies only once OUT opened.
-#   status 0: the decoded bytes, mode 0755.
-#
-# Exit status: the numbers and their meanings are in the rung README.
-# This target does not restate them.
+# One per target: that target's seed, written as commented hex so every byte
+# can be audited by hand. This target is x86_64-linux. Its source is
+# ladder/0-hex0/x86_64-linux/hex0.hex0 and its seed is
+# ladder/0-hex0/x86_64-linux/hex0. The input language and the refusals are
+# in the rung README (ladder/0-hex0/README.md). This file does not restate
+# them. A stranger checks the bytes by stripping comments and packing the
+# hex with sed and xxd, then comparing. hex-check.py is a second reader.
+# Running this seed on its own source proves self-consistency, not trust.
+# Disassemble the code with:
+#   objdump -D -b binary -m i386:x86-64 --start-address=0x78 hex0
 #
 # Instruction comments are AT&T syntax, in file offsets only. Each begins
 # with the file offset of that instruction. Jump targets in those comments
 # are file offsets too. objdump is given --adjust-vma so its addresses are
 # file offsets (the code begins at file offset 0x78, virtual 0x400078).
-# The three exit entry points are status 4 (push 4), die (pop the status
-# into edi), and exit (syscall 60). Success jumps to exit with edi = 0.
-# The read loop, the comment-byte handler, and the status-4 push are marked
-# in the block headings.
-# syscall returns in rax and clobbers rcx and r11. Every other register
-# survives, so the loop keeps rsi as the one-byte buffer and rdx as 1.
-# rcx is not held across a syscall. rbp holds IN's st_dev and r8 holds IN's
-# st_ino. st_dev sits at offset 0 of the stat buffer and st_ino at offset 8.
+# The bad-byte push, die (pop into edi), and exit (syscall 60) are the
+# three ways out of the loop. Success jumps to exit with edi = 0.
 # p_filesz is the sum 0x78 + 417 = 537.
 #
-# Registers:
-#   r12   fd of IN
-#   r13   fd of OUT
-#   r14b  1 when a high nibble is waiting, else 0
-#   r15b  that high nibble
-#   r10b  1 while skipping a comment
-#   rbp   st_dev of IN
-#   r8    st_ino of IN
-#   rsi   the stat buffer. fstat IN leaves it in rsi, and fstat OUT reuses it
-#   rdx   unset by design on open IN. open OUT sets it to the create mode
+# syscall returns in rax and clobbers rcx and r11. Every other register
+# survives a syscall. rcx is not held across one.
+#
+# Registers, and the file offset that sets each value:
+#   r12   fd of IN, set at +009d (mov %eax,%r12d) after open IN
+#   r13   fd of OUT, set at +00bf (mov %eax,%r13d) after open OUT
+#   r14b  1 when a high nibble is waiting, else 0. Cleared at +0159 and +01c8
+#   r15b  that high nibble, set at +01b5 (mov %al,%r15b)
+#   r10b  1 while skipping a comment, set at +01dc, cleared at +015c and +01ec
+#   rbp   st_dev of IN, set at +00df (mov (%rsp),%rbp) from offset 0 of the stat buffer
+#   r8    st_ino of IN, set at +00e3 (mov 0x8(%rsp),%r8) from offset 8
+#   rsi   four values, in order:
+#           the stat buffer, set at +00c9 (mov %rsp,%rsi), reused by fstat OUT
+#           0x1ED, set at +012c (mov $0x1ed,%esi) for fchmod
+#           0, set at +0144 (xor %esi,%esi) for ftruncate
+#           the one-byte buffer, set at +0153 (mov %rsp,%rsi) for read and write
+#   rdx   0x1ED at +00aa (mov $0x1ed,%edx) for open OUT, then 1 at +0158 (pop %rdx)
 #   rcx   clobbered by syscall
 #   [rsp] the one-byte buffer, inside the 144-byte stack slot
 # The slot is 144 bytes because that is the x86-64 ABI's struct stat.
-# fstat is passed rsp, and the write stays inside the slot.
+# fstat is passed rsp. st_dev is offset 0, st_ino is offset 8, st_mode is offset 24.
 # Syscalls: read 0, write 1, open 2, close 3, fstat 5, exit 60,
 #   ftruncate 77, fchmod 91.
 # Open OUT with O_WRONLY|O_CREAT|O_NONBLOCK (0x841), no O_TRUNC, mode 0755 (0x1ED).
@@ -161,9 +114,10 @@ E9 54 01 00 00  # +00ba jmp 0x213
 79 07  # +00d6 jns 0xdf
 6A 02  # +00d8 push $0x2
 E9 34 01 00 00  # +00da jmp 0x213
-# ### fstat OUT
+# ### keep IN's st_dev and st_ino
 48 8B 2C 24  # +00df mov (%rsp),%rbp
 4C 8B 44 24 08  # +00e3 mov 0x8(%rsp),%r8
+# ### fstat OUT
 6A 05  # +00e8 push $0x5
 58  # +00ea pop %rax
 44 89 EF  # +00eb mov %r13d,%edi
@@ -206,6 +160,7 @@ E9 D5 00 00 00  # +0139 jmp 0x213
 79 07  # +014a jns 0x153
 6A 06  # +014c push $0x6
 E9 C0 00 00 00  # +014e jmp 0x213
+# ### read setup
 48 89 E6  # +0153 mov %rsp,%rsi
 6A 01  # +0156 push $0x1
 5A  # +0158 pop %rdx
@@ -266,7 +221,7 @@ EB A2  # +01bb jmp 0x15f
 74 87  # +01d6 je 0x15f
 6A 06  # +01d8 push $0x6
 EB 37  # +01da jmp 0x213
-# ### comment
+# ### comment start
 41 B2 01  # +01dc mov $0x1,%r10b
 E9 7B FF FF FF  # +01df jmp 0x15f
 # ### comment byte
@@ -291,7 +246,7 @@ EB 06  # +020b jmp 0x213
 # ### success
 31 FF  # +020d xor %edi,%edi
 EB 03  # +020f jmp 0x214
-# ### status 4
+# ### bad byte
 6A 04  # +0211 push $0x4
 # ### die
 5F  # +0213 pop %rdi
