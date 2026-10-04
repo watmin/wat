@@ -1542,3 +1542,43 @@ arrive.
     - the knobs are undocumented;
     - reap_group silently kills leaks;
     - the fact lookups have no presence check.
+- **sequi: 3 L1, 8 L2.** The seed's register thread holds on every path, traced by hand:
+  - each exit path is balanced;
+  - rsi carries 0x841, rsp, 0x1ed, 0 and rsp again;
+  - rdx is 1 through the loop;
+  - r14b, r15b and r10b behave as documented;
+  - the order is 7, then S_ISREG, then fchmod, then ftruncate.
+
+  Findings:
+  - **L1:** the gate inherits git's environment. Nothing unsets `GIT_DIR`, `GIT_INDEX_FILE` or `GIT_WORK_TREE`, and git
+    exports those to hooks, which is the natural place to run verify before a checkpoint.
+    - Measured on a copy: `GIT_INDEX_FILE=<repo>/.git/index tools/verify.sh` rewrote that repo's index and staged a
+      reverted `.gitattributes`.
+    - `GIT_DIR=<repo>/.git` created a "hex0 gate candidate" commit on that repo's branch, with stubbed modules.
+    - The live repository was not touched: I checked that no such commit exists anywhere in it.
+    - R34's "the live index is never touched" fails. Unset `GIT_*` on entry, in the driver and in every module.
+  - **L1:** fuzz deletes the hung input (the sixth report).
+  - **L1:** under the gate, "kept <path>" for a disagreement is deleted by the trap (as struere and conformare found).
+  - **L2:** steps without a timer. The seed replaced by a FIFO hung seed-audit's `cmp` at :59 with no bound.
+    driver-test's header overclaims.
+  - **L2:** `HEX0_TIME_SCALE`:
+    - 0 disables the timers, and `HEX0_TIME_SCALE=0 driver-test.sh` hung, orphaning a `timeout … 0 cat`;
+    - leading zeros are read as octal;
+    - the die inside `$(…)` gives rc 125.
+  - **L2:** Ctrl-C does not stop the running step (as struere found).
+  - **L2:** the durations are not written once: fuzz's `timeout=5` and the contract's `sleep 30`.
+  - **L2:** relative arguments resolve from the repo root, after the `cd`:
+    - seed-audit with sandbox `sa` left `?? sa/` in the repo;
+    - hex0-contract with `hc2` ran its rows in the repo and then failed with the wrong cause;
+    - `HEX0_SCRATCH=.` makes layout.sh red on its own temp directory.
+  - **L2:** the environment knobs are not declared anywhere a user looks. `HEX0_SANDBOX=/var/tmp/../…` escapes the
+    guard. The second vigilia's sequi L2 was never addressed.
+  - **L2:** the exit codes do not match their documentation (R27).
+  - **L2:** syscalls-check's `global ALLOWED`.
+  - **L3 (not counted):**
+    - the register tables omit the loop roles;
+    - `out/` is shared and stale;
+    - `fix_ok`'s global;
+    - fault.c swallows signals;
+    - the plain clone inherits a global `core.autocrlf`;
+    - rule 7 scans ignored files.
