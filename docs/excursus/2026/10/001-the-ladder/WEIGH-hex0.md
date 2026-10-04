@@ -241,3 +241,60 @@ inputs). The seed is right today, and the gate would not see a regression in the
 - **Assumption 4 is broken:** the instrument reads OUT and ignores it on any non-zero status. OUT after a refusal is
   unspecified (conferre D3), so nothing checks it.
 - **The discriminating mutant is caught by status alone.** No mutant proves the BYTE comparison discriminates.
+
+### experiri: the declared surface IS fully reachable; 0 findings
+
+The calibration passed (2 cells, 4 drives). The roster was 16 declarations, read from the header and the README, which
+agree verbatim, and the input alphabet was probed exhaustively: all 256 bytes, splitting 6 skipped, 22 digits and 228
+invalid, exactly as declared. 31 cells, every one drove and discriminated. A seccomp fault injector it wrote
+(`/var/tmp/wards-hex0/experiri/drv/fault.c`) reached every failure site no ordinary input can: `fstat` on IN and on OUT,
+`fchmod`, `read`, `write`, `close`, `ftruncate`. Each exits its declared status, and each exits 0 once the fault is
+removed.
+
+## Round 3 — the wards' findings, as one strike (2026-10-04)
+
+The seed behaves exactly as declared, and every ward that drove it agrees. What the wards found is in how the seed
+uses memory, how its source teaches an auditor, what its contract leaves unsaid, and where its gate is blind. Do these
+after "The brand arrives".
+
+- **R7 — the `fstat` buffer must hold a `struct stat` (conferre D1, nesciens H4).** Reserve at least 144 bytes
+  before passing `rsp` to `fstat`, so nothing is written past what the seed reserved. Correctness first. If the seed
+  then exceeds 512 bytes, report the size. Row 10's 512 is the orchestrator's number, not a principle: it moves with a
+  stated reason before the code is contorted to fit it.
+- **R8 — the source teaches an audit (conferre D2, nesciens H2, H4, H5, H7, H8).**
+  - State the coordinate system for branch targets once, or make them file offsets.
+  - Prefix each instruction comment with its offset, and give each block a heading (`# ### open IN`, …).
+  - Declare AT&T syntax, and name the exit convention (push the status, jump to the exit; success enters with
+    `edi = 0`).
+  - State `p_filesz` as a sum (`0x78 + code = 511`).
+  - Say which registers survive `syscall`, where `st_dev` and `st_ino` sit (`+0`, `+8`), and why `fchmod` precedes
+    `ftruncate`.
+
+  Row 9's mechanical comparison must keep working.
+- **R9 — the contract states what a refusal leaves behind (conferre D3).** Say plainly what "total" means: every
+  failure stops with a named status. Say what OUT holds after a refusal: none created, empty, or the bytes decoded so
+  far, per status. Put it in the README, the header and the brief's table.
+- **R10 — the README teaches (nesciens R1–R5, cohaerere F4, F5).**
+  - A usage line and the platform.
+  - One clause each for "ladder", "rung" and "seed", with a pointer to the design.
+  - A byte's two digits may be split by whitespace or a comment.
+  - "Whitespace (exactly space, tab, CR, LF)".
+  - A comment runs "to the next LF; a CR does not end it".
+
+  Make the same two wordings in the header.
+- **R11 — the gate asks the questions it skipped (peragrare).**
+  - `tests/lower.hex0` must contain lowercase digits.
+  - Add fixtures for a comment between a byte's two digits, and for a reject byte after a pending nibble (`0x2F`,
+    `0x40`, `0x80`, `0xFF`).
+  - Rebalance the fuzz generator so most cases succeed and their bytes are compared across all 256 values, both cases,
+    and separators or comments between digits.
+  - Make the reference predict OUT after a refusal (R9), and compare OUT on every status.
+  - Add a second discriminating mutant that only the BYTE comparison can catch (for example a lowercase offset off by
+    one), and keep the status mutant.
+- **R12 — the fault paths become rows (experiri).** Track a fault injector under `tools/check/`. Build it into `out/`
+  with `gcc`, which `docs/MACHINE.md` lists. Add verify rows driving each failure site (`fstat` IN and OUT, `fchmod`,
+  `read`, `write`, `close`, `ftruncate`) to its declared status, each with the fault-removed control. A refusal path
+  only a ward has ever exercised is a path the next edit can break unseen.
+
+After round 3: the orchestrator re-runs everything, casts `circumspicere` (last), and then `vigilia` with every ward's
+full text. Then the seed lands.
