@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand/logo-512.png" width="200" alt="the wat logo">
+  <img src="brand/logo-512.png" alt="the wat logo">
 </p>
 
 <h1 align="center">wat</h1>
