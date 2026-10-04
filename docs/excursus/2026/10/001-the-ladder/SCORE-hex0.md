@@ -2,7 +2,7 @@
 
 2026-10-04. Nothing here is landed. Checkpoints exist and are not a landing. This strike does not commit. The tree is dirty on purpose.
 
-Current seed, after the Round 7 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`. That run of `tools/verify` exited 0. Stderr was empty. Its last line was `verify: judged, outer repository unchanged`. The timed command took 6.26s. This strike does not commit. The R47 section records the earlier bash gate, whose last line was `verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run`, in 103.76s.
+Current seed, after the R55 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`. That run of `tools/verify` exited 0. Stderr was empty. Its last line was `verify: judged, outer repository unchanged`. The timed command took 7.85 s. The checkpoint that contains this section is not a landing. The Round 7 section records the earlier run of the same gate, in 6.26 s.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -2090,3 +2090,75 @@ row 26: ast lint
 row 27: tree unchanged
 verify: judged, outer repository unchanged
 ```
+
+## R55 — comparisons live in judges (2026-10-04)
+
+`_static` is gone. A row puts the fact on the observation. The judge compares it and names a mutant of that fact. `row_*` functions are linted in every file under `tools/gate`. A call that builds an `Observation` or `_static(...)` from a comparison, a boolean, or `0 if a == b else 1` is red. The dead `finish()` test is gone. `probe_crlf` is defined once. README line 10 is `Being built from a seed you can read.`
+
+Every git invocation sets `GIT_OPTIONAL_LOCKS=0`. On git 2.55.0 that variable alone does not stop `git diff` from rewriting a stale index. Measured on a `cp -a` copy: the index sha256 was `572c357762c38bb8739b21276cdb24c5f165826a33cf6bc9938a45631428698a` before `git diff --quiet c45603e -- archived` with `GIT_OPTIONAL_LOCKS=0`, and `82c124bb22694fbd309a2e87c4192859c349d75ff4d38840b20233626c9d3d21` after, exit 0. The same diff with `-c diff.autoRefreshIndex=false` left the index unchanged. Every git invocation sets that config as well.
+
+The official command is one `timeout -s KILL 300` of `tools/verify` from `/home/watmin/Work/holon/wat`, snapshots excluded. It exited 0. Stderr was empty (0 bytes). The log is `/var/tmp/hex0-verify-r55.log`. The timed command took 7.851653035 s (`7851653035` ns). That is under 2 minutes. The last line is `verify: judged, outer repository unchanged`.
+
+```
+row 0: prover refuses an always-accept judge
+row 1: hex-check identical
+row 2: sed|xxd identical
+row 3: fixpoint
+row 4: exit 42
+row 5: 755
+row 6: formats
+row 7: refusals
+row 8: syscalls
+row 9: 156 instructions
+row 10: 537 bytes
+row 11: lint
+row 12: fuzz 2000
+row 13: faults
+row 14: SIGXFSZ default
+row 15: SIGXFSZ ignored
+row 16: capability 7
+row 17: empty argv
+row 18: fd 300
+row 19: sha256
+row 20: layout
+layout mutants: red
+row 21: outer repository unchanged
+row 22: clone
+row 23: hostile startup is red
+row 24: signals
+row 25: out/ lock
+row 26: ast lint
+row 27: tree unchanged
+verify: judged, outer repository unchanged
+```
+
+HEAD at that run was `4a023b5008d08a3bd4a9ca3aca37346b78fe7f9f`. The sha256 of every file under `.git`, sorted, 341 files, was `3ad31e1e879fe96b1eccf37cf903538b431f7f04eff7c351acb8db6f6ba79ee9` before and after. The two listings are `/var/tmp/hex0-r55-before.txt` and `/var/tmp/hex0-r55-after.txt` and `cmp` reported they match. The seed stayed 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`. Wards were not cast. The rung is not landed.
+
+### R55 — self-weigh
+
+Each line is a `cp -a` copy under `/var/tmp`. The comparison inside that judge's `accept` was replaced with `False`. The function was not replaced.
+
+| Judge | Red line |
+| --- | --- |
+| Expect | `verify: row 1 hex-check: mutant status stayed green` |
+| Nonzero | `verify: row 22 crlf: mutant status stayed green` |
+| ProverCheck | `verify: row 0 prover: mutant always stayed green` |
+| Syscalls | `verify: row 8 syscalls: mutant extra stayed green` |
+| Disasm | `verify: row 9 disasm: mutant offset stayed green` |
+| Size | `verify: row 10 size: mutant length stayed green` |
+| Lint | `verify: row 11 lint: mutant bare stayed green` |
+| FuzzAgree | `verify: row 12 fuzz: mutant status stayed green` |
+| FifoMode | `verify: row 7 fifo: mutant status stayed green` |
+| TruncOrder | `verify: row 13 trunc: mutant status stayed green` |
+| Digest | `verify: row 19 sha256: mutant digest stayed green` |
+| SameHash | `verify: row 21 outer: mutant changed stayed green` |
+| ChangedHash | `verify: row 21 outer ref: mutant same stayed green` |
+| TestsText | `verify: row 22 tests text: mutant same stayed green` |
+| Signals | `verify: row 24 INT: mutant code stayed green` |
+| AstLint | `verify: row 26 ast: mutant hits stayed green` |
+
+`Always.accept` and `NoMutant.accept` contain no comparison. Repeating that edit on the final tree left the gate green: exit 0, empty stderr, last line `verify: judged, outer repository unchanged`. Row 0 requires `prove` to refuse both, and it still does.
+
+Stale index, no `git status` before the gate: exit 0 in 9.801 s, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `3ad31e1e879fe96b1eccf37cf903538b431f7f04eff7c351acb8db6f6ba79ee9` (341 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 8.758 s, stderr empty, same last line, same `.git` listing.
+
+Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1. Stderr was `verify: row 26 ast`. Stdout ended at `row 25: out/ lock`.

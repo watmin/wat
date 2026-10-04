@@ -13,8 +13,12 @@ import tempfile
 
 from tools.gate import layout
 from tools.gate.fuzzref import reference
-from tools.gate.lint_rows import lint_file, mutant_files
-from tools.gate.observe import Always, Expect, NoMutant, Nonzero, prove
+from tools.gate.lint_rows import lint_file, lint_gate, mutant_files
+from tools.gate.observe import (
+    Always, AstLint, ChangedHash, Digest, Disasm, Expect, FifoMode, FuzzAgree,
+    Lint, NoMutant, Nonzero, Observation, ProverCheck, SameHash, Signals, Size,
+    Syscalls, TestsText, TruncOrder, prove,
+)
 from tools.gate.run import Runner, signal_probe
 
 # Basis, this laptop, 2026-10-04: one seed invocation is well under a second.
@@ -81,6 +85,7 @@ def git_env():
             del env[key]
     env["GIT_CONFIG_GLOBAL"] = "/dev/null"
     env["GIT_CONFIG_NOSYSTEM"] = "1"
+    env["GIT_OPTIONAL_LOCKS"] = "0"
     return env
 
 
@@ -93,13 +98,17 @@ def git(root, *args, cwd=None):
         "-c", "user.name=hex0-gate",
         "-c", "user.email=hex0-gate@example.invalid",
         "-c", "commit.gpgsign=false",
+        "-c", "diff.autoRefreshIndex=false",
         *args,
     ]
     return subprocess.run(cmd, env=git_env(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 def assert_git():
-    proc = subprocess.run(["git", "--version"], stdout=subprocess.PIPE, text=True)
+    proc = subprocess.run(
+        ["git", "-c", "diff.autoRefreshIndex=false", "--version"],
+        stdout=subprocess.PIPE, text=True, env=git_env(),
+    )
     text = proc.stdout.strip().split()
     number = text[-1] if text else "0"
     parts = number.split(".")
@@ -112,12 +121,12 @@ def assert_git():
 
 def outer_hash(root):
     common = subprocess.run(
-        ["git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        stdout=subprocess.PIPE, text=True, check=True,
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        stdout=subprocess.PIPE, text=True, check=True, env=git_env(),
     ).stdout.strip()
     gitdir = subprocess.run(
-        ["git", "-C", root, "rev-parse", "--path-format=absolute", "--git-dir"],
-        stdout=subprocess.PIPE, text=True, check=True,
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", root, "rev-parse", "--path-format=absolute", "--git-dir"],
+        stdout=subprocess.PIPE, text=True, check=True, env=git_env(),
     ).stdout.strip()
     digest = hashlib.sha256()
     for base in sorted({os.path.realpath(common), os.path.realpath(gitdir)}):
@@ -144,15 +153,15 @@ def cap_override():
 
 
 def row_prover(gate):
-    sample = Expect("sample", status=0).accept  # noqa: not a call
     obs = gate.run(["/bin/true"])
     refused = prove(Always(), obs)
-    if refused.ok:
-        gate.require(type("V", (), {"ok": False, "reason": "always-accept judge stayed green"})())
     empty = prove(NoMutant(), obs)
-    if empty.ok or "no mutant" not in empty.reason:
-        sys.stderr.write("verify: a judge with no mutant stayed green\n")
-        raise SystemExit(1)
+    judged = Observation(
+        always_ok=refused.ok,
+        empty_ok=empty.ok,
+        empty_reason=empty.reason,
+    )
+    gate.require(prove(ProverCheck(), judged))
     print("row 0: prover refuses an always-accept judge")
     return obs
 
@@ -161,7 +170,7 @@ def row_hex_check(gate):
     data = open(gate.source, "rb").read()
     status, body = gate.hex_check.decode_bytes(data)
     seed = open(gate.seed, "rb").read()
-    obs = _static(status, body)
+    obs = Observation(status=status, out_exists=True, out_bytes=body)
     gate.require(prove(Expect("row 1 hex-check", status=0, out_exists=True, out_bytes=seed), obs))
     print("row 1: hex-check identical")
 
@@ -169,7 +178,7 @@ def row_hex_check(gate):
 def row_sed(gate):
     proc = gate.run(["/bin/sh", "-c", "sed 's/[#;].*//' \"$1\" | xxd -r -p", "sh", gate.source])
     seed = open(gate.seed, "rb").read()
-    obs = _static(0 if proc.status == 0 else proc.status, proc.stdout)
+    obs = Observation(status=proc.status, out_exists=True, out_bytes=proc.stdout)
     gate.require(prove(Expect("row 2 sed|xxd", status=0, out_exists=True, out_bytes=seed), obs))
     print("row 2: sed|xxd identical")
 
@@ -276,16 +285,10 @@ def row_syscalls(gate):
     out = os.path.join(gate.sandbox, "sys.out")
     trace = os.path.join(gate.sandbox, "sys.trace")
     obs = gate.run(["strace", "-f", "-o", trace, gate.seed, gate.source, out], timeout=LONG, out_path=out)
-    text = open(trace, encoding="utf-8", errors="replace").read() if os.path.exists(trace) else ""
-    names = syscall_names(text)
-    allowed = tsv_names(os.path.join(gate.root, "ladder/0-hex0/x86_64-linux/syscalls.tsv"))
-    extra = [name for name in names if name not in allowed and name != "execve"]
-    missing = [name for name in allowed if name not in names]
-    ok = obs.status == 0 and names[:1] == ["execve"] and names.count("execve") == 1 and not extra and not missing
-    judged = _static(0 if ok else 1, b"")
-    if not ok:
-        sys.stderr.write("verify: syscalls %s extra %s missing %s\n" % (names, extra, missing))
-    gate.require(prove(Expect("row 8 syscalls", status=0), judged), obs)
+    names = tuple(syscall_names(read_trace(trace)))
+    allowed = tuple(tsv_names(os.path.join(gate.root, "ladder/0-hex0/x86_64-linux/syscalls.tsv")))
+    judged = Observation(status=obs.status, names=names, allowed=allowed)
+    gate.require(prove(Syscalls(), judged), obs)
     print("row 8: syscalls")
 
 
@@ -300,12 +303,12 @@ def row_disasm(gate):
         "--start-address", hex(base), "--stop-address", hex(stop),
         "--insn-width", width, gate.seed,
     ], timeout=LONG)
-    # The judge compares the dumped instructions to the source comments via a prepared observation.
-    mismatch = disasm_mismatch(gate.source, proc.stdout.decode("utf-8", "replace"), base)
-    if mismatch:
-        sys.stderr.write("verify: disasm %s\n" % mismatch)
-    obs = _static(0 if mismatch is None and proc.status == 0 else 1, proc.stdout)
-    gate.require(prove(Expect("row 9 disasm", status=0), obs), proc)
+    obs = Observation(
+        status=proc.status,
+        insns=dumped_triples(proc.stdout.decode("utf-8", "replace")),
+        comments=comment_triples(gate.source),
+    )
+    gate.require(prove(Disasm(), obs), proc)
     print("row 9: 156 instructions")
 
 
@@ -315,53 +318,22 @@ def row_size(gate):
     filesz = struct.unpack_from("<Q", data, phoff + 32)[0]
     memsz = struct.unpack_from("<Q", data, phoff + 40)[0]
     facts = tsv_map(os.path.join(gate.root, "ladder/0-hex0/x86_64-linux/gate.tsv"))
-    want = int(facts["size"])
-    gate.require(prove(Expect("row 10 length", status=0), _static(0 if len(data) == want else 1, b"")), None)
-    gate.require(prove(Expect("row 10 filesz", status=0, out_bytes=data), _static(0 if filesz == len(data) else 1, data)), None)
-    gate.require(prove(Expect("row 10 memsz", status=0, out_bytes=data), _static(0 if memsz == len(data) else 1, data)), None)
+    obs = Observation(length=len(data), filesz=filesz, memsz=memsz)
+    gate.require(prove(Size(int(facts["size"])), obs))
     print("row 10: %d bytes" % len(data))
 
 
 def row_lint(gate):
     data = open(gate.source, "rb").read()
-    bare = gate.hex_check.lint_bytes(data)
-    ascii_ok = all(byte < 128 for byte in data) and b"\r" not in data
-    obs = _static(0 if not bare and ascii_ok else 1, b"")
-    gate.require(prove(Expect("row 11 lint", status=0), obs))
+    obs = Observation(bare=tuple(gate.hex_check.lint_bytes(data)), nonascii=nonascii_offsets(data))
+    gate.require(prove(Lint(), obs))
     print("row 11: lint")
 
 
 def row_fuzz(gate):
-    near = [ord(ch) for ch in ":@G`gx/"] + [0, 0x7F, 0x80, 0xFF]
-    cases = []
-    for byte in near:
-        cases.append(bytes([byte]))
-        cases.append(bytes([0x30, byte]))
-    rng = random.Random(20261004)
-    while len(cases) < FUZZ_N:
-        length = rng.randrange(0, 8)
-        cases.append(bytes(rng.randrange(256) for _ in range(length)))
+    cases = fuzz_cases()
     for case in cases:
-        ref_status, ref_body = reference(case)
-        hex_status, hex_body = gate.hex_check.decode_bytes(case)
-        if ref_status != hex_status or ref_body != hex_body:
-            sys.stderr.write("verify: fuzz reference disagrees %r\n" % case)
-            raise SystemExit(1)
-        src = os.path.join(gate.sandbox, "fuzz.in")
-        out = os.path.join(gate.sandbox, "fuzz.out")
-        open(src, "wb").write(case)
-        if os.path.exists(out):
-            os.remove(out)
-        obs = gate.run([gate.seed, src, out], timeout=STEP, out_path=out)
-        exists = ref_status == 0 or ref_body is not None
-        # Status 4 and 5 still create OUT.
-        gate.require(prove(Expect(
-            "row 12 fuzz",
-            status=ref_status,
-            out_exists=True,
-            out_bytes=ref_body,
-            out_mode=0o755,
-        ), obs))
+        fuzz_one(gate, case)
     print("row 12: fuzz %d" % len(cases))
 
 
@@ -450,13 +422,10 @@ def row_fd300(gate):
     built = gate.run(["gcc", "-O2", "-o", binary, source])
     gate.require(prove(Expect("row 18 gcc", status=0), built))
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
-    want = 301
-    if hard != resource.RLIM_INFINITY and hard < want:
-        sys.stderr.write("verify: soft NOFILE hard limit is below 301\n")
-        raise SystemExit(1)
+    require_nofile(hard)
 
     def soft_only():
-        resource.setrlimit(resource.RLIMIT_NOFILE, (want, hard))
+        resource.setrlimit(resource.RLIMIT_NOFILE, (301, hard))
 
     obs = gate.run([binary], preexec=soft_only)
     gate.require(prove(Expect("row 18 fd300", status=0), obs))
@@ -465,8 +434,7 @@ def row_fd300(gate):
 
 def row_sha(gate):
     digest = hashlib.sha256(open(gate.seed, "rb").read()).hexdigest()
-    obs = _static(0 if digest == SEED_SHA else 1, digest.encode())
-    gate.require(prove(Expect("row 19 sha256", status=0, out_exists=True, out_bytes=SEED_SHA.encode()), obs))
+    gate.require(prove(Digest(SEED_SHA), Observation(digest=digest)))
     print("row 19: sha256")
 
 
@@ -477,7 +445,6 @@ def row_layout(gate):
     except layout.LayoutError as exc:
         sys.stderr.write("verify: %s\n" % exc)
         raise SystemExit(1)
-    from tools.gate.observe import Observation
     obs = Observation(status=0, stdout=text.encode())
     gate.require(prove(Expect("row 20 layout", status=0, stdout_has=b"layout: ok"), obs))
     print("row 20: layout")
@@ -486,8 +453,7 @@ def row_layout(gate):
 
 def row_outer(gate):
     after = outer_hash(gate.root)
-    obs = _static(0 if after == gate.outer_before else 1, b"")
-    gate.require(prove(Expect("row 21 outer", status=0), obs))
+    gate.require(prove(SameHash("row 21 outer"), Observation(before=gate.outer_before, after=after)))
     probe_outer(gate)
     print("row 21: outer repository unchanged")
 
@@ -530,16 +496,13 @@ def row_hostile(gate):
         ["python3", "-I", os.path.join(copy, "tools/verify")],
         timeout=LONG, cwd=copy, env=env,
     )
-    gate.require(prove(Nonzero(), proc), proc)
+    gate.require(prove(Nonzero("row 23 hostile"), proc), proc)
     print("row 23: hostile startup is red")
 
 
 def row_signals(gate):
     for name in ("INT", "TERM", "HUP"):
-        code, _out, err, left, children = signal_probe(name, gate.sandbox)
-        if code == 0 or left or children:
-            sys.stderr.write("verify: signal %s left code %s dirs %s children %s %s\n" % (name, code, left, children, err))
-            raise SystemExit(1)
+        signal_one(gate, name)
     print("row 24: signals")
 
 
@@ -553,49 +516,36 @@ def row_lock(gate):
 
 
 def row_ast(gate):
-    hits = lint_file(os.path.join(gate.root, "tools/gate/rows.py"))
-    if hits:
-        sys.stderr.write("verify: %s\n" % hits[0])
-        raise SystemExit(1)
-    bad, good = mutant_files(gate.sandbox)
-    if not lint_file(bad):
-        sys.stderr.write("verify: ast mutant stayed green\n")
-        raise SystemExit(1)
-    if lint_file(good):
-        sys.stderr.write("verify: ast loop was red\n")
-        raise SystemExit(1)
+    bad, good, static = mutant_files(gate.sandbox)
+    obs = Observation(
+        hits=tuple(lint_gate(gate.root)),
+        bad_hits=tuple(lint_file(bad)),
+        good_hits=tuple(lint_file(good)),
+        static_hits=tuple(lint_file(static)),
+    )
+    gate.require(prove(AstLint(), obs))
     print("row 26: ast lint")
 
 
 def row_effect(gate):
     after = layout.hash_visible(gate.root)
-    same = _static(0 if after == gate.before else 1, b"")
-    gate.require(prove(Expect("row 27 tree", status=0), same))
+    gate.require(prove(SameHash("row 27 tree"), Observation(before=gate.before, after=after)))
     copy = os.path.join(gate.sandbox, "effect")
     os.makedirs(os.path.join(copy, "tools"))
     seed = os.path.join(copy, "hex0")
     open(seed, "wb").write(b"\x7fELF")
     before = layout.hash_visible(copy)
     open(seed, "wb").write(b"\x7fELG")
-    seed_changed = _static(0 if layout.hash_visible(copy) != before else 1, b"")
-    gate.require(prove(Expect("row 27 seed rewrite", status=0), seed_changed))
+    gate.require(prove(ChangedHash("row 27 seed rewrite"), Observation(before=before, after=layout.hash_visible(copy))))
     tool = os.path.join(copy, "tools", "wrote")
     before_tool = layout.hash_visible(copy)
     open(tool, "w", encoding="utf-8").write("x\n")
-    tool_changed = _static(0 if layout.hash_visible(copy) != before_tool else 1, b"")
-    gate.require(prove(Expect("row 27 tools write", status=0), tool_changed))
+    gate.require(prove(ChangedHash("row 27 tools write"), Observation(before=before_tool, after=layout.hash_visible(copy))))
     print("row 27: tree unchanged")
 
 
 def finish(gate):
-    if os.listdir(gate.sandbox) is None:
-        pass
     print("verify: judged, outer repository unchanged")
-
-
-def _static(status, body):
-    from tools.gate.observe import Observation
-    return Observation(status=status, out_exists=True, out_bytes=body if isinstance(body, bytes) else b"", out_mode=None)
 
 
 def tsv_map(path):
@@ -610,7 +560,7 @@ def tsv_map(path):
     return found
 
 
-def disasm_mismatch(source, dump, base):
+def comment_triples(source):
     import re
     comments = []
     seen = False
@@ -627,9 +577,12 @@ def disasm_mismatch(source, dump, base):
         text = " ".join(comment.split())
         match = re.match(r"^\+([0-9A-Fa-f]+) (.*)$", text)
         if match:
-            comments.append((int(match.group(1), 16), match.group(2)))
-    if len(comments) != 156:
-        return "count %d" % len(comments)
+            comments.append((int(match.group(1), 16), bytes.fromhex("".join(hexes)), match.group(2)))
+    return tuple(comments)
+
+
+def dumped_triples(dump):
+    import re
     got = []
     for line in dump.splitlines():
         match = re.match(r"^\s*([0-9a-f]+):(.*)$", line)
@@ -637,22 +590,18 @@ def disasm_mismatch(source, dump, base):
             continue
         addr = int(match.group(1), 16)
         words = match.group(2).split()
-        # objdump prints hex bytes then the mnemonic. Drop the hex bytes.
+        raw = []
         mnemonic = []
         started = False
         for word in words:
             if not started and re.fullmatch(r"[0-9a-f]{2}", word):
+                raw.append(word)
                 continue
             started = True
             mnemonic.append(word)
         if mnemonic:
-            got.append((addr, " ".join(mnemonic)))
-    if len(got) != len(comments):
-        return "objdump %d" % len(got)
-    for (off, text), (addr, mnemonic) in zip(comments, got):
-        if off != addr or text != mnemonic:
-            return "%s vs %s" % (text, mnemonic)
-    return None
+            got.append((addr, bytes.fromhex("".join(raw)), " ".join(mnemonic)))
+    return tuple(got)
 
 
 def probe_outer(gate):
@@ -664,46 +613,20 @@ def probe_outer(gate):
     git(repo, "commit", "-q", "--no-verify", "-m", "a")
     before = outer_hash(repo)
     git(repo, "update-ref", "refs/heads/evil", "HEAD")
-    if outer_hash(repo) == before:
-        sys.stderr.write("verify: a new ref stayed unchanged\n")
-        raise SystemExit(1)
+    gate.require(prove(ChangedHash("row 21 outer ref"), Observation(before=before, after=outer_hash(repo))))
     git(repo, "update-ref", "-d", "refs/heads/evil")
     info = os.path.join(repo, ".git", "info")
     os.makedirs(info, exist_ok=True)
     exclude = os.path.join(info, "exclude")
     open(exclude, "a", encoding="utf-8").write("# x\n")
-    if outer_hash(repo) == before:
-        sys.stderr.write("verify: info/exclude stayed unchanged\n")
-        raise SystemExit(1)
-    # A gitfile .git points at the same common dir.
+    gate.require(prove(ChangedHash("row 21 outer exclude"), Observation(before=before, after=outer_hash(repo))))
     link = os.path.join(gate.sandbox, "outer-link")
     os.makedirs(link)
     real = os.path.realpath(os.path.join(repo, ".git"))
     open(os.path.join(link, ".git"), "w", encoding="utf-8").write("gitdir: %s\n" % real)
     before_link = outer_hash(link)
     open(exclude, "a", encoding="utf-8").write("# y\n")
-    if outer_hash(link) == before_link:
-        sys.stderr.write("verify: a gitfile missed info/exclude\n")
-        raise SystemExit(1)
-
-
-def probe_crlf(gate):
-    repo = os.path.join(gate.sandbox, "crlf-repo")
-    os.makedirs(repo)
-    git(repo, "init", "-q", "--template=")
-    open(os.path.join(repo, ".gitattributes"), "w", encoding="utf-8").write("*.py text eol=crlf\n")
-    open(os.path.join(repo, "a.py"), "w", encoding="utf-8").write("a\n")
-    git(repo, "add", "-A")
-    git(repo, "commit", "-q", "--no-verify", "-m", "crlf")
-    cloned = os.path.join(gate.sandbox, "crlf-clone")
-    git(repo, "clone", "-q", "--template=", "--no-local", repo, cloned)
-    attr = subprocess.run(
-        ["git", "-C", cloned, "check-attr", "-z", "eol", "a.py"],
-        stdout=subprocess.PIPE, env=git_env(),
-    )
-    if b"crlf" not in attr.stdout:
-        sys.stderr.write("verify: crlf attribute was not red\n")
-        raise SystemExit(1)
+    gate.require(prove(ChangedHash("row 21 outer gitfile"), Observation(before=before_link, after=outer_hash(link))))
 
 
 ARGC0 = r'''
@@ -826,15 +749,12 @@ def fifo_case(gate, reader):
     path = os.path.join(gate.sandbox, "fifo-reader" if reader else "fifo-none")
     os.mkfifo(path)
     before = os.stat(path).st_mode & 0o777
-    held = None
-    if reader:
-        held = os.open(path, os.O_RDWR)
+    held = open_reader(path, reader)
     obs = gate.run([gate.seed, os.path.join(gate.tests, "lower.hex0"), path], out_path=path)
-    if held is not None:
-        os.close(held)
+    close_reader(held)
     after = os.stat(path).st_mode & 0o777
-    mode_obs = _static(obs.status if after == before else 1, b"")
-    gate.require(prove(Expect("row 7 fifo", status=3), mode_obs), obs)
+    judged = Observation(status=obs.status, prior_mode=before, out_mode=after)
+    gate.require(prove(FifoMode(), judged), obs)
 
 
 def link_case(gate, old):
@@ -915,11 +835,7 @@ def trunc_order(gate, binary, facts, calls):
         [binary, calls["fchmod"], facts["out_fd"], "5", "1", mutant, src, pre],
         out_path=pre, timeout=LONG,
     )
-    changed = obs.out_bytes != b"OLDDATA" and obs.out_mode == 0o640 and obs.status == 3
-    judged = _static(0 if changed else 1, obs.out_bytes or b"")
-    if not changed:
-        sys.stderr.write("verify: trunc-before-fchmod status %s mode %s bytes %r\n" % (obs.status, obs.out_mode, obs.out_bytes))
-    gate.require(prove(Expect("row 13 trunc order", status=0), judged), obs)
+    gate.require(prove(TruncOrder(), obs), obs)
 
 
 def signal_reinject(gate, binary):
@@ -965,8 +881,8 @@ def fill_candidate(root, dest):
     bare = dest + ".archive.git"
     git(root, "init", "-q", "--bare", "--template=", bare)
     common = subprocess.run(
-        ["git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        stdout=subprocess.PIPE, text=True, check=True,
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        stdout=subprocess.PIPE, text=True, check=True, env=git_env(),
     ).stdout.strip()
     os.makedirs(os.path.join(bare, "objects", "info"), exist_ok=True)
     open(os.path.join(bare, "objects", "info", "alternates"), "w", encoding="utf-8").write(
@@ -992,12 +908,12 @@ def fill_candidate(root, dest):
 
 def text_cr(root):
     listed = subprocess.run(
-        ["git", "-C", root, "ls-files", "-z"],
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", root, "ls-files", "-z"],
         stdout=subprocess.PIPE, env=git_env(),
     )
     rels = [item.decode() for item in listed.stdout.split(b"\0") if item]
     proc = subprocess.run(
-        ["git", "-C", root, "check-attr", "-z", "--stdin", "text"],
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", root, "check-attr", "-z", "--stdin", "text"],
         input=b"\0".join(item.encode() for item in rels) + b"\0",
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=git_env(),
     )
@@ -1033,7 +949,7 @@ def probe_crlf(gate):
     cloned = os.path.join(gate.sandbox, "crlf-clone")
     git(repo, "clone", "-q", "--template=", "--no-local", repo, cloned)
     cr = text_cr(cloned)
-    gate.require(prove(Nonzero(), cr), cr)
+    gate.require(prove(Nonzero("row 22 crlf"), cr), cr)
 
 
 def probe_tests_text(gate, candidate):
@@ -1051,13 +967,89 @@ def probe_tests_text(gate, candidate):
     cr = text_cr(cloned)
     # eol=lf rewrites the fixture, so the work tree no longer matches the blob.
     shown = subprocess.run(
-        ["git", "-C", cloned, "hash-object", "ladder/0-hex0/tests/crlf.hex0"],
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", cloned, "hash-object", "ladder/0-hex0/tests/crlf.hex0"],
         stdout=subprocess.PIPE, env=git_env(),
     )
     blob = subprocess.run(
-        ["git", "-C", cloned, "rev-parse", "HEAD:ladder/0-hex0/tests/crlf.hex0"],
+        ["git", "-c", "diff.autoRefreshIndex=false", "-C", cloned, "rev-parse", "HEAD:ladder/0-hex0/tests/crlf.hex0"],
         stdout=subprocess.PIPE, env=git_env(),
     )
-    differed = shown.stdout.strip() != blob.stdout.strip()
-    judged = _static(0 if differed or cr.status != 0 else 1, b"")
-    gate.require(prove(Expect("row 22 tests text", status=0), judged), cr)
+    obs = Observation(shown=shown.stdout.strip(), blob=blob.stdout.strip(), cr_status=cr.status)
+    gate.require(prove(TestsText(), obs), cr)
+
+
+def read_trace(path):
+    if not os.path.exists(path):
+        return ""
+    return open(path, encoding="utf-8", errors="replace").read()
+
+
+def nonascii_offsets(data):
+    found = []
+    for index, byte in enumerate(data):
+        if byte >= 128 or byte == 13:
+            found.append(index)
+    return tuple(found)
+
+
+def fuzz_cases():
+    near = [ord(ch) for ch in ":@G`gx/"] + [0, 0x7F, 0x80, 0xFF]
+    cases = []
+    for byte in near:
+        cases.append(bytes([byte]))
+        cases.append(bytes([0x30, byte]))
+    rng = random.Random(20261004)
+    while len(cases) < FUZZ_N:
+        length = rng.randrange(0, 8)
+        cases.append(bytes(rng.randrange(256) for _ in range(length)))
+    return cases
+
+
+def fuzz_one(gate, case):
+    ref_status, ref_body = reference(case)
+    hex_status, hex_body = gate.hex_check.decode_bytes(case)
+    agreed = Observation(
+        ref_status=ref_status,
+        ref_out=ref_body,
+        check_status=hex_status,
+        check_out=hex_body,
+    )
+    gate.require(prove(FuzzAgree(), agreed))
+    src = os.path.join(gate.sandbox, "fuzz.in")
+    out = os.path.join(gate.sandbox, "fuzz.out")
+    open(src, "wb").write(case)
+    if os.path.exists(out):
+        os.remove(out)
+    obs = gate.run([gate.seed, src, out], timeout=STEP, out_path=out)
+    gate.require(prove(Expect(
+        "row 12 fuzz",
+        status=ref_status,
+        out_exists=True,
+        out_bytes=ref_body,
+        out_mode=0o755,
+    ), obs))
+
+
+def require_nofile(hard):
+    import resource
+    if hard != resource.RLIM_INFINITY and hard < 301:
+        sys.stderr.write("verify: soft NOFILE hard limit is below 301\n")
+        raise SystemExit(1)
+
+
+def signal_one(gate, name):
+    code, _out, err, left, children = signal_probe(name, gate.sandbox)
+    obs = Observation(code=code, left=len(left), children=len(children), stderr=err)
+    gate.require(prove(Signals(name), obs))
+
+
+def open_reader(path, reader):
+    if not reader:
+        return None
+    return os.open(path, os.O_RDWR)
+
+
+def close_reader(held):
+    if held is None:
+        return
+    os.close(held)

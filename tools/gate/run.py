@@ -56,13 +56,17 @@ class Runner:
             except ProcessLookupError:
                 pass
         out_exists, out_bytes, out_mode = stat_out(out_path)
+        if not stdout:
+            stdout = b""
+        if not stderr:
+            stderr = b""
         return Observation(
             status=status,
             out_exists=out_exists,
             out_bytes=out_bytes,
             out_mode=out_mode,
-            stdout=stdout or b"",
-            stderr=stderr or b"",
+            stdout=stdout,
+            stderr=stderr,
             timed_out=timed_out,
             escaped=tuple(escaped),
         )

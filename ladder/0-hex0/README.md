@@ -7,6 +7,7 @@ One per target: that target's seed, written as commented hex so every byte can b
 ```
 sed 's/[#;].*//' ladder/0-hex0/x86_64-linux/hex0.hex0 | xxd -r -p | cmp - ladder/0-hex0/x86_64-linux/hex0
 ```
+Being built from a seed you can read.
 
 That decode shares no code with `tools/check/hex-check.py`, which is a second reader of the same source. Both readers agree byte for byte. The trust is the hand audit, not which reader ran first. Running this seed on that source proves self-consistency, not trust. The disassembly recipe, the registers and the file offsets live in the target header and in `ladder/0-hex0/x86_64-linux/gate.tsv`.
 

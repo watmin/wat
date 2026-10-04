@@ -20,6 +20,18 @@ STATUS_ROW = re.compile(r"\|\s*[0-9]+\s*\|")
 POINTER = "the rung README"
 
 
+def git_run(argv):
+    env = os.environ.copy()
+    for key in list(env):
+        if key.startswith("GIT_"):
+            del env[key]
+    env["GIT_CONFIG_GLOBAL"] = "/dev/null"
+    env["GIT_CONFIG_NOSYSTEM"] = "1"
+    env["GIT_OPTIONAL_LOCKS"] = "0"
+    cmd = [argv[0], "-c", "diff.autoRefreshIndex=false", *argv[1:]]
+    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+
 def fail(rule, text):
     raise LayoutError("layout: rule %s: %s" % (rule, text))
 
@@ -68,10 +80,7 @@ def rule1(root):
         if name not in TOP:
             fail(1, "top-level name not in the layout: %s" % name)
     if os.path.isdir(os.path.join(root, ".git")) or os.path.isfile(os.path.join(root, ".git")):
-        listed = subprocess.run(
-            ["git", "-C", root, "ls-files", "-z", "--", "out"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
+        listed = git_run(["git", "-C", root, "ls-files", "-z", "--", "out"])
         if listed.returncode == 0 and listed.stdout.strip(b"\0"):
             fail(1, "tracked out/ path: %s" % listed.stdout.split(b"\0")[0].decode())
     brand = os.path.join(root, "brand")
@@ -162,10 +171,7 @@ def rule5(root):
 
 
 def rule6(root, git):
-    proc = subprocess.run(
-        [git, "-C", root, "diff", "--quiet", "c45603e", "--", "archived"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-    )
+    proc = git_run([git, "-C", root, "diff", "--quiet", "c45603e", "--", "archived"])
     if proc.returncode != 0:
         fail(6, "archived/ bytes differ from c45603e")
 
