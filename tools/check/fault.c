@@ -1,20 +1,35 @@
-/* fault NR FD ERRNO prog args...
+/* fault NR FD ERRNO NTH prog args...
  * Run prog with one syscall forced to fail.
  * FD >= 0 fails that syscall only when arg0 equals FD.
  * FD < 0 fails that syscall on any descriptor.
- * ERRNO must be non-zero. The control is prog run without this injector.
- * A check, not a rung. verify builds it into the sandbox.
+ * ERRNO is in 1..4095. NTH is the 1-based matching call to fail.
+ * NTH 1 is installed with seccomp. A later NTH is counted with ptrace,
+ * and the call is skipped before the kernel runs it.
+ * Exit codes:
+ *   93  bad NR, FD, ERRNO, or NTH
+ *   94  could not fill fds 0-2 from /dev/null, or could not close the rest
+ *   95  exec failed
+ *   96  seccomp or ptrace failed
+ *   97  PR_SET_NO_NEW_PRIVS failed
+ *   98  usage
+ * Fd layout guaranteed before exec: 0, 1 and 2 are open, and every fd
+ * from 3 up is closed. The program's first open is then 3 and its second
+ * is 4. A check, not a rung. The gate builds this into the sandbox.
  */
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stddef.h>
 #include <sys/prctl.h>
+#include <sys/ptrace.h>
+#include <sys/resource.h>
+#include <sys/user.h>
+#include <sys/wait.h>
 #include <linux/seccomp.h>
 #include <linux/filter.h>
-#include <sys/resource.h>
 
 static long need_long(const char *text, const char *what) {
   char *end = NULL;
@@ -28,58 +43,10 @@ static long need_long(const char *text, const char *what) {
   return value;
 }
 
-int main(int argc, char **argv) {
-  long nr_l;
-  long fd_l;
-  long err_l;
-  int nr;
-  int watch_fd;
-  int err;
+static int prepare_fds(void) {
   int slot;
   int maxfd;
   struct rlimit lim;
-  struct sock_filter anyfd[] = {
-    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),
-    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
-  };
-  struct sock_filter onefd[] = {
-    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),
-    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 3),
-    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, args[0])),
-    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
-  };
-  struct sock_fprog prog;
-
-  if (argc < 5) {
-    fprintf(stderr, "usage: fault NR FD ERRNO prog args...\n");
-    return 98;
-  }
-  nr_l = need_long(argv[1], "NR");
-  fd_l = need_long(argv[2], "FD");
-  err_l = need_long(argv[3], "ERRNO");
-  if (err_l == 0) {
-    fprintf(stderr, "fault: errno must be non-zero\n");
-    return 93;
-  }
-  nr = (int)nr_l;
-  watch_fd = (int)fd_l;
-  err = (int)err_l;
-  anyfd[1].k = (unsigned)nr;
-  onefd[1].k = (unsigned)nr;
-  onefd[3].k = (unsigned)watch_fd;
-  anyfd[2].k = SECCOMP_RET_ERRNO | (err & SECCOMP_RET_DATA);
-  onefd[4].k = SECCOMP_RET_ERRNO | (err & SECCOMP_RET_DATA);
-  if (watch_fd < 0) {
-    prog.len = 4;
-    prog.filter = anyfd;
-  } else {
-    prog.len = 6;
-    prog.filter = onefd;
-  }
   for (slot = 0; slot < 3; slot++) {
     int got;
     if (fcntl(slot, F_GETFD) != -1) {
@@ -105,6 +72,153 @@ int main(int argc, char **argv) {
   for (slot = 3; slot < maxfd; slot++) {
     close(slot);
   }
+  return 0;
+}
+
+static int trace_nth(int nr, int watch_fd, int err, int nth, char **argv) {
+  pid_t pid;
+  int status;
+  int entering;
+  int seen;
+  int armed;
+  int prep;
+  pid = fork();
+  if (pid < 0) {
+    perror("fork");
+    return 94;
+  }
+  if (pid == 0) {
+    prep = prepare_fds();
+    if (prep != 0) {
+      _exit(prep);
+    }
+    if (ptrace(PTRACE_TRACEME, 0, 0, 0) < 0) {
+      _exit(96);
+    }
+    raise(SIGSTOP);
+    execv(argv[0], argv);
+    _exit(95);
+  }
+  if (waitpid(pid, &status, 0) < 0) {
+    return 96;
+  }
+  if (ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD) < 0) {
+    return 96;
+  }
+  entering = 1;
+  seen = 0;
+  armed = 0;
+  for (;;) {
+    struct user_regs_struct regs;
+    if (ptrace(PTRACE_SYSCALL, pid, 0, 0) < 0) {
+      return 96;
+    }
+    if (waitpid(pid, &status, 0) < 0) {
+      return 96;
+    }
+    if (WIFEXITED(status)) {
+      return WEXITSTATUS(status);
+    }
+    if (WIFSIGNALED(status)) {
+      return 128 + WTERMSIG(status);
+    }
+    if (!WIFSTOPPED(status) || WSTOPSIG(status) != (SIGTRAP | 0x80)) {
+      continue;
+    }
+    if (ptrace(PTRACE_GETREGS, pid, 0, &regs) < 0) {
+      return 96;
+    }
+    if (entering) {
+      int match = regs.orig_rax == (unsigned long)nr;
+      if (watch_fd >= 0 && (long)regs.rdi != watch_fd) {
+        match = 0;
+      }
+      if (match) {
+        seen++;
+        if (seen == nth) {
+          regs.orig_rax = (unsigned long)-1;
+          if (ptrace(PTRACE_SETREGS, pid, 0, &regs) < 0) {
+            return 96;
+          }
+          armed = 1;
+        }
+      }
+    } else if (armed) {
+      regs.rax = (unsigned long)(-(long)err);
+      if (ptrace(PTRACE_SETREGS, pid, 0, &regs) < 0) {
+        return 96;
+      }
+      armed = 0;
+    }
+    entering = !entering;
+  }
+}
+
+int main(int argc, char **argv) {
+  long nr_l;
+  long fd_l;
+  long err_l;
+  long nth_l;
+  int nr;
+  int watch_fd;
+  int err;
+  int nth;
+  int prep;
+  struct sock_filter anyfd[] = {
+    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),
+    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1),
+    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO),
+    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
+  };
+  struct sock_filter onefd[] = {
+    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),
+    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 3),
+    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, args[0])),
+    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1),
+    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO),
+    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
+  };
+  struct sock_fprog prog;
+
+  if (argc < 6) {
+    fprintf(stderr, "usage: fault NR FD ERRNO NTH prog args...\n");
+    return 98;
+  }
+  nr_l = need_long(argv[1], "NR");
+  fd_l = need_long(argv[2], "FD");
+  err_l = need_long(argv[3], "ERRNO");
+  nth_l = need_long(argv[4], "NTH");
+  if (err_l < 1 || err_l > 4095) {
+    fprintf(stderr, "fault: errno must be 1..4095\n");
+    return 93;
+  }
+  if (nth_l < 1) {
+    fprintf(stderr, "fault: nth must be at least 1\n");
+    return 93;
+  }
+  nr = (int)nr_l;
+  watch_fd = (int)fd_l;
+  err = (int)err_l;
+  nth = (int)nth_l;
+  if (nth > 1) {
+    return trace_nth(nr, watch_fd, err, nth, argv + 5);
+  }
+  anyfd[1].k = (unsigned)nr;
+  onefd[1].k = (unsigned)nr;
+  onefd[3].k = (unsigned)watch_fd;
+  anyfd[2].k = SECCOMP_RET_ERRNO | (err & SECCOMP_RET_DATA);
+  onefd[4].k = SECCOMP_RET_ERRNO | (err & SECCOMP_RET_DATA);
+  if (watch_fd < 0) {
+    prog.len = 4;
+    prog.filter = anyfd;
+  } else {
+    prog.len = 6;
+    prog.filter = onefd;
+  }
+  prep = prepare_fds();
+  if (prep != 0) {
+    return prep;
+  }
   if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
     perror("nnp");
     return 97;
@@ -113,7 +227,7 @@ int main(int argc, char **argv) {
     perror("seccomp");
     return 96;
   }
-  execv(argv[4], argv + 4);
+  execv(argv[5], argv + 5);
   perror("execv");
   return 95;
 }

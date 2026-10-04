@@ -6,7 +6,7 @@ Most cases decode successfully. The reference states whether OUT exists,
 and a missing OUT is None, distinct from an empty file. Bytes are
 compared on every status.
 
-Disagreements on the real seed are written under the rung's tests.
+A disagreement is written into the sandbox passed on the command line.
 Each kind has its own exit code: 3 status, 4 existence, 5 bytes.
 A bytes-only disagreement prints the bytes.
 
@@ -29,12 +29,9 @@ LETTER = bytes.fromhex("040aeb02")
 LETTER_FLIPPED = bytes.fromhex("040beb02")
 # NEAR: the bytes just outside the digit classes, plus the ends of a byte.
 # ':' follows '9', '@' precedes 'A', 'G' follows 'F', '`' precedes 'a',
-# 'g' and 'x' follow 'f', '/' precedes '0'.
+# 'g' follows 'f', '/' precedes '0'. 'x' is a reject byte, not a neighbor.
 NEAR = [ord(c) for c in ":@G`gx/"] + [0, 0x7F, 0x80, 0xFF]
 REJECT_AFTER = (0x2F, 0x40, 0x80, 0xFF)
-ROOT = Path(__file__).resolve().parents[2]
-
-
 def nibble(byte):
     if 48 <= byte <= 57:
         return byte - 48
@@ -128,6 +125,8 @@ def forced():
     yield b"4\r\n1"
     yield b"# only comment"
     yield b"4"
+    yield b"4#"
+    yield b"414#"
     yield b"AA" * 2048
 
 
@@ -162,7 +161,13 @@ def run_one(hex0, data, folder):
     src.write_bytes(data)
     if dst.exists():
         dst.unlink()
-    proc = subprocess.run([str(hex0), str(src), str(dst)])
+    try:
+        proc = subprocess.run([str(hex0), str(src), str(dst)], timeout=5)
+    except subprocess.TimeoutExpired:
+        hung = folder / "hung.hex0"
+        hung.write_bytes(data)
+        sys.stderr.write("fuzz: hung on %s\n" % hung)
+        return None
     if dst.exists():
         return proc.returncode, True, dst.read_bytes()
     return proc.returncode, False, None
@@ -196,16 +201,17 @@ def main(argv):
             expect = "letter"
         else:
             args.append(arg)
-    if len(args) != 2:
+    if len(args) != 3:
         sys.stderr.write(
-            "usage: fuzz-hex0.py [--expect-disagree | --expect-letter-offset] HEX0 COUNT\n"
+            "usage: fuzz-hex0.py [--expect-disagree | --expect-letter-offset] HEX0 COUNT SANDBOX\n"
         )
         return 2
     hex0 = Path(args[0]).resolve()
     count = int(args[1])
+    sandbox = Path(args[2])
     rng = random.Random(SEED)
     sample = cases(count, rng)
-    work = Path(tempfile.mkdtemp(prefix="hex0-fuzz-", dir="/var/tmp"))
+    work = Path(tempfile.mkdtemp(prefix="hex0-fuzz-", dir=str(sandbox)))
     target = hex0
     if expect == "status":
         target = work / "mutant"
@@ -220,13 +226,24 @@ def main(argv):
     try:
         for data in sample:
             want_rc, want_exists, want_body = reference(data)
-            got_rc, got_exists, got_body = run_one(target, data, work)
+            got = run_one(target, data, work)
+            if got is None:
+                return 1
+            got_rc, got_exists, got_body = got
             kind = disagree(got_rc, got_exists, got_body, want_rc, want_exists, want_body)
             if kind == 0:
                 continue
             disagreements += 1
             if kind == 5:
                 byte_only += 1
+            if expect == "status" and disagreements >= 1:
+                sys.stdout.write("fuzz mutant: stopped at first disagreement\n")
+                return 0
+            if expect == "letter" and byte_only >= 1:
+                sys.stdout.write(
+                    "fuzz letter-offset mutant: stopped at first byte disagreement\n"
+                )
+                return 0
             if expect:
                 continue
             if kind == 5:
@@ -237,7 +254,7 @@ def main(argv):
                         want_body.hex() if want_body is not None else "missing",
                     )
                 )
-            fixture = ROOT / "ladder/0-hex0/tests/fuzz-disagree.hex0"
+            fixture = sandbox / "fuzz-disagree.hex0"
             fixture.write_bytes(data)
             sys.stderr.write(
                 "fuzz: disagree kind %d status %d vs %d, kept %s\n"
@@ -249,20 +266,11 @@ def main(argv):
             child.unlink()
         work.rmdir()
     if expect == "status":
-        if disagreements < 1:
-            sys.stderr.write("fuzz: flipped seed agreed on every case\n")
-            return 1
-        sys.stdout.write("fuzz mutant: %d disagreements\n" % disagreements)
-        return 0
+        sys.stderr.write("fuzz: flipped seed agreed on every case\n")
+        return 1
     if expect == "letter":
-        if byte_only < 1:
-            sys.stderr.write("fuzz: letter-offset mutant had no byte-only disagreement\n")
-            return 1
-        sys.stdout.write(
-            "fuzz letter-offset mutant: %d disagreements, %d on bytes\n"
-            % (disagreements, byte_only)
-        )
-        return 0
+        sys.stderr.write("fuzz: letter-offset mutant had no byte-only disagreement\n")
+        return 1
     sys.stdout.write("fuzz: %d agree\n" % count)
     return 0
 

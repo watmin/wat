@@ -12,6 +12,13 @@ else
 fi
 ROOT=$PWD
 shopt -s nullglob
+if [ -n "${HEX0_SCRATCH:-}" ]; then
+  LTMP=$HEX0_SCRATCH/layout-tmp
+  mkdir -p "$LTMP"
+else
+  LTMP=$(mktemp -d /var/tmp/hex0-layout.XXXXXX)
+fi
+trap 'rm -rf "$LTMP"' EXIT
 
 fail() {
   echo "layout: rule $1: $2"
@@ -19,19 +26,21 @@ fail() {
 }
 
 fill_find() {
-  FIND_LIST=$(mktemp)
+  local rule=$1
+  shift
+  FIND_LIST=$(mktemp "$LTMP/find.XXXXXX")
   find "$@" -print0 >"$FIND_LIST"
   local rc=$?
   if [ "$rc" -ne 0 ]; then
     rm -f "$FIND_LIST"
-    fail 2 "find failed"
+    fail "$rule" "find failed"
   fi
 }
 
 # Files a commit could carry: tracked, plus untracked that are not git-ignored.
 visible_list() {
   local rule=$1
-  VISIBLE=$(mktemp)
+  VISIBLE=$(mktemp "$LTMP/visible.XXXXXX")
   git ls-files -co --exclude-standard -z >"$VISIBLE"
   local rc=$?
   if [ "$rc" -ne 0 ]; then
@@ -40,7 +49,38 @@ visible_list() {
   fi
 }
 
-# 1. Top level is exactly the allowed names. out/ may exist. .git is metadata.
+# One grep over a NUL list. kind 8 skips archived/ and docs/. kind 9 skips archived/.
+# Exit 0 a hit, 1 no hit, 2 grep failed. Hit paths are written to out.
+grep_list() {
+  local re=$1
+  local list=$2
+  local out=$3
+  local kind=$4
+  local -a files=()
+  local rel
+  while IFS= read -r -d '' rel; do
+    [ -n "$rel" ] || continue
+    case $kind in
+      8)
+        case $rel in
+          archived/*|docs/*) continue ;;
+        esac
+        ;;
+      9)
+        case $rel in
+          archived/*) continue ;;
+        esac
+        ;;
+    esac
+    files+=("$rel")
+  done <"$list"
+  if [ "${#files[@]}" -eq 0 ]; then
+    return 1
+  fi
+  grep -I -l -E -e "$re" -- "${files[@]}" >"$out"
+}
+
+# 1. Top level is exactly the allowed names. out/ may exist, and is never tracked.
 # brand/ image files are part of this rule.
 allowed=" README.md LICENSE NOTICE .gitignore .gitattributes ladder watc tools docs brand archived out "
 for name in "$ROOT"/* "$ROOT"/.[!.]*; do
@@ -53,7 +93,7 @@ for name in "$ROOT"/* "$ROOT"/.[!.]*; do
 done
 
 if [ -d "$ROOT/brand" ]; then
-  fill_find "$ROOT/brand" -mindepth 1
+  fill_find 1 "$ROOT/brand" -mindepth 1
   while IFS= read -r -d '' f; do
     rel=${f#"$ROOT"/}
     base=$(basename "$f")
@@ -68,40 +108,58 @@ if [ -d "$ROOT/brand" ]; then
   rm -f "$FIND_LIST"
 fi
 
+tracked_out=$(git ls-files -- out) || fail 1 "git ls-files failed"
+if [ -n "$tracked_out" ]; then
+  first=${tracked_out%%$'\n'*}
+  fail 1 "tracked out/ path: $first"
+fi
+
 # 2. One committed binary per target: ladder/0-hex0/<arch>-<os>/hex0.
-# brand/ is not skipped by rules that read text; it is skipped here because
-# its images are binaries on purpose. Ignored build output is not a commit.
+# ELF magic is refused everywhere, including brand/. A NUL is refused
+# everywhere except brand/, whose images are binaries on purpose.
+# Ignored build output is not a commit, so it is not in this list.
 visible_list 2
-while IFS= read -r -d '' rel; do
-  if [[ $rel =~ ^ladder/0-hex0/[a-z0-9_]+-[a-z0-9_]+/hex0$ ]]; then
-    continue
-  fi
-  case $rel in
-    out|out/*|brand|brand/*) continue ;;
-  esac
-  f=$ROOT/$rel
-  if [ ! -r "$f" ]; then
-    fail 2 "unreadable file: $rel"
-  fi
-  raw=""
-  IFS= read -r -N 4 raw <"$f" || true
-  if [ "$raw" = $'\177ELF' ]; then
-    fail 2 "ELF magic outside the seed: $rel"
-  fi
-  # A NUL in the pattern makes grep treat the pattern as empty, so compare
-  # the file with its NULs removed instead.
-  tr -d '\000' <"$f" | cmp -s - "$f"
-  crc=$?
-  if [ "$crc" -eq 1 ]; then
-    fail 2 "binary outside the seed and brand/: $rel"
-  elif [ "$crc" -gt 1 ]; then
-    fail 2 "cmp failed on $rel"
-  fi
-done <"$VISIBLE"
+bin_msg=$(python3 - "$ROOT" "$VISIBLE" << 'PY'
+import os, re, sys
+root, vis = sys.argv[1], sys.argv[2]
+seed = re.compile(r"^ladder/0-hex0/[a-z0-9_]+-[a-z0-9_]+/hex0$")
+with open(vis, "rb") as handle:
+    blob = handle.read()
+for relb in blob.split(b"\0"):
+    if not relb:
+        continue
+    rel = relb.decode()
+    if seed.match(rel):
+        continue
+    path = os.path.join(root, rel)
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(4)
+            if head.startswith(b"\x7fELF"):
+                sys.stdout.write("ELF magic outside the seed: %s\n" % rel)
+                sys.exit(1)
+            if rel == "brand" or rel.startswith("brand/"):
+                continue
+            if b"\0" in head or b"\0" in handle.read():
+                sys.stdout.write("binary outside the seed and brand/: %s\n" % rel)
+                sys.exit(1)
+    except OSError:
+        sys.stdout.write("unreadable file: %s\n" % rel)
+        sys.exit(2)
+sys.exit(0)
+PY
+)
+bin_rc=$?
 rm -f "$VISIBLE"
+if [ "$bin_rc" -eq 1 ] || [ "$bin_rc" -eq 2 ]; then
+  fail 2 "$bin_msg"
+elif [ "$bin_rc" -ne 0 ]; then
+  fail 2 "scan failed"
+fi
 
 # 3. A rung holds README.md, tests/, and <arch>-<os>/ directories.
-# A target directory holds that target's source. Process documents stay in docs/.
+# A target holds its source, and may hold *.tsv tables the gate reads.
+# Process documents stay in docs/.
 for rung in "$ROOT"/ladder/*/; do
   rung_rel=${rung#"$ROOT"/}
   for child in "$rung"*; do
@@ -115,7 +173,7 @@ for rung in "$ROOT"/ladder/*/; do
     fi
     if [ -d "$child" ] && [[ $base =~ ^[a-z0-9_]+-[a-z0-9_]+$ ]]; then
       found=0
-      fill_find "$child" -type f
+      fill_find 3 "$child" -type f
       while IFS= read -r -d '' f; do
         b=$(basename "$f")
         if [ "$b" != hex0 ]; then
@@ -124,7 +182,7 @@ for rung in "$ROOT"/ladder/*/; do
         if [[ $b == *.md ]]; then
           fail 3 "process document inside a rung: ${rung_rel}$base/$b"
         fi
-        printf '%s' "$b" | grep -qiE 'brief|expect|score|note|design|weigh'
+        printf '%s\n' "$b" | grep -qiE 'brief|expect|score|note|design|weigh'
         prc=${PIPESTATUS[1]}
         if [ "$prc" -eq 0 ]; then
           fail 3 "process document inside a rung: ${rung_rel}$base/$b"
@@ -150,7 +208,7 @@ for rung in "$ROOT"/ladder/*/; do
   if [[ ! $base =~ ^([0-9]+)-(.+)$ ]]; then
     fail 4 "rung directory is not <n>-<name>: $base"
   fi
-  nums+=("${BASH_REMATCH[1]}")
+  nums+=("$((10#${BASH_REMATCH[1]}))")
 done
 if [ "${#nums[@]}" -eq 0 ]; then
   fail 4 "no rungs under ladder/"
@@ -163,14 +221,35 @@ for n in "${sorted[@]}"; do
   expect=$((expect + 1))
 done
 
-# 5. README exit rows equal the single "Exit status:" block in the rung source.
+# 5. The README's status numbers are the contract. A target block that lists
+# numbers must equal that set. A pointer with no numbers adds nothing.
+status_numbers() {
+  awk '
+    index($0, "Exit status:") { inb = 1; next }
+    inb {
+      line = $0
+      sub(/^[[:space:]]*[#;]+[[:space:]]*/, "", line)
+      if (match(line, /^[0-9]+/)) { print substr(line, RSTART, RLENGTH); next }
+      inb = 0
+    }
+  ' "$1" | sort -n | uniq
+}
+
 for rung in "$ROOT"/ladder/*/; do
   name=$(basename "$rung")
   readme=$rung/README.md
   [ -f "$readme" ] || fail 5 "rung has no README.md: $name"
-  blocks=0
-  src_file=""
-  fill_find "$rung" -type f
+  readme_set=$(awk '
+    /^[[:space:]]*\|[[:space:]]*[0-9]+[[:space:]]*\|/ {
+      line = $0
+      sub(/^[[:space:]]*\|[[:space:]]*/, "", line)
+      if (match(line, /^[0-9]+/)) print substr(line, RSTART, RLENGTH)
+    }
+  ' "$readme" | sort -n | uniq)
+  if [ -z "$readme_set" ]; then
+    fail 5 "readme has no exit statuses: $name"
+  fi
+  fill_find 5 "$rung" -type f
   while IFS= read -r -d '' f; do
     rel=${f#"$rung"}
     case $rel in
@@ -183,40 +262,12 @@ for rung in "$ROOT"/ladder/*/; do
     elif [ "$grc" -gt 1 ]; then
       fail 5 "grep failed on $f"
     fi
-    n=$(grep -F -c 'Exit status:' "$f")
-    grc=$?
-    if [ "$grc" -gt 1 ]; then
-      fail 5 "grep failed on $f"
-    fi
-    if [ "$grc" -eq 1 ]; then
-      n=0
-    fi
-    if [ "$n" -gt 0 ]; then
-      blocks=$((blocks + n))
-      src_file=$f
+    src_set=$(status_numbers "$f")
+    if [ -n "$src_set" ] && [ "$src_set" != "$readme_set" ]; then
+      fail 5 "exit statuses differ for $name (source: $(printf '%s' "$src_set" | tr '\n' ' ') readme: $(printf '%s' "$readme_set" | tr '\n' ' '))"
     fi
   done <"$FIND_LIST"
   rm -f "$FIND_LIST"
-  [ "$blocks" -eq 1 ] || fail 5 "rung source needs one Exit status block, found $blocks: $name"
-  src_set=$(awk '
-    index($0, "Exit status:") { inb = 1; next }
-    inb {
-      line = $0
-      sub(/^[[:space:]]*[#;]+[[:space:]]*/, "", line)
-      if (match(line, /^[0-9]+/)) { print substr(line, RSTART, RLENGTH); next }
-      inb = 0
-    }
-  ' "$src_file" | sort -n | uniq)
-  readme_set=$(awk '
-    /^[[:space:]]*\|[[:space:]]*[0-9]+[[:space:]]*\|/ {
-      line = $0
-      sub(/^[[:space:]]*\|[[:space:]]*/, "", line)
-      if (match(line, /^[0-9]+/)) print substr(line, RSTART, RLENGTH)
-    }
-  ' "$readme" | sort -n | uniq)
-  if [ "$src_set" != "$readme_set" ]; then
-    fail 5 "exit statuses differ for $name (source: $(printf '%s' "$src_set" | tr '\n' ' ') readme: $(printf '%s' "$readme_set" | tr '\n' ' '))"
-  fi
 done
 
 # 6. archived/ is the tree at c45603e, byte for byte, and nothing else.
@@ -225,18 +276,27 @@ drc=$?
 if [ "$drc" -gt 1 ]; then
   fail 6 "git diff failed"
 fi
+if [ "$drc" -ne 0 ]; then
+  fail 6 "archived/ bytes differ from c45603e"
+fi
 por=$(git status --porcelain -- archived) || fail 6 "git status failed"
+if [ -n "$por" ]; then
+  first=${por%%$'\n'*}
+  case $first in
+    '??'*) fail 6 "untracked file under archived/: $first" ;;
+    *) fail 6 "archived/ porcelain: $first" ;;
+  esac
+fi
 lista=$(git ls-tree -r --name-only c45603e -- archived | sort) || fail 6 "git ls-tree failed"
 listb=$(git ls-files -- archived | sort) || fail 6 "git ls-files failed"
-if [ "$drc" -ne 0 ] || [ -n "$por" ] || [ "$lista" != "$listb" ]; then
-  fail 6 "archived/ is not the tree at c45603e"
+if [ "$lista" != "$listb" ]; then
+  fail 6 "archived/ file list differs from c45603e"
 fi
 
 # 7. tools/ checks. It does not write a rung's output into out/.
-# A check may compile tools/check/fault.c to out/fault. That line is allowed.
 scan_out() {
   local re=$1 why=$2 list rc line
-  list=$(mktemp)
+  list=$(mktemp "$LTMP/scan.XXXXXX")
   grep -R -n -E -e "$re" tools >"$list"
   rc=$?
   if [ "$rc" -gt 1 ]; then
@@ -244,12 +304,9 @@ scan_out() {
     fail 7 "grep failed"
   fi
   if [ "$rc" -eq 0 ]; then
-    while IFS= read -r line; do
-      case $line in
-        *fault.c*out/fault*) ;;
-        *) rm -f "$list"; fail 7 "$why: $line" ;;
-      esac
-    done <"$list"
+    IFS= read -r line <"$list" || line=""
+    rm -f "$list"
+    fail 7 "$why: $line"
   fi
   rm -f "$list"
 }
@@ -284,26 +341,28 @@ arrow_re+='-'
 arrow_re+='>'
 arrow_re+=')([^A-Za-z0-9_]|$)'
 visible_list 8
-while IFS= read -r -d '' f; do
-  case $f in
-    archived/*|docs/*) continue ;;
-  esac
-  grep -I -q -E "$colon_re" "$f"
-  grc=$?
-  if [ "$grc" -eq 0 ]; then
-    fail 8 "colon-path token in $f"
-  elif [ "$grc" -gt 1 ]; then
-    fail 8 "grep failed on $f"
-  fi
-  grep -I -q -E "$arrow_re" "$f"
-  grc=$?
-  if [ "$grc" -eq 0 ]; then
-    fail 8 "bare type arrow in $f"
-  elif [ "$grc" -gt 1 ]; then
-    fail 8 "grep failed on $f"
-  fi
-done <"$VISIBLE"
-rm -f "$VISIBLE"
+hit=$(mktemp "$LTMP/hit.XXXXXX")
+grep_list "$colon_re" "$VISIBLE" "$hit" 8
+grc=$?
+if [ "$grc" -eq 0 ]; then
+  IFS= read -r hit_path <"$hit" || hit_path=""
+  rm -f "$hit" "$VISIBLE"
+  fail 8 "colon-path token in $hit_path"
+elif [ "$grc" -gt 1 ]; then
+  rm -f "$hit" "$VISIBLE"
+  fail 8 "grep failed"
+fi
+grep_list "$arrow_re" "$VISIBLE" "$hit" 8
+grc=$?
+if [ "$grc" -eq 0 ]; then
+  IFS= read -r hit_path <"$hit" || hit_path=""
+  rm -f "$hit" "$VISIBLE"
+  fail 8 "bare type arrow in $hit_path"
+elif [ "$grc" -gt 1 ]; then
+  rm -f "$hit" "$VISIBLE"
+  fail 8 "grep failed"
+fi
+rm -f "$hit" "$VISIBLE"
 
 # 9. docs/ is standing markdown plus excursus/YYYY/MM/NNN-slug/.
 for entry in "$ROOT"/docs/* "$ROOT"/docs/.[!.]*; do
@@ -334,7 +393,7 @@ if [ -d "$ROOT/docs/excursus" ]; then
           fail 9 "badly formed excursus slug: $ybase/$mbase/$ebase"
         fi
         nums+=("$((10#${BASH_REMATCH[1]}))")
-        fill_find "$ex" -mindepth 1
+        fill_find 9 "$ex" -mindepth 1
         while IFS= read -r -d '' f; do
           rel=${f#"$ex"/}
           if [ -d "$f" ]; then
@@ -365,19 +424,18 @@ bare_re='(^|[^A-Za-z0-9_])('
 bare_re+='excursus|arc'
 bare_re+=')[[:space:]]+[0-9]+([^0-9-]|$)'
 visible_list 9
-while IFS= read -r -d '' f; do
-  case $f in
-    archived/*) continue ;;
-  esac
-  grep -I -q -E "$bare_re" "$f"
-  grc=$?
-  if [ "$grc" -eq 0 ]; then
-    fail 9 "bare numbered reference in $f"
-  elif [ "$grc" -gt 1 ]; then
-    fail 9 "grep failed on $f"
-  fi
-done <"$VISIBLE"
-rm -f "$VISIBLE"
+hit=$(mktemp "$LTMP/hit.XXXXXX")
+grep_list "$bare_re" "$VISIBLE" "$hit" 9
+grc=$?
+if [ "$grc" -eq 0 ]; then
+  IFS= read -r hit_path <"$hit" || hit_path=""
+  rm -f "$hit" "$VISIBLE"
+  fail 9 "bare numbered reference in $hit_path"
+elif [ "$grc" -gt 1 ]; then
+  rm -f "$hit" "$VISIBLE"
+  fail 9 "grep failed"
+fi
+rm -f "$hit" "$VISIBLE"
 
 echo "layout: ok"
 exit 0

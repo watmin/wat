@@ -23,8 +23,8 @@ The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap
 
 ## What is given, and what is not
 
-- **Given:** the Linux kernel on x86-64. Programs talk to it only through syscalls. wat is a Linux language, so the
-  kernel is the platform, not a dependency.
+- **Given:** each target's architecture, and the Linux kernel on that architecture. Programs talk to it only through
+  syscalls. wat is a Linux language, so the kernel is the platform, not a dependency.
 - **Not given:**
   - no libc;
   - no dynamic loader;
@@ -32,8 +32,9 @@ The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap
   - no binary except the seed.
 
   Every artifact above the seed is built by the rung below it.
-- **Checking is not building.** Shell, `xxd` and Python may CHECK a rung, for example by decoding the seed's hex
-  independently and comparing bytes. No rung's OUTPUT may come from them.
+- **Checking is not building.** Shell, `xxd` and Python may CHECK a rung. `sed` and `xxd` decode the seed
+  independently. `hex-check.py` is a second reader of the same source. The fixpoint proves self-consistency, not trust.
+  No rung's OUTPUT may come from them.
 
 ## Targets
 
@@ -44,9 +45,8 @@ its own hand-auditable seed. A host runs the contract rows for every target it c
 bytes (decode and byte identity), which needs no execution.
 
 Syscall numbers are per target. The table is `ladder/<n>-<name>/<arch>-<os>/syscalls.tsv`: one row for each call
-that target makes, the number and the name. The fault rows and the syscall allow-list read it. The brief that adds
-the second executable target is the one that cuts the gate over to that table. With one target, the x86-64 Linux
-numbers stay in the hex0 contract check.
+that target makes, the number and the name. That file exists for the x86-64 Linux seed, and the fault rows and the
+syscall allow-list read it.
 
 ## Which targets, and nothing more
 
@@ -59,8 +59,8 @@ Targets are machines in hand, in order. There is no portability for its own sake
 | target | the machine | ISA baseline it may assume |
 |---|---|---|
 | `x86_64-linux` | this laptop: Intel i7-1270P, Linux 7.2, 4 KiB pages | **x86-64-v3**: AVX2, BMI2, FMA, MOVBE (measured from `/proc/cpuinfo` and the loader, 2026-10-04). **No AVX-512.** |
-| `aarch64-linux` | a Raspberry Pi, later | to measure on the board when it arrives |
-| `riscv64-linux` | if one is acquired | to measure then |
+| `aarch64-linux` | not a target until a machine is in hand | measured on that machine |
+| `riscv64-linux` | not a target until a machine is in hand | measured on that machine |
 
 A CPU extension enters a target only when a machine in hand has it. Code may use anything its target's baseline
 guarantees; nothing below it is kept for an older CPU nobody here runs.
@@ -113,7 +113,7 @@ requires"*, *"we need you and grok to debug effortlessly"*, and *"we are the bes
   - `rbp` (and `x29`) is the frame pointer, so it is not in the preserved pool.
   - Debugging by name needs names too: every rung above the seed emits an ELF symbol table, so gdb and `perf` show
     routines, not addresses. The seed stays a program audited by offset.
-- **The stack pointer is 16-byte aligned at every call, on every target.** This reverses what this section first
+- **The stack pointer is 16-byte aligned at every call, on every target, starting with the first rung that contains a `call`.** The seed has no `call`. This reverses what this section first
   listed under "discarded", for these reasons:
   - aarch64 hardware faults on a memory access through an unaligned `sp`;
   - x86-64 does not require alignment, but aligned AVX2 spills want it, and values straddling a cache line cost time;
@@ -128,8 +128,8 @@ contracts. Its `push imm; pop reg` is a 3-byte constant load, not a frame.
 ## The rules every rung follows
 
 1. **Each rung is its own source.** A rung's program is written in the language of the rung below it and checked in
-   under `ladder/<n>-<name>/`. Its binary is built into `out/`, never committed. The seed is the one committed binary
-   (`docs/LAYOUT.md`).
+   under `ladder/<n>-<name>/`. Its binary is built into `out/`, never committed. One committed binary per target: the
+   seed (`docs/LAYOUT.md`).
 2. **Each rung reaches a fixpoint where it can.** hex0 assembling `hex0.hex0` reproduces `ladder/0-hex0/x86_64-linux/hex0` byte for byte.
 3. **Every refusal is total and named.** Bad input stops with a distinct, nonzero, documented exit status; it is never
    ignored. That is wat's totality ruling, applied from the first byte. Its stated bounds are what the kernel decides,

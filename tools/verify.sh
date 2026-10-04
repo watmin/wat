@@ -1,36 +1,38 @@
 #!/usr/bin/env bash
 # tools/verify.sh -- the hex0 gate.
-# Sandbox, host detection, and the loop over rungs and targets.
-# Layout mutants, the seed audit, and the hex0 contract are modules
-# under tools/check/. Scratch and instruments live under /var/tmp.
-# Rung output goes to out/. This script does not modify the live tree
-# or the git index.
+# Host detection and the loop over rungs and targets. Steps are timed
+# inside the modules. This driver does not put a second timer around them.
+# Scratch and instruments live under /var/tmp. Rung output goes to out/.
 set -u
 export PYTHONDONTWRITEBYTECODE=1
 cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 2
-# shellcheck disable=SC1091
-. tools/check/gate-lib.sh
+# shellcheck source=tools/check/gate-lib.sh
+. tools/check/gate-lib.sh || exit 2
 umask 0022
 
-SANDBOX=${HEX0_SANDBOX:-/var/tmp/hex0-verify}
+if [ -n "${HEX0_SANDBOX:-}" ]; then
+  case $HEX0_SANDBOX in
+    /var/tmp/*) ;;
+    *) die "HEX0_SANDBOX must be under /var/tmp" ;;
+  esac
+  if [ -e "$HEX0_SANDBOX" ]; then
+    die "HEX0_SANDBOX already exists"
+  fi
+  mkdir "$HEX0_SANDBOX" || die "HEX0_SANDBOX mkdir"
+  SANDBOX=$HEX0_SANDBOX
+else
+  SANDBOX=$(mktemp -d /var/tmp/hex0-verify.XXXXXX)
+fi
+export SANDBOX
+export HEX0_SCRATCH=$SANDBOX
 HOST=$(uname -m)-$(uname -s | tr '[:upper:]' '[:lower:]')
-LAYOUT_GUARD=${LAYOUT_GUARD:-180}
-SEED_GUARD=${SEED_GUARD:-60}
-CONTRACT_GUARD=${CONTRACT_GUARD:-180}
-rm -rf "$SANDBOX"
-mkdir -p "$SANDBOX" out
 trap 'rm -rf "$SANDBOX"' EXIT
 
-skip_execution() {
-  local tgt=$1
-  if [ "$tgt" = "$HOST" ]; then
-    return 1
-  fi
-  echo "$tgt: not executed on this host"
-  return 0
+is_host() {
+  [ "$1" = "$HOST" ]
 }
 
-guard "$LAYOUT_GUARD" tools/check/layout-mutants.sh "$SANDBOX"
+tools/check/layout-mutants.sh "$SANDBOX" || die "tools/check/layout-mutants.sh rc $?"
 
 shopt -s nullglob
 found_host=0
@@ -43,16 +45,19 @@ for rung in ladder/*/; do
     case $rname in
       0-hex0)
         if [ "$tgt" = x86_64-linux ]; then
-          guard "$SEED_GUARD" tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" --size 537
+          tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" --size 537 \
+            || die "tools/check/seed-audit.sh rc $?"
         else
-          guard "$SEED_GUARD" tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX"
+          tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" \
+            || die "tools/check/seed-audit.sh rc $?"
         fi
-        if [ "$tgt" = "$HOST" ]; then
+        if is_host "$tgt"; then
           found_host=1
-          guard "$CONTRACT_GUARD" tools/check/hex0-contract.sh \
-            "${rung}${tgt}/hex0" "${rung}${tgt}/hex0.hex0" "${rung}tests" "$SANDBOX"
+          tools/check/hex0-contract.sh \
+            "${rung}${tgt}/hex0" "${rung}${tgt}/hex0.hex0" "${rung}tests" "$SANDBOX" \
+            || die "tools/check/hex0-contract.sh rc $?"
         else
-          skip_execution "$tgt" || die "non-host target $tgt fell through to execution"
+          echo "$tgt: not executed on this host"
         fi
         ;;
       *) die "no module for rung $rname" ;;
@@ -60,19 +65,24 @@ for rung in ladder/*/; do
   done
 done
 [ "$found_host" -eq 1 ] || die "no target for this host: $HOST"
-if skip_execution "$HOST"; then
-  die "host target was not executed"
-fi
-skip_execution aarch64-linux || die "aarch64-linux stayed silent"
 
-# A nested proof sets HEX0_DRIVER_TEST so this driver does not call itself.
-if [ "${HEX0_DRIVER_TEST:-}" != 1 ]; then
-  guard 90 tools/check/driver-test.sh "$SANDBOX"
-  guard 60 git clone --quiet "$PWD" "$SANDBOX/clone"
-  guard 60 tools/layout.sh "$SANDBOX/clone" >"$SANDBOX/clone.layout"
-  cat "$SANDBOX/clone.layout"
-  echo "fresh clone: layout ok"
+if [ "${HEX0_DRIVER_TEST:-}" = 1 ]; then
+  echo "driver-test: skipped"
+else
+  tools/check/driver-test.sh "$SANDBOX" || die "tools/check/driver-test.sh rc $?"
 fi
 
-echo "verify: ok"
+check "fresh clone" "$DUR_CMD" -- git clone --quiet "$PWD" "$SANDBOX/clone"
+export HEX0_SCRATCH=$SANDBOX
+check "fresh clone layout" "$DUR_CMD" -- tools/layout.sh "$SANDBOX/clone" >"$SANDBOX/clone.layout"
+cat "$SANDBOX/clone.layout"
+echo "fresh clone: layout ok"
+
+check "autocrlf clone" "$DUR_CMD" -- git -c core.autocrlf=true clone --quiet "$PWD" "$SANDBOX/crlf-clone"
+if grep -q $'\r' "$SANDBOX/crlf-clone/tools/verify.sh"; then
+  die "autocrlf clone rewrote a tools script"
+fi
+echo "autocrlf clone: lf"
+
+echo "verify: working tree and HEAD clone"
 exit 0

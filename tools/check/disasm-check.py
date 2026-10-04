@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Row 9. Instruction comments against objdump of the code blob.
 
-Each comment begins with +FILEOFFSET. That offset is 0x78 plus the
-instruction's address in the blob. The rest of the comment is the
+Each comment begins with +FILEOFFSET. objdump is run with --adjust-vma
+so that address is already a file offset. The rest of the comment is the
 disassembly, whitespace collapsed. Headings are lines with no hex.
+
+Exit codes: 2 usage, 1 a row-9 mismatch, 99 an unexpected failure.
 """
 
 import re
 import sys
-
-CODE_BASE = 0x78
 
 
 def instructions(source_text):
@@ -66,10 +66,12 @@ def main(argv):
     if len(rows) != len(ops):
         sys.stderr.write("row 9: %d comments vs %d instructions\n" % (len(rows), len(ops)))
         return 1
-    for index, ((blob, offset, text), (addr, oblob, otext)) in enumerate(zip(rows, ops)):
-        if offset != addr + CODE_BASE:
+    for index in range(len(rows)):
+        blob, offset, text = rows[index]
+        addr, oblob, otext = ops[index]
+        if offset != addr:
             sys.stderr.write(
-                "row 9: offset +%04x is not file +%04x\n" % (offset, addr + CODE_BASE)
+                "row 9: offset +%04x is not file +%04x\n" % (offset, addr)
             )
             return 1
         if blob != oblob or text != otext:

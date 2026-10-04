@@ -29,11 +29,9 @@ that.
 
 ## What this repository is now
 
-The home of the native, Rust-free wat:
-- **watc**, the compiler, which compiles itself;
-- **the bootstrap ladder** that builds it from source. The one binary not built from source is the seed, written as
-  commented hex so every byte can be audited by hand. It comes first, then an assembler, then a minimal interpreter for the subset watc is written in. That interpreter runs
-  watc's source once, and from there watc rebuilds itself.
+The home of the native, Rust-free wat. The compiler is not in this tree. The bootstrap ladder is what is here, and it builds toward that compiler from source. The one binary not built from source is the seed, written as commented hex so every byte can be audited by hand. It comes first, then an assembler, then a minimal interpreter for the subset the compiler is written in.
+
+**Status.** Rung 0 is in weigh, not landed.
 
 The work starts at the bottom of that ladder: `ladder/0-hex0/`. The contract is the rung's. The machine code for x86-64 Linux is the target `ladder/0-hex0/x86_64-linux/`, a seed of a few hundred bytes written as commented hex, so every byte can be checked against the instruction it encodes.
 
@@ -44,6 +42,7 @@ The work starts at the bottom of that ladder: `ladder/0-hex0/`. The contract is 
 - [`docs/LAYOUT.md`](docs/LAYOUT.md): where everything lives. A gate enforces it.
 - [`docs/WARDS.md`](docs/WARDS.md): the quality guards cast before anything lands.
 - [`docs/MACHINE.md`](docs/MACHINE.md): what a fresh machine needs, on Omarchy or Debian.
+- [`docs/RECOVERY.md`](docs/RECOVERY.md): how to put the tree back together.
 
 ## Lineage
 

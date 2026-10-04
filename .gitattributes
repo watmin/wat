@@ -1,3 +1,4 @@
+* text=auto eol=lf
 # wat is s-expression — render as clojure on GitHub
 *.wat linguist-language=clojure
 # the seed is bytes, never text: no line-ending conversion, no diff as text (circumspicere C-5)

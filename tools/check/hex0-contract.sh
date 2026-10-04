@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # tools/check/hex0-contract.sh <hex0> <target-src> <tests> <sandbox>
 # Rows 3-8, 12 and 13 for one target this host can execute.
-# A later rung gets its own contract script. This one stays hex0's.
+# Syscall numbers, fds, and the trunc-mutant bytes come from the target.
 set -u
 export PYTHONDONTWRITEBYTECODE=1
-here=$(dirname "${BASH_SOURCE[0]}")
-cd "$here/../.." || exit 2
-# shellcheck disable=SC1091
-. "$here/gate-lib.sh"
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd) || exit 2
+# shellcheck source=tools/check/gate-lib.sh
+. "$root/tools/check/gate-lib.sh" || exit 2
+cd "$root" || exit 2
 umask 0022
 
 [ $# -eq 4 ] || die "hex0-contract: want HEX0 SRC TESTS SANDBOX"
@@ -15,7 +15,37 @@ HEX0=$1
 SRC=$2
 TESTS=$3
 SANDBOX=$4
+case $HEX0 in
+  /*) ;;
+  *) HEX0=$root/$HEX0 ;;
+esac
 RUNG=$(dirname "$TESTS")
+TARGET=$(dirname "$SRC")
+mkdir -p "$SANDBOX" out
+export SANDBOX
+export HEX0_SCRATCH=$SANDBOX
+
+seed_hash=$(sha256sum "$HEX0" | awk 'NR==1 {print $1}')
+
+nr_of() {
+  awk -v k="$1" '$1==k {print $2}' "$TARGET/syscalls.tsv"
+}
+fact() {
+  awk -v k="$1" '$1==k {print $2}' "$TARGET/gate.tsv"
+}
+IN_FD=$(fact in_fd)
+OUT_FD=$(fact out_fd)
+
+expect_rc() {
+  local label=$1 want=$2
+  shift 2
+  local rc=0
+  run_status "$DUR_FAST" -- "$@" || rc=$?
+  if timed_out "$rc"; then
+    die "$label timed out"
+  fi
+  [ "$rc" -eq "$want" ] || die "$label rc $rc"
+}
 
 assert_out() {
   local label=$1 path=$2 exp=$3
@@ -28,12 +58,12 @@ assert_out() {
   mode=$(stat -c %a "$path")
   if [ "$exp" = same ]; then
     [ "$mode" = 640 ] || die "$label mode $mode"
-    cmp "$path" "$SANDBOX/olddata" || die "$label bytes"
+    cmp -s "$path" "$SANDBOX/olddata" || die "$label bytes"
     return
   fi
   if [ "$exp" = "samebytes:755" ]; then
     [ "$mode" = 755 ] || die "$label mode $mode"
-    cmp "$path" "$SANDBOX/olddata" || die "$label bytes"
+    cmp -s "$path" "$SANDBOX/olddata" || die "$label bytes"
     return
   fi
   [ "$mode" = 755 ] || die "$label mode $mode"
@@ -42,7 +72,7 @@ assert_out() {
     return
   fi
   local want=${exp#file:}
-  cmp "$path" "$want" || die "$label bytes"
+  cmp -s "$path" "$want" || die "$label bytes"
 }
 
 pair() {
@@ -52,55 +82,37 @@ pair() {
   rm -f "$abs"
   cp "$SANDBOX/olddata" "$pre"
   chmod 640 "$pre"
-  run_status 30 "$HEX0" "$src" "$abs"
-  local rc=$?
-  [ "$rc" -eq "$want" ] || die "$label absent rc $rc"
+  expect_rc "row 7 $label absent" "$want" "$HEX0" "$src" "$abs"
   assert_out "$label absent" "$abs" "$abs_exp"
-  run_status 30 "$HEX0" "$src" "$pre"
-  rc=$?
-  [ "$rc" -eq "$want" ] || die "$label pre rc $rc"
+  expect_rc "row 7 $label pre" "$want" "$HEX0" "$src" "$pre"
   assert_out "$label pre" "$pre" "$pre_exp"
   echo "row 7: $label exit $want"
 }
 
-rm -f out/h1
-guard 30 "$HEX0" "$SRC" out/h1
-rc=$?
-[ "$rc" -eq 0 ] || die "row 3 rc $rc"
-cmp out/h1 "$HEX0" || die "row 3 cmp"
+check "row 3" "$DUR_FAST" -- "$HEX0" "$SRC" out/h1
+cmp -s out/h1 "$HEX0" || die "row 3 cmp"
 echo "row 3: cmp identical, exit 0"
 
-rm -f out/h1str
-guard 30 strace -f -o "$SANDBOX/trace" "$HEX0" "$SRC" out/h1str
-rc=$?
-[ "$rc" -eq 0 ] || die "row 8 rc $rc"
-cmp out/h1str "$HEX0" || die "row 8 cmp"
-guard 30 python3 tools/check/syscalls-check.py "$SANDBOX/trace" >"$SANDBOX/sys.out"
-rc=$?
-[ "$rc" -eq 0 ] || die "row 8 syscalls"
+check "row 8 strace" "$DUR_CMD" -- strace -f -o "$SANDBOX/trace" "$HEX0" "$SRC" out/h1str
+cmp -s out/h1str "$HEX0" || die "row 8 cmp"
+check "row 8 syscalls" "$DUR_CMD" -- python3 tools/check/syscalls-check.py "$SANDBOX/trace" "$TARGET/syscalls.tsv" >"$SANDBOX/sys.out"
 cat "$SANDBOX/sys.out"
 cp "$SANDBOX/trace" "$SANDBOX/trace-mut"
 printf '0 socket(2, 1, 0) = 3\n' >> "$SANDBOX/trace-mut"
-run_status 30 python3 tools/check/syscalls-check.py "$SANDBOX/trace-mut" >"$SANDBOX/sys-mut.out" 2>"$SANDBOX/sys-mut.err"
-rc=$?
-[ "$rc" -ne 0 ] || die "row 8 mutant stayed green"
-grep -q 'unexpected socket' "$SANDBOX/sys-mut.err" || die "row 8 mutant said $(cat "$SANDBOX/sys-mut.err")"
+rc=0
+run_status "$DUR_CMD" -- python3 tools/check/syscalls-check.py "$SANDBOX/trace-mut" "$TARGET/syscalls.tsv" >"$SANDBOX/sys-mut.out" 2>"$SANDBOX/sys-mut.err" || rc=$?
+if timed_out "$rc"; then
+  die "mutant row 8 timed out"
+fi
+[ "$rc" -ne 0 ] || die "mutant row 8 stayed green"
+grep -q 'unexpected socket' "$SANDBOX/sys-mut.err" || die "mutant row 8 said $(cat "$SANDBOX/sys-mut.err")"
 echo "mutant row 8 (extra syscall): red"
 
-guard 30 python3 tools/check/hex-check.py --digits "$TESTS/exit42.hex0" >"$SANDBOX/probe.hex"
-rc=$?
-[ "$rc" -eq 0 ] || die "probe digits rc $rc"
-xxd -r -p "$SANDBOX/probe.hex" > "$SANDBOX/probe.bin"
-rc=$?
-[ "$rc" -eq 0 ] || die "probe xxd rc $rc"
-rm -f out/exit42
-guard 30 "$HEX0" "$TESTS/exit42.hex0" out/exit42
-rc=$?
-[ "$rc" -eq 0 ] || die "row 4 build rc $rc"
-cmp out/exit42 "$SANDBOX/probe.bin" || die "row 4 cmp"
-run_status 30 out/exit42
-rc=$?
-[ "$rc" -eq 42 ] || die "row 4 run rc $rc"
+check "row 4 digits" "$DUR_CMD" -- python3 tools/check/hex-check.py --digits "$TESTS/exit42.hex0" >"$SANDBOX/probe.hex"
+check "row 4 xxd" "$DUR_FAST" -- xxd -r -p "$SANDBOX/probe.hex" >"$SANDBOX/probe.bin"
+check "row 4 build" "$DUR_FAST" -- "$HEX0" "$TESTS/exit42.hex0" out/exit42
+cmp -s out/exit42 "$SANDBOX/probe.bin" || die "row 4 cmp"
+expect_rc "row 4 run" 42 out/exit42
 echo "row 4: cmp identical, exit 42"
 
 mode=$(stat -c %a out/exit42)
@@ -109,21 +121,17 @@ echo "row 5: $mode"
 printf 'old-contents' > "$SANDBOX/old-contents"
 cp "$SANDBOX/old-contents" "$SANDBOX/pre600"
 chmod 600 "$SANDBOX/pre600"
-guard 30 "$HEX0" "$TESTS/exit42.hex0" "$SANDBOX/pre600"
-rc=$?
-[ "$rc" -eq 0 ] || die "row 5 preexist rc $rc"
+check "row 5 preexist" "$DUR_FAST" -- "$HEX0" "$TESTS/exit42.hex0" "$SANDBOX/pre600"
 mode=$(stat -c %a "$SANDBOX/pre600")
 [ "$mode" = "755" ] || die "row 5 preexist mode $mode"
-cmp "$SANDBOX/pre600" "$SANDBOX/probe.bin" || die "row 5 preexist bytes"
+cmp -s "$SANDBOX/pre600" "$SANDBOX/probe.bin" || die "row 5 preexist bytes"
 echo "row 5: preexist 600 is 755"
 
 fix_ok() {
   local src=$1 exp=$2 name=$3
   rm -f "$SANDBOX/$name"
-  guard 30 "$HEX0" "$src" "$SANDBOX/$name"
-  rc=$?
-  [ "$rc" -eq 0 ] || die "row 6 $name rc $rc"
-  cmp "$SANDBOX/$name" "$exp" || die "row 6 $name bytes"
+  check "row 6 $name" "$DUR_FAST" -- "$HEX0" "$src" "$SANDBOX/$name"
+  cmp -s "$SANDBOX/$name" "$exp" || die "row 6 $name bytes"
   mode=$(stat -c %a "$SANDBOX/$name")
   [ "$mode" = "755" ] || die "row 6 $name mode $mode"
   echo "row 6: $name exit 0"
@@ -147,15 +155,6 @@ fix_ok "$TESTS/comment-tab.hex0" "$SANDBOX/exp-two" comment-tab
 fix_ok "$TESTS/comment-high.hex0" "$SANDBOX/exp-two" comment-high
 fix_ok "$TESTS/crlf-two.hex0" "$SANDBOX/exp-two" crlf-two
 
-rm -f "$SANDBOX/abs-argc-one"
-cp "$SANDBOX/olddata" "$SANDBOX/pre-argc-one"
-chmod 640 "$SANDBOX/pre-argc-one"
-run_status 30 "$HEX0" "$SANDBOX/pre-argc-one"
-rc=$?
-[ "$rc" -eq 1 ] || die "argc-one pre rc $rc"
-assert_out "argc-one pre" "$SANDBOX/pre-argc-one" same
-[ ! -e "$SANDBOX/abs-argc-one" ] || die "argc-one absent exists"
-echo "row 7: argc 1 exit 1"
 cat > "$SANDBOX/argc0.c" << 'EOF'
 #include <unistd.h>
 int main(int argc, char **argv) {
@@ -164,33 +163,39 @@ int main(int argc, char **argv) {
   return 99;
 }
 EOF
-guard 30 gcc -O2 -o "$SANDBOX/argc0" "$SANDBOX/argc0.c"
-rc=$?
-[ "$rc" -eq 0 ] || die "argc0 gcc rc $rc"
-rm -f "$SANDBOX/abs-argc0"
-cp "$SANDBOX/olddata" "$SANDBOX/pre-argc0"
-chmod 640 "$SANDBOX/pre-argc0"
-run_status 30 "$SANDBOX/argc0" "$HEX0"
-rc=$?
-[ "$rc" -eq 1 ] || die "row 7 argc 0 rc $rc"
-assert_out "argc 0 absent" "$SANDBOX/abs-argc0" missing
-assert_out "argc 0 pre" "$SANDBOX/pre-argc0" same
+cat > "$SANDBOX/argc1.c" << 'EOF'
+#include <unistd.h>
+int main(int argc, char **argv) {
+  char *av[] = {argv[1], 0};
+  execv(argv[1], av);
+  return 99;
+}
+EOF
+check "argc0 gcc" "$DUR_CMD" -- gcc -O2 -o "$SANDBOX/argc0" "$SANDBOX/argc0.c"
+check "argc1 gcc" "$DUR_CMD" -- gcc -O2 -o "$SANDBOX/argc1" "$SANDBOX/argc1.c"
+expect_rc "row 7 argc 0" 1 "$SANDBOX/argc0" "$HEX0"
 echo "row 7: argc 0 exit 1"
+expect_rc "row 7 argc 1" 1 "$SANDBOX/argc1" "$HEX0"
+echo "row 7: argc 1 exit 1"
+
+cp "$SANDBOX/olddata" "$SANDBOX/one-path"
+chmod 640 "$SANDBOX/one-path"
+expect_rc "row 7 one path" 1 "$HEX0" "$SANDBOX/one-path"
+cmp -s "$SANDBOX/one-path" "$SANDBOX/olddata" || die "row 7 one path bytes"
+mode=$(stat -c %a "$SANDBOX/one-path")
+[ "$mode" = 640 ] || die "row 7 one path mode $mode"
+echo "row 7: one path exit 1"
+
 rm -f "$SANDBOX/abs-argc4"
 cp "$SANDBOX/olddata" "$SANDBOX/pre-argc4"
 chmod 640 "$SANDBOX/pre-argc4"
-run_status 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/abs-argc4" extra
-rc=$?
-[ "$rc" -eq 1 ] || die "row 7 argc 4 absent rc $rc"
+expect_rc "row 7 argc 4 absent" 1 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/abs-argc4" extra
 assert_out "argc 4 absent" "$SANDBOX/abs-argc4" missing
-run_status 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/pre-argc4" extra
-rc=$?
-[ "$rc" -eq 1 ] || die "row 7 argc 4 pre rc $rc"
+expect_rc "row 7 argc 4 pre" 1 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/pre-argc4" extra
 assert_out "argc 4 pre" "$SANDBOX/pre-argc4" same
 echo "row 7: argc 4 exit 1"
 
 pair "missing IN" 2 "$SANDBOX/missing-in" missing same
-
 pair G 4 "$TESTS/bad-g.hex0" empty empty
 pair vt 4 "$TESTS/vt.hex0" empty empty
 pair ff 4 "$TESTS/ff.hex0" empty empty
@@ -202,115 +207,110 @@ pair odd 5 "$TESTS/odd.hex0" empty empty
 pair odd-after 5 "$TESTS/odd-after.hex0" file:"$SANDBOX/exp-one" file:"$SANDBOX/exp-one"
 
 rm -rf "$SANDBOX/absent-dir"
-run_status 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/absent-dir/out"
-rc=$?
-[ "$rc" -eq 3 ] || die "row 7 missing dir rc $rc"
+expect_rc "row 7 missing dir" 3 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/absent-dir/out"
 [ ! -e "$SANDBOX/absent-dir/out" ] || die "row 7 missing dir created"
 echo "row 7: missing OUT directory exit 3, absent stays absent"
 
 dev_before=$(stat -c %a /dev/null)
-run_status 30 "$HEX0" "$TESTS/lower.hex0" /dev/null
-rc=$?
+expect_rc "row 7 non-regular" 3 "$HEX0" "$TESTS/lower.hex0" /dev/null
 dev_after=$(stat -c %a /dev/null)
-[ "$rc" -eq 3 ] || die "row 7 non-regular rc $rc"
 [ "$dev_before" = "$dev_after" ] || die "row 7 /dev/null mode $dev_before to $dev_after"
 echo "row 7: non-regular exit 3, mode unchanged"
 
+expect_rc "row 7 same device" 7 "$HEX0" /dev/null /dev/null
+echo "row 7: same device exit 7"
+
+mkfifo "$SANDBOX/fifo-none"
+fifo_mode=$(stat -c %a "$SANDBOX/fifo-none")
+expect_rc "row 7 fifo none" 3 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/fifo-none"
+[ "$(stat -c %a "$SANDBOX/fifo-none")" = "$fifo_mode" ] || die "row 7 fifo none mode"
+echo "row 7: fifo with no reader exit 3, mode unchanged"
+
+mkfifo "$SANDBOX/fifo-reader"
+fifo_mode=$(stat -c %a "$SANDBOX/fifo-reader")
+sleep 30 < "$SANDBOX/fifo-reader" &
+fifo_reader=$!
+expect_rc "row 7 fifo reader" 3 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/fifo-reader"
+kill "$fifo_reader" 2>/dev/null || true
+wait "$fifo_reader" 2>/dev/null || true
+[ "$(stat -c %a "$SANDBOX/fifo-reader")" = "$fifo_mode" ] || die "row 7 fifo reader mode"
+echo "row 7: fifo with a reader exit 3, mode unchanged"
+
 cp "$SANDBOX/olddata" "$SANDBOX/ro"
 chmod 444 "$SANDBOX/ro"
-run_status 30 "$HEX0" "$SANDBOX/ro" "$SANDBOX/ro"
-rc=$?
-[ "$rc" -eq 3 ] || die "row 7 read-only rc $rc"
-cmp "$SANDBOX/ro" "$SANDBOX/olddata" || die "row 7 read-only bytes"
+expect_rc "row 7 read-only" 3 "$HEX0" "$SANDBOX/ro" "$SANDBOX/ro"
+cmp -s "$SANDBOX/ro" "$SANDBOX/olddata" || die "row 7 read-only bytes"
 mode=$(stat -c %a "$SANDBOX/ro")
 [ "$mode" = 444 ] || die "row 7 read-only mode $mode"
 echo "row 7: read-only same file exit 3, unchanged"
 
 cp "$SANDBOX/olddata" "$SANDBOX/same"
 chmod 640 "$SANDBOX/same"
-run_status 30 "$HEX0" "$SANDBOX/same" "$SANDBOX/same"
-rc=$?
-[ "$rc" -eq 7 ] || die "row 7 same path rc $rc"
+expect_rc "row 7 same path" 7 "$HEX0" "$SANDBOX/same" "$SANDBOX/same"
 assert_out "same path" "$SANDBOX/same" same
 echo "row 7: same path exit 7"
 printf '41 extra\n' > "$SANDBOX/hard"
 chmod 640 "$SANDBOX/hard"
 ln "$SANDBOX/hard" "$SANDBOX/hard.link"
-run_status 30 "$HEX0" "$SANDBOX/hard" "$SANDBOX/hard.link"
-rc=$?
-[ "$rc" -eq 7 ] || die "row 7 hard link rc $rc"
-cmp "$SANDBOX/hard" <(printf '41 extra\n') || die "row 7 hard link bytes"
+expect_rc "row 7 hard link" 7 "$HEX0" "$SANDBOX/hard" "$SANDBOX/hard.link"
+cmp -s "$SANDBOX/hard" <(printf '41 extra\n') || die "row 7 hard link bytes"
 mode=$(stat -c %a "$SANDBOX/hard")
 [ "$mode" = 640 ] || die "row 7 hard link mode $mode"
 echo "row 7: hard link exit 7"
 printf '41\n' > "$SANDBOX/sym.target"
 chmod 640 "$SANDBOX/sym.target"
 ln -s sym.target "$SANDBOX/sym.link"
-run_status 30 "$HEX0" "$SANDBOX/sym.target" "$SANDBOX/sym.link"
-rc=$?
-[ "$rc" -eq 7 ] || die "row 7 symlink rc $rc"
-cmp "$SANDBOX/sym.target" <(printf '41\n') || die "row 7 symlink bytes"
+expect_rc "row 7 symlink" 7 "$HEX0" "$SANDBOX/sym.target" "$SANDBOX/sym.link"
+cmp -s "$SANDBOX/sym.target" <(printf '41\n') || die "row 7 symlink bytes"
 mode=$(stat -c %a "$SANDBOX/sym.target")
 [ "$mode" = 640 ] || die "row 7 symlink mode $mode"
 echo "row 7: symlink exit 7"
 rm -f "$SANDBOX/absent-same"
-run_status 30 "$HEX0" "$SANDBOX/absent-same" "$SANDBOX/absent-same"
-rc=$?
-[ "$rc" -eq 2 ] || die "row 7 absent same rc $rc"
+expect_rc "row 7 absent same" 2 "$HEX0" "$SANDBOX/absent-same" "$SANDBOX/absent-same"
 [ ! -e "$SANDBOX/absent-same" ] || die "row 7 absent same created"
 echo "row 7: absent same path exit 2"
 
 pair "directory IN" 6 "$RUNG" empty empty
 
-guard 30 gcc -O2 -o "$SANDBOX/fault" tools/check/fault.c
-rc=$?
-[ "$rc" -eq 0 ] || die "fault gcc rc $rc"
+check "fault gcc" "$DUR_CMD" -- gcc -O2 -o "$SANDBOX/fault" tools/check/fault.c
 
 fault_both() {
-  local label=$1 nr=$2 fd=$3 want=$4 abs_exp=$5 pre_exp=$6
+  local label=$1 nr=$2 fd=$3 nth=$4 want=$5 abs_exp=$6 pre_exp=$7
   local src=$SANDBOX/fin
   local abs=$SANDBOX/fabs-$label
   local pre=$SANDBOX/fpre-$label
   local ctl=$SANDBOX/fctl-$label
-  printf '41\n' > "$src"
+  printf '4142\n' > "$src"
   rm -f "$abs"
   cp "$SANDBOX/olddata" "$pre"
   chmod 640 "$pre"
-  run_status 30 "$SANDBOX/fault" "$nr" "$fd" 1 "$HEX0" "$src" "$abs"
-  rc=$?
-  [ "$rc" -eq "$want" ] || die "row 13 $label absent rc $rc"
+  expect_rc "row 13 $label absent" "$want" "$SANDBOX/fault" "$nr" "$fd" 1 "$nth" "$HEX0" "$src" "$abs"
   assert_out "row 13 $label absent" "$abs" "$abs_exp"
-  run_status 30 "$SANDBOX/fault" "$nr" "$fd" 1 "$HEX0" "$src" "$pre"
-  rc=$?
-  [ "$rc" -eq "$want" ] || die "row 13 $label pre rc $rc"
+  expect_rc "row 13 $label pre" "$want" "$SANDBOX/fault" "$nr" "$fd" 1 "$nth" "$HEX0" "$src" "$pre"
   assert_out "row 13 $label pre" "$pre" "$pre_exp"
   rm -f "$ctl"
   cp "$SANDBOX/olddata" "$ctl"
   chmod 640 "$ctl"
-  guard 30 "$HEX0" "$src" "$ctl"
-  rc=$?
-  [ "$rc" -eq 0 ] || die "row 13 $label control rc $rc"
-  assert_out "row 13 $label control" "$ctl" file:"$SANDBOX/exp-one"
+  check "row 13 $label control" "$DUR_FAST" -- "$HEX0" "$src" "$ctl"
+  assert_out "row 13 $label control" "$ctl" file:"$SANDBOX/exp-two"
   echo "row 13: $label exit $want, control 0"
 }
-fault_both "fstat IN" 5 3 2 empty same
-fault_both "fstat OUT" 5 4 3 empty same
-fault_both fchmod 91 4 3 empty same
-fault_both read 0 -1 6 empty empty
-fault_both write 1 -1 6 empty empty
-fault_both close 3 -1 6 file:"$SANDBOX/exp-one" file:"$SANDBOX/exp-one"
-fault_both ftruncate 77 -1 6 empty "samebytes:755"
 
-python3 - "$HEX0" "$SANDBOX/trunc-first" << 'PY'
+fault_both "fstat IN" "$(nr_of fstat)" "$IN_FD" 1 2 empty same
+fault_both "fstat OUT" "$(nr_of fstat)" "$OUT_FD" 1 3 empty same
+fault_both fchmod "$(nr_of fchmod)" "$OUT_FD" 1 3 empty same
+fault_both read "$(nr_of read)" -1 1 6 empty empty
+fault_both write "$(nr_of write)" -1 1 6 empty empty
+fault_both close "$(nr_of close)" -1 1 6 file:"$SANDBOX/exp-two" file:"$SANDBOX/exp-two"
+fault_both ftruncate "$(nr_of ftruncate)" -1 1 6 empty "samebytes:755"
+printf 'A' > "$SANDBOX/exp-a"
+fault_both "write after a byte" "$(nr_of write)" -1 2 6 file:"$SANDBOX/exp-a" file:"$SANDBOX/exp-a"
+fault_both "read after bytes" "$(nr_of read)" -1 5 6 file:"$SANDBOX/exp-two" file:"$SANDBOX/exp-two"
+
+python3 - "$HEX0" "$SANDBOX/trunc-first" "$(fact trunc_old)" "$(fact trunc_new)" << 'PY'
 import sys
-old = bytes.fromhex(
-    "6a5b584489efbeed0100000f0585c079076a03e9d5000000"
-    "6a4d584489ef31f60f0585c079076a06e9c0000000"
-)
-new = bytes.fromhex(
-    "6a4d584489ef31f60f0585c079076a06e9d8000000"
-    "6a5b584489efbeed0100000f0585c079076a03e9c0000000"
-)
+old = bytes.fromhex(sys.argv[3])
+new = bytes.fromhex(sys.argv[4])
 data = open(sys.argv[1], "rb").read()
 found = data.count(old)
 if found != 1:
@@ -318,29 +318,63 @@ if found != 1:
     sys.exit(2)
 open(sys.argv[2], "wb").write(data.replace(old, new, 1))
 PY
-rc=$?
-[ "$rc" -eq 0 ] || die "trunc mutant build rc $rc"
 chmod 755 "$SANDBOX/trunc-first"
 cp "$SANDBOX/olddata" "$SANDBOX/trunc-pre"
 chmod 640 "$SANDBOX/trunc-pre"
 printf '41\n' > "$SANDBOX/trunc-in"
-run_status 30 "$SANDBOX/fault" 91 4 1 "$SANDBOX/trunc-first" "$SANDBOX/trunc-in" "$SANDBOX/trunc-pre"
-rc=$?
-mode=$(stat -c %a "$SANDBOX/trunc-pre")
-if [ "$rc" -eq 3 ] && [ "$mode" = 640 ] && cmp -s "$SANDBOX/trunc-pre" "$SANDBOX/olddata"; then
-  die "trunc-before-fchmod mutant stayed green"
+rc=0
+run_status "$DUR_FAST" -- "$SANDBOX/fault" "$(nr_of fchmod)" "$OUT_FD" 1 1 "$SANDBOX/trunc-first" "$SANDBOX/trunc-in" "$SANDBOX/trunc-pre" || rc=$?
+if timed_out "$rc"; then
+  die "mutant trunc-before-fchmod timed out"
 fi
-echo "mutant trunc-before-fchmod: red (rc $rc)"
+mode=$(stat -c %a "$SANDBOX/trunc-pre")
+if [ "$rc" -ne 3 ] || [ "$mode" != 640 ] || cmp -s "$SANDBOX/trunc-pre" "$SANDBOX/olddata"; then
+  die "mutant trunc-before-fchmod rc $rc mode $mode"
+fi
+echo "mutant trunc-before-fchmod: red (rc 3, mode 640, bytes truncated)"
 
-guard 120 python3 tools/check/fuzz-hex0.py "$HEX0" 2000
-rc=$?
-[ "$rc" -eq 0 ] || die "row 12 fuzz rc $rc"
-guard 120 python3 tools/check/fuzz-hex0.py --expect-disagree "$HEX0" 2000
-rc=$?
-[ "$rc" -eq 0 ] || die "row 12 mutant rc $rc"
-guard 120 python3 tools/check/fuzz-hex0.py --expect-letter-offset "$HEX0" 2000
-rc=$?
-[ "$rc" -eq 0 ] || die "row 12 letter mutant rc $rc"
-cmp "$HEX0" "$SANDBOX/py.bin" || die "row 12 seed changed"
+python3 -c 'open("/dev/stdout","w").write("00\n"*2000)' > "$SANDBOX/big.hex0"
+cat > "$SANDBOX/sigxfsz.c" << 'EOF'
+#include <signal.h>
+#include <unistd.h>
+#include <sys/resource.h>
+int main(int argc, char **argv) {
+  struct rlimit lim;
+  if (argv[1][0] == 'd') {
+    signal(SIGXFSZ, SIG_DFL);
+  } else {
+    signal(SIGXFSZ, SIG_IGN);
+  }
+  lim.rlim_cur = 1024;
+  lim.rlim_max = 1024;
+  setrlimit(RLIMIT_FSIZE, &lim);
+  execv(argv[2], argv + 2);
+  return 99;
+}
+EOF
+check "sigxfsz gcc" "$DUR_CMD" -- gcc -O2 -o "$SANDBOX/sigxfsz" "$SANDBOX/sigxfsz.c"
+rm -f "$SANDBOX/sig-dfl.out" "$SANDBOX/sig-ign.out"
+rc=0
+( cd "$SANDBOX" && run_status "$DUR_FAST" -- "$SANDBOX/sigxfsz" dfl "$HEX0" "$SANDBOX/big.hex0" "$SANDBOX/sig-dfl.out" ) || rc=$?
+if timed_out "$rc"; then
+  die "row 6 SIGXFSZ default timed out"
+fi
+[ "$rc" -eq 153 ] || die "row 6 SIGXFSZ default rc $rc"
+echo "row 6: SIGXFSZ default exit 153"
+rc=0
+run_status "$DUR_FAST" -- "$SANDBOX/sigxfsz" ign "$HEX0" "$SANDBOX/big.hex0" "$SANDBOX/sig-ign.out" || rc=$?
+if timed_out "$rc"; then
+  die "row 6 SIGXFSZ ignored timed out"
+fi
+[ "$rc" -eq 6 ] || die "row 6 SIGXFSZ ignored rc $rc"
+kept=$(wc -c < "$SANDBOX/sig-ign.out")
+[ "$kept" -eq 1024 ] || die "row 6 SIGXFSZ ignored kept $kept"
+echo "row 6: SIGXFSZ ignored exit 6, 1024 bytes kept"
+
+check "row 12 fuzz" "$DUR_LONG" -- python3 tools/check/fuzz-hex0.py "$HEX0" 2000 "$SANDBOX"
+check "row 12 status mutant" "$DUR_LONG" -- python3 tools/check/fuzz-hex0.py --expect-disagree "$HEX0" 2000 "$SANDBOX"
+check "row 12 letter mutant" "$DUR_LONG" -- python3 tools/check/fuzz-hex0.py --expect-letter-offset "$HEX0" 2000 "$SANDBOX"
+now_hash=$(sha256sum "$HEX0" | awk 'NR==1 {print $1}')
+[ "$now_hash" = "$seed_hash" ] || die "row 12 seed changed"
 echo "row 12: fuzz ok"
 exit 0

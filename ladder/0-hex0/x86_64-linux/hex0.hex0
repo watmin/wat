@@ -7,8 +7,9 @@
 # (ladder/0-hex0/README.md and tests/). The machine code and the syscalls
 # belong to this target, x86_64-linux. Its source is
 # ladder/0-hex0/x86_64-linux/hex0.hex0. Anyone verifies the binary by
-# decoding that source with tools/check/hex-check.py and comparing the
-# bytes, or by running this seed on that source and comparing again.
+# stripping comments and packing the hex with sed and xxd, then comparing.
+# hex-check.py is a second reader. Running this seed on its own source
+# proves self-consistency, not trust.
 # A ladder is the sequence of programs that builds watc, each one built by
 # the one below it. A rung is one program in that sequence. The design is
 # docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md.
@@ -22,17 +23,21 @@
 # Output: OUT is created or truncated with mode 0755, so it runs directly.
 # An existing OUT is truncated only after fchmod. fchmod runs before
 # ftruncate so a failed chmod leaves the previous bytes in place.
-# Once OUT has been opened and the checks before fchmod have passed, its
-# mode is 0755 on every later status.
-# If IN and OUT are the same file (same device and inode, hard link or
-# symlink included) and OUT opened, nothing is changed and the status is 7.
-# A read-only same file does not open, so the status is 3 and the file is
-# unchanged. A device or FIFO fails S_ISREG before fchmod, status 3,
-# unchanged. st_mode is the 32-bit field at offset 24. S_IFMT is 0xF000
-# and S_IFREG is 0x8000.
+# Once fchmod has succeeded, the mode is 0755 on every later status.
+# Status 7 is tested before status 3. hex0 /dev/null /dev/null exits 7.
+# A read-only same file does not open when the process lacks
+# CAP_DAC_OVERRIDE, so the status is 3 and the file is unchanged. With
+# that capability the open succeeds and the status is 7, still untouched.
+# A device or FIFO fails S_ISREG before fchmod, status 3. Opening a device
+# can change device state, because the open has no O_NOCTTY. Unchanged
+# means mode and bytes. A FIFO with no reader fails the open itself.
+# st_mode is the 32-bit field at offset 24. S_IFMT is 0xF000 and S_IFREG
+# is 0x8000.
 #
-# What this program does not cover: a signal (SIGXFSZ under ulimit -f)
-# ends hex0 with no status, and a FIFO or terminal IN can block.
+# With the default SIGXFSZ disposition, a file-size limit kills hex0
+# (wait status 153) and may dump core. With SIGXFSZ ignored, the failed
+# write is status 6 and the bytes written before it are kept. A FIFO or
+# terminal used as IN can block.
 #
 # Total means every failure stops with a named status. hex0 does not report
 # done after a failure. What OUT holds:
@@ -53,20 +58,13 @@
 #   status 7: untouched. This status applies only once OUT opened.
 #   status 0: the decoded bytes, mode 0755.
 #
-# Exit status:
-#   0  done
-#   1  wrong argument count
-#   2  IN cannot be opened, or fstat on IN failed
-#   3  OUT cannot be opened, or is not a regular file, or fchmod failed, or fstat on OUT failed
-#   4  a byte that is not a digit, a comment, or whitespace (exactly space, tab, CR, LF)
-#   5  an odd number of digits at end of input
-#   6  a read, write, close or truncate failed
-#   7  IN and OUT are the same file, and OUT opened
+# Exit status: the numbers and their meanings are in the rung README.
+# This target does not restate them.
 #
-# Instruction comments are AT&T syntax. Each begins with the file offset of
-# that instruction. Every jump target in an instruction comment is an offset
-# from the first code byte (file offset 0x78, virtual 0x400078). objdump of
-# the code alone starts at 0, and those addresses match it.
+# Instruction comments are AT&T syntax, in file offsets only. Each begins
+# with the file offset of that instruction. Jump targets in those comments
+# are file offsets too. objdump is given --adjust-vma so its addresses are
+# file offsets (the code begins at file offset 0x78, virtual 0x400078).
 # The three exit entry points are status 4 (push 4), die (pop the status
 # into edi), and exit (syscall 60). Success jumps to exit with edi = 0.
 # The read loop, the comment-byte handler, and the status-4 push are marked
@@ -85,13 +83,15 @@
 #   r10b  1 while skipping a comment
 #   rbp   st_dev of IN
 #   r8    st_ino of IN
+#   rsi   the stat buffer. fstat IN leaves it in rsi, and fstat OUT reuses it
+#   rdx   unset by design on open IN. open OUT sets it to the create mode
 #   rcx   clobbered by syscall
 #   [rsp] the one-byte buffer, inside the 144-byte stack slot
 # The slot is 144 bytes because that is the x86-64 ABI's struct stat.
 # fstat is passed rsp, and the write stays inside the slot.
 # Syscalls: read 0, write 1, open 2, close 3, fstat 5, exit 60,
 #   ftruncate 77, fchmod 91.
-# Open OUT with O_WRONLY|O_CREAT (0x41), no O_TRUNC, and mode 0755 (0x1ED).
+# Open OUT with O_WRONLY|O_CREAT|O_NONBLOCK (0x841), no O_TRUNC, mode 0755 (0x1ED).
 # Then fstat both descriptors. Then, if OUT is a regular file,
 # fchmod(OUT, 0755) and ftruncate(OUT, 0).
 
@@ -124,9 +124,9 @@
 # ## Code, at file offset 0x78 (virtual 0x400078)
 # ### check argc
 48 83 3C 24 03  # +0078 cmpq $0x3,(%rsp)
-74 07  # +007d je 0xe
+74 07  # +007d je 0x86
 6A 01  # +007f push $0x1
-E9 8D 01 00 00  # +0081 jmp 0x19b
+E9 8D 01 00 00  # +0081 jmp 0x213
 # ### open IN
 48 8B 7C 24 10  # +0086 mov 0x10(%rsp),%rdi
 31 F6  # +008b xor %esi,%esi
@@ -134,21 +134,21 @@ E9 8D 01 00 00  # +0081 jmp 0x19b
 58  # +008f pop %rax
 0F 05  # +0090 syscall
 85 C0  # +0092 test %eax,%eax
-79 07  # +0094 jns 0x25
+79 07  # +0094 jns 0x9d
 6A 02  # +0096 push $0x2
-E9 76 01 00 00  # +0098 jmp 0x19b
+E9 76 01 00 00  # +0098 jmp 0x213
 41 89 C4  # +009d mov %eax,%r12d
 # ### open OUT
 48 8B 7C 24 18  # +00a0 mov 0x18(%rsp),%rdi
-BE 41 00 00 00  # +00a5 mov $0x41,%esi
+BE 41 08 00 00  # +00a5 mov $0x841,%esi
 BA ED 01 00 00  # +00aa mov $0x1ed,%edx
 6A 02  # +00af push $0x2
 58  # +00b1 pop %rax
 0F 05  # +00b2 syscall
 85 C0  # +00b4 test %eax,%eax
-79 07  # +00b6 jns 0x47
+79 07  # +00b6 jns 0xbf
 6A 03  # +00b8 push $0x3
-E9 54 01 00 00  # +00ba jmp 0x19b
+E9 54 01 00 00  # +00ba jmp 0x213
 41 89 C5  # +00bf mov %eax,%r13d
 # ### fstat IN
 48 81 EC 90 00 00 00  # +00c2 sub $0x90,%rsp
@@ -158,9 +158,9 @@ E9 54 01 00 00  # +00ba jmp 0x19b
 44 89 E7  # +00cf mov %r12d,%edi
 0F 05  # +00d2 syscall
 85 C0  # +00d4 test %eax,%eax
-79 07  # +00d6 jns 0x67
+79 07  # +00d6 jns 0xdf
 6A 02  # +00d8 push $0x2
-E9 34 01 00 00  # +00da jmp 0x19b
+E9 34 01 00 00  # +00da jmp 0x213
 # ### fstat OUT
 48 8B 2C 24  # +00df mov (%rsp),%rbp
 4C 8B 44 24 08  # +00e3 mov 0x8(%rsp),%r8
@@ -169,23 +169,23 @@ E9 34 01 00 00  # +00da jmp 0x19b
 44 89 EF  # +00eb mov %r13d,%edi
 0F 05  # +00ee syscall
 85 C0  # +00f0 test %eax,%eax
-79 07  # +00f2 jns 0x83
+79 07  # +00f2 jns 0xfb
 6A 03  # +00f4 push $0x3
-E9 18 01 00 00  # +00f6 jmp 0x19b
+E9 18 01 00 00  # +00f6 jmp 0x213
 # ### same file
 48 3B 2C 24  # +00fb cmp (%rsp),%rbp
-75 0E  # +00ff jne 0x97
+75 0E  # +00ff jne 0x10f
 4C 3B 44 24 08  # +0101 cmp 0x8(%rsp),%r8
-75 07  # +0106 jne 0x97
+75 07  # +0106 jne 0x10f
 6A 07  # +0108 push $0x7
-E9 04 01 00 00  # +010a jmp 0x19b
+E9 04 01 00 00  # +010a jmp 0x213
 # ### regular file
 8B 44 24 18  # +010f mov 0x18(%rsp),%eax
 25 00 F0 00 00  # +0113 and $0xf000,%eax
 3D 00 80 00 00  # +0118 cmp $0x8000,%eax
-74 07  # +011d je 0xae
+74 07  # +011d je 0x126
 6A 03  # +011f push $0x3
-E9 ED 00 00 00  # +0121 jmp 0x19b
+E9 ED 00 00 00  # +0121 jmp 0x213
 # ### fchmod
 6A 5B  # +0126 push $0x5b
 58  # +0128 pop %rax
@@ -193,9 +193,9 @@ E9 ED 00 00 00  # +0121 jmp 0x19b
 BE ED 01 00 00  # +012c mov $0x1ed,%esi
 0F 05  # +0131 syscall
 85 C0  # +0133 test %eax,%eax
-79 07  # +0135 jns 0xc6
+79 07  # +0135 jns 0x13e
 6A 03  # +0137 push $0x3
-E9 D5 00 00 00  # +0139 jmp 0x19b
+E9 D5 00 00 00  # +0139 jmp 0x213
 # ### ftruncate
 6A 4D  # +013e push $0x4d
 58  # +0140 pop %rax
@@ -203,12 +203,13 @@ E9 D5 00 00 00  # +0139 jmp 0x19b
 31 F6  # +0144 xor %esi,%esi
 0F 05  # +0146 syscall
 85 C0  # +0148 test %eax,%eax
-79 07  # +014a jns 0xdb
+79 07  # +014a jns 0x153
 6A 06  # +014c push $0x6
-E9 C0 00 00 00  # +014e jmp 0x19b
+E9 C0 00 00 00  # +014e jmp 0x213
 48 89 E6  # +0153 mov %rsp,%rsi
 6A 01  # +0156 push $0x1
 5A  # +0158 pop %rdx
+# safety-margin: xor clears the whole register; the flag lives in the low byte
 45 31 F6  # +0159 xor %r14d,%r14d
 45 31 D2  # +015c xor %r10d,%r10d
 # ### read loop
@@ -216,42 +217,42 @@ E9 C0 00 00 00  # +014e jmp 0x19b
 44 89 E7  # +0161 mov %r12d,%edi
 0F 05  # +0164 syscall
 85 C0  # +0166 test %eax,%eax
-0F 84 86 00 00 00  # +0168 je 0x17c
-79 07  # +016e jns 0xff
+0F 84 86 00 00 00  # +0168 je 0x1f4
+79 07  # +016e jns 0x177
 6A 06  # +0170 push $0x6
-E9 9C 00 00 00  # +0172 jmp 0x19b
+E9 9C 00 00 00  # +0172 jmp 0x213
 # ### classify
 0F B6 04 24  # +0177 movzbl (%rsp),%eax
 45 84 D2  # +017b test %r10b,%r10b
-75 64  # +017e jne 0x16c
+75 64  # +017e jne 0x1e4
 3C 23  # +0180 cmp $0x23,%al
-74 58  # +0182 je 0x164
+74 58  # +0182 je 0x1dc
 3C 3B  # +0184 cmp $0x3b,%al
-74 54  # +0186 je 0x164
+74 54  # +0186 je 0x1dc
 3C 20  # +0188 cmp $0x20,%al
-74 D3  # +018a je 0xe7
+74 D3  # +018a je 0x15f
 3C 09  # +018c cmp $0x9,%al
-74 CF  # +018e je 0xe7
+74 CF  # +018e je 0x15f
 3C 0A  # +0190 cmp $0xa,%al
-74 CB  # +0192 je 0xe7
+74 CB  # +0192 je 0x15f
 3C 0D  # +0194 cmp $0xd,%al
-74 C7  # +0196 je 0xe7
+74 C7  # +0196 je 0x15f
 89 C1  # +0198 mov %eax,%ecx
 80 E9 30  # +019a sub $0x30,%cl
 80 F9 09  # +019d cmp $0x9,%cl
-76 0C  # +01a0 jbe 0x136
+76 0C  # +01a0 jbe 0x1ae
 0C 20  # +01a2 or $0x20,%al
 2C 61  # +01a4 sub $0x61,%al
 3C 05  # +01a6 cmp $0x5,%al
-77 67  # +01a8 ja 0x199
+77 67  # +01a8 ja 0x211
 04 0A  # +01aa add $0xa,%al
-EB 02  # +01ac jmp 0x138
+EB 02  # +01ac jmp 0x1b0
 88 C8  # +01ae mov %cl,%al
 45 84 F6  # +01b0 test %r14b,%r14b
-75 08  # +01b3 jne 0x145
+75 08  # +01b3 jne 0x1bd
 41 88 C7  # +01b5 mov %al,%r15b
 41 B6 01  # +01b8 mov $0x1,%r14b
-EB A2  # +01bb jmp 0xe7
+EB A2  # +01bb jmp 0x15f
 # ### write
 41 C0 E7 04  # +01bd shl $0x4,%r15b
 41 08 C7  # +01c1 or %al,%r15b
@@ -262,34 +263,34 @@ EB A2  # +01bb jmp 0xe7
 58  # +01d0 pop %rax
 0F 05  # +01d1 syscall
 83 F8 01  # +01d3 cmp $0x1,%eax
-74 87  # +01d6 je 0xe7
+74 87  # +01d6 je 0x15f
 6A 06  # +01d8 push $0x6
-EB 37  # +01da jmp 0x19b
+EB 37  # +01da jmp 0x213
 # ### comment
 41 B2 01  # +01dc mov $0x1,%r10b
-E9 7B FF FF FF  # +01df jmp 0xe7
+E9 7B FF FF FF  # +01df jmp 0x15f
 # ### comment byte
 3C 0A  # +01e4 cmp $0xa,%al
-0F 85 73 FF FF FF  # +01e6 jne 0xe7
+0F 85 73 FF FF FF  # +01e6 jne 0x15f
 45 31 D2  # +01ec xor %r10d,%r10d
-E9 6B FF FF FF  # +01ef jmp 0xe7
+E9 6B FF FF FF  # +01ef jmp 0x15f
 # ### end of input
 45 84 F6  # +01f4 test %r14b,%r14b
-74 04  # +01f7 je 0x185
+74 04  # +01f7 je 0x1fd
 6A 05  # +01f9 push $0x5
-EB 16  # +01fb jmp 0x19b
+EB 16  # +01fb jmp 0x213
 # ### close OUT
 6A 03  # +01fd push $0x3
 58  # +01ff pop %rax
 44 89 EF  # +0200 mov %r13d,%edi
 0F 05  # +0203 syscall
 85 C0  # +0205 test %eax,%eax
-79 04  # +0207 jns 0x195
+79 04  # +0207 jns 0x20d
 6A 06  # +0209 push $0x6
-EB 06  # +020b jmp 0x19b
+EB 06  # +020b jmp 0x213
 # ### success
 31 FF  # +020d xor %edi,%edi
-EB 03  # +020f jmp 0x19c
+EB 03  # +020f jmp 0x214
 # ### status 4
 6A 04  # +0211 push $0x4
 # ### die

@@ -29,10 +29,19 @@ def names_of(text):
 
 
 def main(argv):
-    if len(argv) != 1:
-        sys.stderr.write("usage: syscalls-check.py TRACE\n")
+    if len(argv) != 2:
+        sys.stderr.write("usage: syscalls-check.py TRACE SYSCALLS.TSV\n")
         return 2
     text = open(argv[0], encoding="utf-8", errors="replace").read()
+    allowed = []
+    for line in open(argv[1], encoding="utf-8"):
+        name = line.split()[0] if line.split() else ""
+        if name:
+            allowed.append(name)
+    if "execve" not in allowed:
+        allowed.insert(0, "execve")
+    global ALLOWED
+    ALLOWED = allowed
     found = names_of(text)
     if not found:
         sys.stderr.write("row 8: no syscalls parsed\n")

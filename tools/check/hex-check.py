@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Check a hex0 source the way the seed reads bytes.
 
+scan is the one tokenizer. decode and --digits both consume it.
 decode_bytes returns (status, OUT bytes). Status 0, 4 and 5 match hex0:
 4 is a byte that is not a digit, a comment, or whitespace, and 5 is an odd
 digit count. OUT is the bytes decoded before that refusal. This script
 checks. It does not build a rung.
+
+Exit codes: 2 usage or a missing file, 0/4/5 the decode status, 1 a lint
+failure, 99 an unexpected failure.
 """
 
 import re
@@ -21,9 +25,10 @@ def nibble(byte):
     return None
 
 
-def decode_bytes(data):
-    """Return (status, bytes). A comment runs to the next LF or end of input."""
+def scan(data):
+    """One pass. Return (status, OUT bytes, hex-digit text)."""
     out = bytearray()
+    chars = []
     pending = None
     i = 0
     n = len(data)
@@ -38,7 +43,8 @@ def decode_bytes(data):
             continue
         val = nibble(byte)
         if val is None:
-            return 4, bytes(out)
+            return 4, bytes(out), ""
+        chars.append(chr(byte))
         if pending is None:
             pending = val
         else:
@@ -46,30 +52,22 @@ def decode_bytes(data):
             pending = None
         i += 1
     if pending is not None:
-        return 5, bytes(out)
-    return 0, bytes(out)
+        return 5, bytes(out), ""
+    return 0, bytes(out), "".join(chars)
+
+
+def decode_bytes(data):
+    """Return (status, bytes). A comment runs to the next LF or end of input."""
+    status, out, _text = scan(data)
+    return status, out
 
 
 def digit_text(data):
-    """Hex digits only, using the same comment and whitespace rules as decode_bytes."""
-    status, _ = decode_bytes(data)
+    """Hex digits only, from the same scan as decode_bytes."""
+    status, _out, text = scan(data)
     if status != 0:
         return status, ""
-    chars = []
-    i = 0
-    n = len(data)
-    while i < n:
-        byte = data[i]
-        if byte in (35, 59):
-            while i < n and data[i] != 10:
-                i += 1
-            continue
-        if byte in (32, 9, 13, 10):
-            i += 1
-            continue
-        chars.append(chr(byte))
-        i += 1
-    return 0, "".join(chars)
+    return 0, text
 
 
 def lint_bytes(data):
@@ -114,7 +112,11 @@ def main(argv):
     if len(args) != 1:
         sys.stderr.write("usage: hex-check.py [--lint | --digits] FILE\n")
         return 2
-    data = open(args[0], "rb").read()
+    try:
+        data = open(args[0], "rb").read()
+    except FileNotFoundError:
+        sys.stderr.write("hex-check: missing file\n")
+        return 2
     if mode == "lint":
         bare = lint_bytes(data)
         if bare:
@@ -138,4 +140,8 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception as exc:
+        sys.stderr.write("hex-check: %s\n" % exc)
+        sys.exit(99)

@@ -3,7 +3,7 @@
 The builder, 2026-10-03: *"we've been burned many times working on holon and wat with letting llms run wild... we just
 need to be mindful"*. Mindfulness alone is a convention, and conventions rot. So this layout is CHECKED:
 `tools/layout.sh` runs first in `tools/verify.sh`, and a file in the wrong place, or written in a retired syntax, is
-a red build. To change the layout,
+red when `tools/verify.sh` runs, which is before every checkpoint. There is no CI yet. To change the layout,
 amend this document and the gate together, in one commit, on purpose.
 
 ```
@@ -25,29 +25,34 @@ wat/
 ## The rules `tools/layout.sh` enforces
 
 1. **The top level is exactly the list above.** `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
-   `ladder/`, `watc/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. Any other
-   tracked top-level name is a red. The image-only check on `brand/` is part of this rule: a file there must be
-   `.png`, `.ico` or `.svg`.
-2. **One committed binary per target: `ladder/0-hex0/<arch>-<os>/hex0`.** A file anywhere else, outside `brand/`, that begins with the ELF
-   magic (`7F 45 4C 46`) or contains a NUL byte is a red. `brand/` holds images, which are binaries on purpose.
-   Every other binary is built into `out/`.
+   `ladder/`, `watc/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. A
+   tracked path under `out/` is a red. Any other tracked top-level name is a red. The image-only check on `brand/` is
+   part of this rule: a file there must be `.png`, `.ico` or `.svg`.
+2. **One committed binary per target: `ladder/0-hex0/<arch>-<os>/hex0`.** This rule is about binaries a rung produces.
+   ELF magic (`7F 45 4C 46`) anywhere else, including `brand/`, is a red. A NUL byte anywhere else except `brand/` is a
+   red: `brand/` holds images, which are binaries on purpose, and only the NUL check is exempt there. The fault injector
+   is not a rung binary. The contract builds it in the sandbox under `/var/tmp`.
 3. **A rung directory holds code, never process.** `ladder/<n>-<name>/` contains `README.md` (the contract, one per
    rung), `tests/` (contract fixtures, shared by every target), and one directory per target named `<arch>-<os>` in
    `uname` spelling (`x86_64-linux`, `aarch64-linux`). A target directory holds that target's source, plus the seed in
-   rung 0. A rung is one contract with per-target implementations: a new architecture or OS lands as a new target
-   directory and is held to the same README and the same tests. Briefs, expectations, scores and notes live in `docs/`.
+   rung 0, and may hold `*.tsv` tables the gate reads (`syscalls.tsv`, `gate.tsv`). A rung is one contract with
+   per-target implementations: a new architecture or OS lands as a new target directory and is held to the same README
+   and the same tests. Briefs, expectations, scores and notes live in `docs/`.
 4. **Rung directories are numbered in build order.** `<n>-<name>`, where `n` counts from 0 with no gaps. Rung `n` is
    built only by rung `n-1`. Rung 0, the seed, is the one declared exception: each target's seed was decoded ONCE from its commented
    hex by `tools/check/hex-check.py`, and from then on it reproduces itself byte for byte from that source (the
    fixpoint, checked on every verify). That decode is the bootstrap of the root of trust, and the only RUNG build any tool
    ever performs.
-5. **Every rung's `README.md` states its contract:** its input language, what it outputs, and every exit status.
+5. **Every rung's `README.md` states its contract:** its input language, what it outputs, and every exit status. The
+   README's status numbers are the contract. A target file whose `Exit status:` block lists numbers must list that same
+   set. A pointer with no numbers adds nothing, so a second target that only points at the README stays green.
 6. **`archived/` is frozen.** Its tracked files must equal the list at `c45603e`, the archive commit, byte for byte.
-7. **`tools/` checks; it never builds a rung.** No rung's output in `out/` may be produced by anything under `tools/`.
-   `out/` holds only what a RUNG produces when the gate runs it (for example, the seed decoding its own source). A
-   check's own scratch and instruments (the fault injector built by `gcc`, staged OUT files, the copied tree the
-   layout mutants run on) live in a sandbox under `/var/tmp/`, never in the repository. Every instrument a check
-   needs is built from tracked source during the run: the gate depends on nothing outside the repository.
+7. **`tools/` checks; it never builds a rung.** The seed decode in rule 4 is the one exception. No script under
+   `tools/` may write a rung's output into `out/`. `out/` holds only what a rung produces when the gate runs it (for
+   example, the seed decoding its own source). A check's own scratch and instruments (the fault injector built by
+   `gcc` into the sandbox, staged OUT files, the copied tree the layout mutants run on) live under `/var/tmp`, never
+   in the repository. Every instrument a check needs is built from tracked source during the run: the gate depends on
+   nothing outside the repository.
 8. **Only Clojure/EDN-compliant syntax.** No tracked file outside `archived/` and `docs/` contains a token with `::`
    (a colon path such as `:wat::core::+`), or a bare `<-` or `->` used as a type annotation. Names are namespaced
    symbols (`wat.core/+`), and types are ascribed with `:-`. The builder, 2026-10-04: *"we are not going to support

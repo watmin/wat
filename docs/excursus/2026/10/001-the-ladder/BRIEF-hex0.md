@@ -9,7 +9,7 @@
    not (no libc, no loader, no borrowed assembler), and the four rules every rung follows.
 2. `ladder/0-hex0/tests/exit42.hex0`. It is the input format, and a complete 132-byte static ELF you can copy the
    headers from. It was decoded by Python and by `xxd` to the same bytes, and it ran with exit code 42.
-3. `docs/MACHINE.md`: the tools on this machine. All of them CHECK; none of them builds a rung.
+3. `docs/MACHINE.md`: the tools on this machine. All of them CHECK. None of them builds a rung, except the seed decode named in `docs/LAYOUT.md` rule 4.
 4. Reference material from watc, read-only: watmin/the-little-wat at `/home/watmin/Work/holon/the-little-wat`.
    - `elf/hello.wat` is a hand-built 166-byte ELF.
    - `elf/lib/x86.wat` holds instruction encodings.
@@ -27,7 +27,7 @@
     - Whitespace (exactly space, tab, CR, LF) is skipped.
     - A byte's two digits may be split by whitespace or a comment.
     - `0-9`, `a-f` and `A-F` are hex digits, two per output byte, high nibble first.
-  - **Output.** It writes each byte to OUT, created or truncated with mode `0755`, so the output runs directly. Once OUT has been opened and the checks before `fchmod` have passed, its mode is 0755 on every later status. A signal (SIGXFSZ under `ulimit -f`) ends hex0 with no status, and a FIFO or terminal IN can block. The stat buffer is 144 bytes because that is the x86-64 ABI's `struct stat`.
+  - **Output.** It writes each byte to OUT, created or truncated with mode `0755`, so the output runs directly. The mode is 0755 once `fchmod` has succeeded. With the default `SIGXFSZ` disposition a file-size limit kills hex0. With `SIGXFSZ` ignored, the failed write is status 6 and the bytes written are kept. A FIFO OUT is status 3. A FIFO or terminal IN can block. The stat buffer is 144 bytes because that is the x86-64 ABI's `struct stat`.
 - **Refusals.** Total means every failure stops with a named status. hex0 does not report done after a failure. Each status says what OUT holds. The same table is in the source header and the rung README.
 
   | exit | meaning | OUT |
@@ -47,14 +47,14 @@
 - **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
   rule 5).
 - **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: every rule of `docs/LAYOUT.md`, each a check
-  that fails loudly. It then runs every row of `EXPECTATIONS-hex0.md`, building into `out/`, and exits nonzero on any
-  failure.
+  that fails loudly. It then runs every row of `EXPECTATIONS-hex0.md`. The fault injector is built in the sandbox, not
+  in `out/`. The gate exits nonzero on any failure.
 
 ## SKETCH — the shape, in prose
 
 - **Startup.** `[rsp]` is argc and argv sits after it. Check argc == 3. Open argv[1] read-only (status 2 on failure).
-  Open argv[2] with `O_WRONLY|O_CREAT` and mode `0755`, without `O_TRUNC` (status 3). `fstat` both descriptors.
-  The same device and inode, once OUT has opened, is status 7, and the file is left untouched. A read-only same file is status 3. If OUT is not a regular file, status 3, before `fchmod`. Otherwise `fchmod` OUT to `0755`
+  Open argv[2] with `O_WRONLY|O_CREAT|O_NONBLOCK` and mode `0755`, without `O_TRUNC` (status 3). `fstat` both descriptors.
+  The same device and inode, once OUT has opened, is status 7, and the file is left untouched. A read-only same file is status 3 without `CAP_DAC_OVERRIDE`. If OUT is not a regular file, status 3, before `fchmod`. Otherwise `fchmod` OUT to `0755`
   (status 3 on failure) and `ftruncate` it to 0 (status 6 on failure).
 - **The loop.** Read one byte into a stack slot. At end of file:
   - a pending high nibble means status 5;

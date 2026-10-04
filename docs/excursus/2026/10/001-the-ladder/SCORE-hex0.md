@@ -1,8 +1,8 @@
 # SCORE — rung 0: hex0
 
-2026-10-04. Nothing here is landed. Nothing was committed. The tree is dirty on purpose.
+2026-10-04. Nothing here is landed. Checkpoints exist and are not a landing. This strike does not commit. The tree is dirty on purpose.
 
-Current seed, after the R23 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/x86_64-linux/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The R22 section records the modular gate. The R21 section records the move into the target directory. The round-4 section records that same seed at `ladder/0-hex0/hex0`, before that move. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
+Current seed, after the round 5 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`. That run of `tools/verify.sh` exited 1 before a final line. The R23 section records the previous gate, which printed `verify: ok`. The R22 section records the modular gate. The R21 section records the move into the target directory. The round-4 section records that same seed at `ladder/0-hex0/hex0`, before that move. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -720,3 +720,145 @@ verify: ok
 ```
 
 Wards were not cast. Nothing was committed. The rung is not landed.
+
+## Round 5 — FIFO refused, and the clone of HEAD still rewrites LF
+
+Open OUT is `O_WRONLY|O_CREAT|O_NONBLOCK` (`0x841`). The seed stayed 537 bytes, mode 755. Row 9 matched 156 instructions. Row 2 is `sed` then `xxd`, and it printed `row 2: cmp identical`.
+
+`tools/verify.sh` exited 1. Stdout is the block below. Stderr was:
+
+```
+timeout: the monitored command dumped core
+/home/watmin/Work/holon/wat/tools/check/gate-lib.sh: line 100: 2676491 File size limit exceeded   timeout --verbose -s KILL "$secs" "$@"
+verify: non-host target: driver rc 1 verify: autocrlf clone rewrote a tools script
+verify: tools/check/driver-test.sh rc 1
+```
+
+The default `SIGXFSZ` row still printed `row 6: SIGXFSZ default exit 153`. The ignored row printed `row 6: SIGXFSZ ignored exit 6, 1024 bytes kept`. The core line is timeout's note from that default row.
+
+The driver printed the three fatal lines and the three hang lines, then died in the non-host proof. That nested run clones HEAD. With `core.autocrlf=true`, the clone rewrote a tools script. The worktree `.gitattributes` starts with `* text=auto eol=lf`. HEAD `1bc8a48` does not have that line. This strike does not commit, so a clone of HEAD does not carry it. These lines did not print: `fresh clone: layout ok`, `autocrlf clone: lf`, `verify: working tree and HEAD clone`.
+
+A FIFO OUT printed status 3 with the mode unchanged, with no reader and with a reader. `row 7: same device exit 7` printed. The trunc-first mutant printed `mutant trunc-before-fchmod: red (rc 3, mode 640, bytes truncated)`. Fuzz printed `fuzz: 2000 agree`, then `fuzz mutant: stopped at first disagreement`, then `fuzz letter-offset mutant: stopped at first byte disagreement`.
+
+Wards were not cast. This strike committed nothing. The rung is not landed.
+
+```
+mutant stray top-level file: red
+mutant brand directory: red
+mutant brand non-image: red
+mutant ELF in brand: red
+mutant tracked out: red
+mutant second ELF: red
+mutant seed outside a target: red
+mutant second binary inside a target: red
+mutant NUL binary: red
+mutant markdown inside a target: red
+mutant note inside a target: red
+mutant brief inside a rung: red
+mutant target with no source: red
+mutant badly named target: red
+mutant rung name: red
+mutant rung number gap: red
+mutant rung without README: red
+mutant readme without an exit table: red
+mutant source missing a status: red
+mutant source extra status: red
+mutant archived byte: red
+mutant untracked archived file: red
+mutant redirect into out/: red
+mutant tee-out: red
+mutant copy into out/: red
+mutant move into out/: red
+mutant dd into out/: red
+mutant install-out: red
+mutant dash-o into out/: red
+mutant fault allowance bypass: red
+mutant colon path: red
+mutant tracked arrow: red
+mutant stray directory under docs/: red
+mutant docs top-level non-document: red
+mutant year not YYYY: red
+mutant month not MM: red
+mutant empty month: red
+mutant counter gap: red
+mutant directory inside an excursus: red
+mutant non-document in an excursus: red
+mutant bad slug: red
+mutant bare numbered reference: red
+second target with a pointer: green
+layout: ok
+row 1: cmp identical
+mutant row 1 (byte): red
+row 2: cmp identical
+row 9: 156 instructions match
+mutant row 9 (comment): red
+mutant row 9 (offset): red
+mutant row 9 (count): red
+row 10: 537 bytes
+row 11: lint ok
+mutant row 11 (bare): red
+row 3: cmp identical, exit 0
+row 8: execve read write open close fstat exit ftruncate fchmod
+mutant row 8 (extra syscall): red
+row 4: cmp identical, exit 42
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 6: comment-nibble exit 0
+row 6: comment-cr exit 0
+row 6: comment-tab exit 0
+row 6: comment-high exit 0
+row 6: crlf-two exit 0
+row 7: argc 0 exit 1
+row 7: argc 1 exit 1
+row 7: one path exit 1
+row 7: argc 4 exit 1
+row 7: missing IN exit 2
+row 7: G exit 4
+row 7: vt exit 4
+row 7: ff exit 4
+row 7: reject-2f exit 4
+row 7: reject-40 exit 4
+row 7: reject-80 exit 4
+row 7: reject-ff exit 4
+row 7: odd exit 5
+row 7: odd-after exit 5
+row 7: missing OUT directory exit 3, absent stays absent
+row 7: non-regular exit 3, mode unchanged
+row 7: same device exit 7
+row 7: fifo with no reader exit 3, mode unchanged
+row 7: fifo with a reader exit 3, mode unchanged
+row 7: read-only same file exit 3, unchanged
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+row 7: absent same path exit 2
+row 7: directory IN exit 6
+row 13: fstat IN exit 2, control 0
+row 13: fstat OUT exit 3, control 0
+row 13: fchmod exit 3, control 0
+row 13: read exit 6, control 0
+row 13: write exit 6, control 0
+row 13: close exit 6, control 0
+row 13: ftruncate exit 6, control 0
+row 13: write after a byte exit 6, control 0
+row 13: read after bytes exit 6, control 0
+mutant trunc-before-fchmod: red (rc 3, mode 640, bytes truncated)
+row 6: SIGXFSZ default exit 153
+row 6: SIGXFSZ ignored exit 6, 1024 bytes kept
+fuzz: 2000 agree
+fuzz mutant: stopped at first disagreement
+fuzz letter-offset mutant: stopped at first byte disagreement
+row 12: fuzz ok
+driver: layout-mutants exit 1 is fatal
+driver: seed-audit exit 1 is fatal
+driver: hex0-contract exit 1 is fatal
+driver: layout-mutants hang timed out
+driver: seed-audit hang timed out
+driver: hex0-contract hang timed out
+```
