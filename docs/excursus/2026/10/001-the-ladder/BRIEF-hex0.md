@@ -5,7 +5,7 @@
 
 ## YOU ARE NEW TO THIS REPOSITORY — read first
 
-1. `README.md`, then `docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md`: what is given (the Linux kernel, through syscalls), what is
+1. `docs/LAYOUT.md` first (where everything lives, enforced). Then `README.md`, then `docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md`: what is given (the Linux kernel, through syscalls), what is
    not (no libc, no loader, no borrowed assembler), and the four rules every rung follows.
 2. `ladder/0-hex0/tests/exit42.hex0`. It is the input format, and a complete 132-byte static ELF you can copy the
    headers from. It was decoded by Python and by `xxd` to the same bytes, and it ran with exit code 42.
@@ -19,7 +19,7 @@
 
 ## THE WORK
 
-**hex0**: a static x86-64 Linux ELF, written as commented hex in `ladder/0-hex0/hex0.hex0`. The repository's layout is enforced: read `docs/LAYOUT.md` first. The paths below follow it.
+**hex0**: a static x86-64 Linux ELF, written as commented hex in `ladder/0-hex0/hex0.hex0`. The paths below follow `docs/LAYOUT.md` (reading item 1).
 - **Its contract.**
   - **Invocation.** It runs as `hex0 IN OUT`.
   - **Input.** It reads IN byte by byte.
@@ -41,11 +41,11 @@
   | 7 | IN and OUT are the same file |
 
 - **The seed.** `ladder/0-hex0/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/hex0.hex0` with an
-  independent decoder: a Python script you write at `tools/check/hex-check.py`, which CHECKS only. hex0 then has to
+  independent decoder: a Python script you write at `tools/check/hex-check.py`. That one decode is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the script only checks. hex0 then has to
   reproduce `ladder/0-hex0/hex0` from its own source.
 - **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
   rule 5).
-- **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: the eight rules of `docs/LAYOUT.md`, each a check
+- **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: every rule of `docs/LAYOUT.md`, each a check
   that fails loudly. It then runs every row of `EXPECTATIONS-hex0.md`, building into `out/`, and exits nonzero on any
   failure.
 
@@ -60,8 +60,8 @@
   - otherwise close OUT. A negative close is status 6. Success exits 0.
 
   Otherwise:
-  - `#` or `;`: skip bytes until LF, or until end of file.
-  - Whitespace: skip it.
+  - `#` or `;`: skip bytes until LF, or until end of file. A CR does not end a comment.
+  - Whitespace (exactly space, tab, CR, LF): skip it.
   - A digit: convert it. If no nibble is pending, keep it as the high nibble. If one is, combine the two and write
     one byte (status 6 on a short write, a failed close, or a failed truncate).
   - Anything else: status 4.
@@ -75,7 +75,7 @@ Registers and layout are yours to choose. Small and readable beat clever: one by
 
 This repository only, in `docs/LAYOUT.md`'s places:
 - `ladder/0-hex0/`: `README.md`, `hex0.hex0`, `hex0`, and `tests/` for the fixtures;
-- `tools/verify.sh`, `tools/layout.sh` and `tools/check/hex-check.py`;
+- `tools/verify.sh`, `tools/layout.sh`, `tools/check/hex-check.py` and `tools/check/fuzz-hex0.py`;
 - `docs/excursus/2026/10/001-the-ladder/SCORE-hex0.md`.
 
 Nothing goes anywhere else.
@@ -83,7 +83,7 @@ Nothing goes anywhere else.
 ## STOP TRIGGERS
 
 - **STOP-1** — the format wants something beyond digits, comments and whitespace, such as labels or addresses. That
-  belongs to rung 1 (hex1/hex2). Say what, and why.
+  belongs to a later rung (hex1, then hex2). Say what, and why.
 - **STOP-2** — `hex0` built from its own source differs from `ladder/0-hex0/hex0` and the cause cannot be named.
 - **STOP-3** — any rung output would have to come from a tool other than a rung (an assembler, `xxd -r`, Python).
   Those check; they never build.

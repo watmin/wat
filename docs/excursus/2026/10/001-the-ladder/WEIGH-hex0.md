@@ -190,3 +190,25 @@ we can decorate our readme a bit too?"*
   - make rule 2's ELF scan and rule 8's syntax scan pass over `brand/` honestly (the SVG is text: 0 colon paths and 0
     arrows today);
   - add a mutant: a non-image file such as `brand/x.md`, which must be red. That is rule 1's "image files only".
+
+### cohaerere: INCOHERENT; 3 Level-1 and 5 Level-2 findings, all confirmed and all accepted
+
+- **F1 (L1):** "the eight rules" in the brief and the expectations against LAYOUT's nine, so row 0 promised one mutant
+  per rule while rule 9 had none.
+- **F2 (L1):** LAYOUT says `tools/` never builds, yet the seed was decoded once by `tools/check/hex-check.py`.
+- **F3 (L1):** the brief's blast radius omitted `fuzz-hex0.py`, which row 12 requires.
+- **F4 (L2):** "whitespace" is used undefined in the exit-4 row (vertical tab and form feed are exit 4, not skipped).
+- **F5 (L2):** a comment "runs to the end of the line", but CR does not end one; only the brief said LF.
+- **F6 (L2):** row 9 was described as a human reading, while "every row is a command".
+- **F7 (L2):** two different documents were each called "read first".
+- **F8 (L2):** rung 1 was named "hex1/hex2".
+
+**Fixed by me, in my own documents:**
+- F1: "every rule", and row 0 names its rule-9 and brand mutants.
+- F2: LAYOUT rules 4 and 7 and the brief now DECLARE the seed's one decode as the single exception: the bootstrap of
+  the root of trust, after which the seed reproduces itself.
+- F3, F6, F7 and F8 as stated.
+- F4 and F5 in the brief's own wording.
+
+**For Grok (round 3):** F4 and F5 in `ladder/0-hex0/README.md` and the source header. Write "whitespace (exactly
+space, tab, CR, LF)", and say a comment runs "to the next LF; a CR does not end it".

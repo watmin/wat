@@ -1,0 +1,259 @@
+# SCORE — rung 0: hex0
+
+2026-10-04. Nothing here is landed. Nothing was committed. The tree is dirty on purpose.
+
+Current seed, after the refute section below: `ladder/0-hex0/hex0` is 511 bytes, mode `755`, the stdout of `tools/check/hex-check.py ladder/0-hex0/hex0.hex0`. The re-run of `tools/verify.sh` printed `verify: ok` and exited 0. The 475-byte seed was the previous weigh, before `fchmod`, status 7, and the fuzz.
+
+The first run, before that weigh, was 455 bytes. Its log follows.
+
+## What verify printed
+
+```
+mutant rule 1: red
+mutant rule 2: red
+mutant rule 3: red
+mutant rule 4: red
+mutant rule 5: red
+mutant rule 6: red
+mutant rule 7: red
+mutant rule 8: red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open read write close exit
+row 4: cmp identical, exit 42
+row 5: 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 7: argc exit 1
+row 7: missing IN exit 2
+row 7: missing OUT directory exit 3
+row 7: G exit 4
+row 7: odd digits exit 5
+note: IN is a directory, exit 6
+row 9: 119 instructions match
+row 10: 455 bytes
+row 11: lint ok
+verify: ok
+```
+
+The clean layout run before the mutants also had to print `layout: ok`; a miss there stops the script before mutant 1. Each mutant is required to exit nonzero and to print `layout: rule N:` for its own rule. All eight were reverted before the second `layout: ok`. After the run, `git diff --quiet c45603e -- archived` is clean, `archived/` has no porcelain, and the index has no staged mutant.
+
+## Rows
+
+| # | result |
+|---|---|
+| 0 | `layout: ok`. Eight mutants red, each naming its rule, then reverted: stray top-level file; a second ELF; a brief inside the rung; rung `2-skip` with rung 1 absent; a README with no exit table; a byte appended under `archived/`; a `tools/` script that redirects into `out/`; a tracked `.wat` file whose text is a colon path. |
+| 1 | `tools/check/hex-check.py` on `hex0.hex0` cmp identical to `ladder/0-hex0/hex0` |
+| 2 | comments stripped, `xxd -r -p`, cmp identical |
+| 3 | `ladder/0-hex0/hex0 ladder/0-hex0/hex0.hex0 out/h1` exit 0, cmp identical |
+| 4 | `out/exit42` cmp identical to the xxd decode of `ladder/0-hex0/tests/exit42.hex0`, and running it exits 42 |
+| 5 | `stat -c %a out/exit42` is `755`. `verify.sh` sets `umask 0022` before the run. |
+| 6 | lower `ab`, upper `J`, CRLF between nibbles `A`, comment at EOF with no newline `A`, `;` and `#` then `B`, split `4 1` is `A`. Each exit 0. |
+| 7 | argc 2 exits 1; missing IN exits 2; OUT under a missing directory exits 3; `G` exits 4; one leftover digit exits 5 |
+| 8 | `strace -f` on the row 3 command: `execve`, `open`, `read`, `write`, `close`, `exit` |
+| 9 | `objdump -D -b binary -m i386:x86-64` on the bytes after file offset `0x78`: 119 instruction comments match, and those bytes are the whole code blob |
+| 10 | `wc -c` is 455, which is ≤ 512 |
+| 11 | `tools/check/hex-check.py --lint` printed `lint: ok` |
+
+The directory-as-IN line is not an expectations row. Opening the rung directory succeeds and the following read fails, and hex0 exits 6. That is the status 6 path in the contract.
+
+## Size
+
+455 bytes: 120 of ELF and program header, 335 of code. `p_filesz` and `p_memsz` are 455 (`C7 01 00 00 00 00 00 00`). The prediction was 250–400, the upper half because refusals are distinct. 455 is above that prediction and under the 512 gate. A few conditional jumps are rel32 because the displacement does not fit in a byte; the comment-skip `je` is one of them. Left as assembled.
+
+## Cross-check
+
+The same 335 code bytes were assembled with `nasm -f bin` under `/tmp/hex0-scratch` and wrapped into an ELF there. `cmp` of that file with `ladder/0-hex0/hex0` was identical. nasm did not write the seed or anything under `out/`. `out/h1`, `out/exit42`, and the fixture outputs were written by `ladder/0-hex0/hex0`.
+
+## Weigh round 1
+
+Two fixes, then every row again.
+
+**R1.** After `close` of OUT the seed tests `eax`. Negative exits 6. Status 6 now reads "a read, write or close failed" in the `hex0.hex0` header, in `ladder/0-hex0/README.md`, and in the brief's table. The close sequence is `syscall` / `test %eax,%eax` / `jns` / push 6, or `xor %edi,%edi` and exit 0. No fixture makes the kernel fail `close`. A scratch trace of a successful decode showed `close` returning 0 and then `exit(0)`.
+
+**R2.** `tools/layout.sh` rule 5 no longer demands rows 0 through 6. It reads the one `Exit status:` block in the rung source and the README table, and requires those two sets of numbers to be equal. The old "no exit table" mutant still goes red. Two mutants were added: the README missing row 4, and a README row 7 that the source does not declare.
+
+The seed is 475 bytes: 120 of header, 355 of code. `p_filesz` and `p_memsz` are 475 (`DB 01 00 00 00 00 00 00`). That is 20 bytes over the first seed, still under the 512 gate, still above the 250–400 prediction. Row 9 is 124 instructions. The code bytes were cross-assembled with nasm under `/tmp` and `cmp` against the decoded seed was identical. The seed file itself is the decoder's stdout.
+
+```
+mutant rule 1: red
+mutant rule 2: red
+mutant rule 3: red
+mutant rule 4: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 6: red
+mutant rule 7: red
+mutant rule 8: red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open read write close exit
+row 4: cmp identical, exit 42
+row 5: 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 7: argc exit 1
+row 7: missing IN exit 2
+row 7: missing OUT directory exit 3
+row 7: G exit 4
+row 7: odd digits exit 5
+note: IN is a directory, exit 6
+row 9: 124 instructions match
+row 10: 475 bytes
+row 11: lint ok
+verify: ok
+```
+
+After that run, `git diff --quiet c45603e -- archived` is clean and the rung README matches the copy taken before the mutants.
+
+## Refute — R3, R4, R5
+
+The previous knock stopped at R1 and R2. This run puts the rest in.
+
+**R3.** OUT is opened with `O_WRONLY|O_CREAT` (`0x41`) and no `O_TRUNC`. After the same-file check, `fchmod` (syscall 91) sets mode `0755`. Failure exits 3. A fresh `out/exit42` is mode `755`. An OUT that already existed at mode `600` is mode `755` afterwards, and its bytes match the probe.
+
+**R4.** `fstat` (syscall 5) of both descriptors compares `st_dev` and `st_ino` before `fchmod` and before `ftruncate` (syscall 77). A match exits 7 and leaves the bytes alone. The same path, a hard link, and a symlink each exited 7 with IN byte-identical. `ftruncate` failure exits 6. Status 6 now reads "a read, write, close or truncate failed" in the source header, the README, and the brief. `fstat` failure on IN is status 2. `fstat` failure on OUT is status 3, with `fchmod`.
+
+**R5.** `tools/check/fuzz-hex0.py` is a reference written from the contract, generator seed `20261004`, covering every byte, the near-miss bytes, comments, CRLF, and lengths through 4,096. The 2,000-case slice printed `fuzz: 2000 agree`. The discriminating copy flips the one `cmp $0x5` that bounds `a-f` (`3C 05` to `3C 06`, the compact form of the `cmp $0x46` example). It printed `fuzz mutant: 6 disagreements`. The seed file was not modified.
+
+The seed is 511 bytes: 120 of header, 391 of code. `p_filesz` and `p_memsz` are 511 (`FF 01 00 00 00 00 00 00`). That is under the 512 gate. Row 9 is 150 instructions. nasm under `/tmp` cross-assembled the code; `cmp` against the decoded seed was identical. The seed file is the decoder's stdout.
+
+```
+mutant rule 1: red
+mutant rule 2: red
+mutant rule 3: red
+mutant rule 4: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 6: red
+mutant rule 7: red
+mutant rule 8: red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open fstat fchmod ftruncate read write close exit
+row 4: cmp identical, exit 42
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 7: argc exit 1
+row 7: missing IN exit 2
+row 7: missing OUT directory exit 3
+row 7: G exit 4
+row 7: odd digits exit 5
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+note: IN is a directory, exit 6
+row 9: 150 instructions match
+row 10: 511 bytes
+row 11: lint ok
+fuzz: 2000 agree
+fuzz mutant: 6 disagreements
+row 12: fuzz ok
+verify: ok
+```
+
+After that run, `archived/` still matches `c45603e` and no fuzz-disagree fixture was left behind. Wards were not cast. Nothing was committed.
+
+## R6 — the docs shape
+
+`tools/layout.sh` now enforces rule 9. The top of `docs/` may contain standing `*.md` files and `excursus/` only. An excursus is `docs/excursus/YYYY/MM/NNN-<slug>/`, the counter starts at `001` in each month with no gaps, the slug is lowercase words joined by `-`, and the directory holds `*.md` only.
+
+The clean tree passed. Four mutants went red naming rule 9, then were removed:
+
+- `docs/stray-dir` — stray directory under `docs/`
+- `docs/excursus/2026/10/003-counter-gap` with `002` absent — counter gap
+- `001-the-ladder/stray.hex0` — a non-document inside an excursus
+- `002-BadSlug` — a badly formed slug
+
+The seed is still 511 bytes. `tools/verify.sh` was re-run and printed `verify: ok`. Wards were not cast. Nothing was committed.
+
+```
+mutant rule 1: red
+mutant rule 2: red
+mutant rule 3: red
+mutant rule 4: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 5: red
+mutant rule 6: red
+mutant rule 7: red
+mutant rule 8: red
+mutant rule 9: red
+mutant rule 9: red
+mutant rule 9: red
+mutant rule 9: red
+layout: ok
+row 1: cmp identical
+row 2: cmp identical
+row 3: cmp identical, exit 0
+row 8: execve open fstat fchmod ftruncate read write close exit
+row 4: cmp identical, exit 42
+row 5: 755
+row 5: preexist 600 is 755
+row 6: lower exit 0
+row 6: upper exit 0
+row 6: crlf exit 0
+row 6: eof exit 0
+row 6: comments exit 0
+row 6: split exit 0
+row 7: argc exit 1
+row 7: missing IN exit 2
+row 7: missing OUT directory exit 3
+row 7: G exit 4
+row 7: odd digits exit 5
+row 7: same path exit 7
+row 7: hard link exit 7
+row 7: symlink exit 7
+note: IN is a directory, exit 6
+row 9: 150 instructions match
+row 10: 511 bytes
+row 11: lint ok
+fuzz: 2000 agree
+fuzz mutant: 6 disagreements
+row 12: fuzz ok
+verify: ok
+```
+
+After that run, `archived/` still matches `c45603e` and the four rule 9 mutants are gone.
+
+## R6 extended — bare numbered references
+
+Rule 9 now also rejects a tracked file outside `archived/` that contains the name `excursus` or `arc`, a space, and digits that are not the start of a slug. A reference still names `YYYY/MM/NNN-<slug>`.
+
+The statute quoted that forbidden form, so a literal gate was red on `docs/LAYOUT.md` and on `WEIGH-hex0.md`. Those quotations were split into "the name, a space, then digits". The rule they state is unchanged. After that, a clean `tools/layout.sh` printed `layout: ok`.
+
+A standing file `docs/bare-ref.md`, tracked for the check and then removed, printed:
+
+```
+layout: rule 9: bare numbered reference in docs/bare-ref.md
+```
+
+`tools/verify.sh` was then run once. It did not print `verify: ok`. It got through the earlier mutants and stopped here:
+
+```
+verify: mutant rule 9 said layout: rule 1: top-level name not in the layout: brand
+```
+
+`wat/brand/` is a directory of logo and icon files. It is not one of the top-level names in `docs/LAYOUT.md`. It was not created by this strike, and it was not removed. Rule 1 fires before rule 9, so this run did not reach the bare-reference mutant or any later row. The seed is still 511 bytes. Wards were not cast. Nothing was committed.
