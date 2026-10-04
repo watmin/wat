@@ -822,3 +822,25 @@ circumspicere is cast last. Reports are recorded here as they arrive.
   - **L2:** the environment knobs move only the outer timers.
   - **L2:** the fuzz has one 120 s deadline over 2000 cases. A hang does not name its input, and a KILL skips cleanup.
   - **L2:** the hang stub is `sleep 300`, itself a guessed duration. Block on an event that never arrives instead.
+- **peragrare: 32 L1, 1 L2.** One cast per instrument; all five green on a copy. Census scripts are in
+  `/var/tmp/vigilia2-hex0/peragrare/census/`. The five gaps claimed fixed were re-derived and hold, except argc: the
+  argc-0 OUT assertions are vacuous, and the row labelled "argc 1" stages argc 2.
+  - **fuzz (2 L1):** (status 5, pending, comment open at EOF), with and without bytes before, is never visited.
+    Hypothesis refuted on this seed: `4#x` and `414#x` give rc 5.
+  - **contract (5 L1):**
+    - FIFO OUT is unvisited. CONFIRMED: it blocks in open and is killed with rc 137.
+    - A write or read failure after one or more bytes is never staged (4 cells). Every fault fails the first call,
+      so "keeps the bytes written before" is asserted only at 0. On this seed, `ulimit -f 1` gives rc 6 and keeps
+      1024 bytes, so the cell can be built.
+  - **seed-audit (4 L1):** the comparisons are never shown going red:
+    - row 1 seed-differs: the checkpoint's byte-flip proof is not committed;
+    - row 9 offset and count: `zip()` truncates silently;
+    - row 11 bare.
+  - **layout-mutants (19 L1, 1 L2):**
+    - 7-allowlist CONFIRMED.
+    - 5b-many CONFIRMED: a second target holding its own Exit-status block.
+    - 17 latent checks are never exercised: 1b, 3a, 3b, 4a, 5a, 6b; the 7 tee/mv/dd/install/-o regexes; 8 arrow; 9b,
+      9c, 9d, 9f, 9h.
+    - L2: 3d is hollow, because the mutant reads only the rule number.
+  - **driver-test (2 L1):** seed-audit hang and contract hang are unvisited. They cannot be filled as configured: the
+    30 s module guard exceeds the 20 s hang bound.
