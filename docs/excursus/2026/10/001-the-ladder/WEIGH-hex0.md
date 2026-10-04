@@ -615,3 +615,24 @@ The real run on the live tree: `verify: ok`, rc 0, and `git status` identical be
 
 **For the next watch (L2):** `HEX0_DRIVER_TEST=1` silently skips the driver test and the fresh-clone row. It is a
 nesting hook, but a silent skip is the same shape as the fail-open just removed; it should announce itself.
+
+## The second vigilia (2026-10-04) — in flight
+
+Cast at checkpoint `1e41957`, after R23. 19 inward wards, each fetching its full signed text:
+- intueri, solvere, conformare, purgare, struere, sequi, temperare;
+- exigere, mora, excusare (triggered by five `shellcheck disable=SC1091` lines), experiri;
+- peragrare, once per instrument: fuzz, contract, seed-audit, layout-mutants, driver-test;
+- cernere, probare, conferre, complectens, vocare, nesciens, cohaerere.
+
+circumspicere is cast last. Reports are recorded here as they arrive.
+
+- **probare: 1 L1, 3 L2.**
+  - **L1:** a FIFO OUT hangs instead of exiting 3, because OUT is opened without `O_NONBLOCK`, so `open` blocks
+    waiting for a reader. Measured: `mkfifo f; hex0 in f` timed out. The header and the README promise "a device or
+    FIFO is refused", and only `/dev/null` is tested. The likely fix: `O_WRONLY|O_CREAT|O_NONBLOCK` (`0x841`). A FIFO
+    with no reader then fails `open` (ENXIO), and one with a reader fails `S_ISREG`: status 3 either way. Prove it with
+    a fixture.
+  - **L2:** "mode 0755 on every later status" should say "once `fchmod` has succeeded".
+  - **L2:** the same-file check (7) precedes the non-regular check (3); state the order.
+  - **L2:** the contract is written twice (README and header), with nothing comparing them. The header could keep only
+    what the bytes need and point to the README.
