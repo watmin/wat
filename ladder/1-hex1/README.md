@@ -20,7 +20,7 @@ Hex1 accepts hex0's language, and two forms.
 - A byte's two digits may be split by whitespace or a comment.
 - `0-9`, `a-f`, and `A-F` are hex digits, two per output byte, high nibble first.
 - `:c` defines label `c` at the current output offset. The offset counts from 0 at the file's first byte. The definition emits nothing.
-- `%c` emits `target − (the offset after these 4 bytes)` as 4 bytes, little-endian, signed 32-bit.
+- `%c` emits `target − (the offset after these 4 bytes)` as 4 bytes, little-endian, signed. The accepted values run from −2147483648 through 2147483647. A value outside that range is status 10. The output offset advances by 1 for a hex pair and by 4 for a reference, so an output shorter than 2147483648 bytes reaches neither end of that range and does not reach status 10. No fixture of that size is in `tests/`.
 
 A label is one byte: printable ASCII, and not a hex digit, not whitespace, and not `#` `;` `:` `%`. Printable ASCII here is the bytes from `0x21` through `0x7E`. A byte after `:` or `%` that is not a legal label is status 4, the same OUT handling as any other bad byte.
 
@@ -40,12 +40,12 @@ Pass 1 records labels. `lseek(IN, 0, SEEK_SET)` rewinds the input. Pass 2 emits 
 | 5 | an odd number of digits at end of input. OUT was truncated, then holds the bytes decoded before the trailing nibble, mode 0755 |
 | 6 | a read, write, close, or truncate failed |
 | 7 | IN and OUT are the same file, and OUT opened. OUT is untouched |
-| 8 | a reference to a label that was never defined |
-| 9 | a label defined twice |
-| 10 | a displacement that does not fit in signed 32 bits |
-| 11 | IN cannot be rewound, because lseek failed |
+| 8 | a reference to a label that was never defined. Raised in pass 2 at that reference, before its 4 bytes are written. OUT holds the bytes pass 2 already emitted, mode 0755 |
+| 9 | a label defined twice. Raised in pass 1. OUT is empty, mode 0755 |
+| 10 | a displacement outside −2147483648 through 2147483647. Raised at the same write as status 8, before those 4 bytes. The gate does not run this status |
+| 11 | IN cannot be rewound, because lseek failed. Raised after pass 1, before pass 2. OUT is empty, mode 0755 |
 
-The gate runs statuses 8, 9, and 11 once with OUT absent and once with OUT already present, and judges the status. It does not judge the bytes or the mode those two runs leave behind. Status 10 has no fixture. A displacement at either end of signed 32 bits is a gap of about 2^31 output bytes, and no committed input of that size is in `tests/`.
+fchmod and ftruncate run before either pass. A refusal after that point leaves mode 0755 and the bytes pass 2 has already written. The gate runs statuses 8, 9, and 11 with OUT absent and with OUT already present, and judges the status, the bytes, and the mode.
 
 ## Fixtures
 
@@ -57,7 +57,7 @@ The gate runs statuses 8, 9, and 11 once with OUT absent and once with OUT alrea
 
 `label-digit.hex1`, `label-hash.hex1`, `label-semi.hex1`, `label-colon.hex1`, `label-percent.hex1`, `label-space.hex1`, `label-lf.hex1`, `label-low.hex1`, and `label-percent-digit.hex1` are status 4 with no byte before the bad label. `label-digit-after.hex1` is `41` and then a digit label, status 4, and OUT holds that one byte.
 
-`undef.hex1` is status 8. `twice.hex1` is status 9. Status 11's input is a FIFO: the writer feeds `41` and a newline, then closes.
+`undef.hex1` is `%Z`, status 8, and OUT is empty. `undef-after.hex1` is the byte `41` and then `%Z`, status 8, and OUT holds that one byte. `twice.hex1` is status 9, and OUT is empty. Status 11's input is a FIFO: the writer feeds `41` and a newline, then closes. Pass 1 reads that byte, the rewind fails, and pass 2 writes nothing, so OUT is empty. Each of these leaves mode 0755.
 
 ## The target
 

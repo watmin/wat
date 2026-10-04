@@ -132,35 +132,47 @@ def refuse_shape(gate, name, shape):
 
 
 def row_hex1_refusals(gate):
-    for name, status in (("undef.hex1", 8), ("twice.hex1", 9)):
-        refuse_status(gate, name, status)
+    for name, status, body in (
+        ("undef.hex1", 8, b""),
+        ("undef-after.hex1", 8, b"A"),
+        ("twice.hex1", 9, b""),
+    ):
+        refuse_status(gate, name, status, body)
     refuse_rewind(gate)
     print("row 31: refusals")
 
 
-def refuse_status(gate, name, status):
+def refuse_status(gate, name, status, body):
     src = os.path.join(tests_of(gate), name)
     absent = os.path.join(gate.sandbox, "h1abs-" + name)
     if os.path.lexists(absent):
         os.remove(absent)
     obs = run_hex1(gate, [src, absent], absent)
-    gate.require(prove(Expect("row 31 " + name, status=status), obs), obs)
+    gate.require(prove(Expect(
+        "row 31 " + name, status=status, out_exists=True, out_bytes=body, out_mode=0o755,
+    ), obs), obs)
     pre = os.path.join(gate.sandbox, "h1pre-" + name)
     shutil.copy(ensure_old(gate), pre)
     os.chmod(pre, 0o640)
     obs = run_hex1(gate, [src, pre], pre)
-    gate.require(prove(Expect("row 31 " + name + " pre", status=status), obs), obs)
+    gate.require(prove(Expect(
+        "row 31 " + name + " pre", status=status, out_exists=True, out_bytes=body, out_mode=0o755,
+    ), obs), obs)
 
 
 def refuse_rewind(gate):
     program = program_path(gate)
     if not os.path.isfile(program):
         obs = Observation(status=None, out_exists=False)
-        gate.require(prove(Expect("row 31 rewind", status=11), obs), obs)
+        gate.require(prove(Expect(
+            "row 31 rewind", status=11, out_exists=True, out_bytes=b"", out_mode=0o755,
+        ), obs), obs)
         return
     for kind in ("absent", "existing"):
         obs = rewind_once(gate, program, kind)
-        gate.require(prove(Expect("row 31 rewind " + kind, status=11), obs), obs)
+        gate.require(prove(Expect(
+            "row 31 rewind " + kind, status=11, out_exists=True, out_bytes=b"", out_mode=0o755,
+        ), obs), obs)
 
 
 def rewind_once(gate, program, kind):
