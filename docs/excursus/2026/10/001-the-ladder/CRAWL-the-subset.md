@@ -122,6 +122,42 @@ The builder accepts wat-rs's reader being more lax on pathological spellings. Th
 - Every other namespace belongs to the user, with `user/` reserved for rendezvous. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
 state this rule once it is next edited.
 
+**Q4 crawled on wat-rs `origin/main` `839e8fbbf` (2026-10-03, read-only).** Spot-checked by hand where it matters.
+`wat/` is converted to symbol spelling, but `wat-tests/` and `examples/` are not yet: the cutover's step 5c-iii is
+briefed, and keyword heads stay legal until 5d. So some spellings below are derived from the registry plus the mapping
+rule (`src/edn/render.rs`), with no symbol-spelled use in any `.wat` yet.
+
+| op | spelling on origin/main |
+|---|---|
+| println | `wat.kernel/println` |
+| assertion failure | `wat.kernel/assertion-failed!` (kwargs `:message`, optional `:actual`/`:expected`) |
+| test | `wat.test/deftest`, `wat.test/assert-eq` (derived) |
+| typealias | `wat.core/typealias` |
+| load | `wat/load-file!` (derived; a Rust test uses it) |
+| bytes ↔ hex | `wat.bytes/to-hex`, `wat.bytes/from-hex` → Option (derived) |
+| read a file | `wat.io/read-file` → String. There is no one-shot read as bytes. |
+| write a file | `wat.io.IOWriter/open-file` `/write-all` `/write-string` `/flush` `/close` |
+| string | `wat.string/concat` `length` `subs` `starts-with?` (character-indexed) |
+| i64 | `wat.i64/to-string` `quot` `rem` |
+| vector | `(wat.type/Vector :- [T] items…)`, `wat.core/nth` `length` `conj` |
+| Option | `(wat.core/Option.Some {:value x})`, `wat.core/Option.None`, and match arms `[wat.core/Option.Some {:value v} …]` |
+| the first slash | implemented and pinned: `crates/wat-reader/src/identifier.rs`, test `the_first_slash_separates_namespace_from_name` |
+| `user/` rendezvous | `user/main`, `user.bracket/work-fn`, `user.spawn/service-locus`, closure captures |
+
+**Dilemmas raised with the builder (origin/main against the rulings above):**
+1. **defenum.** origin/main requires a purity marker after the name, and keyword variant names:
+   `(wat.core/defenum wat.core/Option :- [T] wat.enum/Pure :Some [value :- T] :None [])`. It refuses bare-symbol
+   variants and a missing marker (`src/types.rs:5647`, `:5787`). The Q2 example has neither.
+2. **Record construction.** origin/main builds records with keyword arguments, `(wat.fmt/Acc :out … :next-id …)`, or
+   positionally with the prime name `T'`. Only enum variants take a map. Q2 says both take maps.
+3. **Accessor spelling.** The corpus writes `wat.fmt.Acc/out` (the type folded into the namespace). Q1's `u/rec/n` is
+   the first-slash reading of the same identity (`:u::rec/n`), which follows from the code but is not pinned by a
+   test. Which is the canonical spelling?
+4. **Operations watc needs that origin/main lacks:** `byte-length`, `byte-subs`, `byte-at`, `bit-and`, `bit-or`,
+   `bit-shift-left`, `bit-shift-right`, `assoc` on a Vector, and a one-shot read of a file as bytes. They exist on
+   the `the-little-wat` branch, in keyword spelling. The mirror has no spelling for them yet.
+5. **Not yet settled on origin/main itself:** the enum marker's name (`SEAM.md` "D"), and the `wat.bytes/` namespace.
+
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
 `Option` (one `Some`, one `None`).
 
