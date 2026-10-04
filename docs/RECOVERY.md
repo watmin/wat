@@ -37,14 +37,13 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `dd7552a`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `1df1074`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** the fourth vigilia is complete, cast at `8201e8d`, and it DIVERGES. The seed has converged; the gate has
-  not, with about 20 L1s in a few bash-rooted classes (see WEIGH's verdict).
-- **Next:** round 7 (R48–R54) is drawn and was knocked to Grok. It is the gate re-shaped as one Python program:
-  observe, then judge, with every judge proven by mutants on every run, and one tier. Then my weigh: break each
-  COMPARISON, and run the hostile-environment, gitfile, signal and concurrency probes. Then checkpoint, and cast
+- **State:** round 7 is checkpointed (`1df1074`): the gate is one Python program (`tools/verify`, `tools/gate/`), 8 s,
+  one tier. Green is rc 0 and the last line `verify: judged, outer repository unchanged`. Two classes remain: verdicts
+  laundered through `_static`, and missing `GIT_OPTIONAL_LOCKS=0`. R55 was knocked to Grok.
+- **Next:** read the SCORE; break a comparison inside each judge myself; run on a `cp -a` copy; checkpoint; cast
   vigilia 5.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
