@@ -1106,3 +1106,47 @@ arrive.
     - "wait status 153" against "shell status 153" (the wait status is 25 without a core);
     - the dead `ALLOWED` list in syscalls-check;
     - stale files in `out/`.
+- **nesciens: 0 L1, 2 L2.** The cold walk holds.
+  - The README's `sed | xxd | cmp` one-liner runs clean.
+  - Every status probed matches.
+  - The header, walked byte by byte, matches readelf.
+  - An independent objdump matches all 156 instruction comments.
+  - The second vigilia's three nesciens items hold.
+
+  Findings:
+  - **L2:** a stranger cannot reproduce the disassembly from the documents. `objdump -d hex0` prints nothing (there
+    are no sections). Following the header's `--adjust-vma` hint on the file disassembles the ELF header as code. The
+    working recipe (`dd skip=120` plus `--adjust-vma`) lives only in seed-audit. Give the one-liner
+    `objdump -D -b binary -m i386:x86-64 --start-address=0x78 hex0`, which was measured to match all 156.
+  - **L2:** the header says "wait status 153" and the README says "shell status 153". The raw wait status is 153 only
+    when a core is reported; here systemd-coredump's pipe reports one even with `ulimit -c 0`. The shell status is 153
+    everywhere.
+  - **L3 (not counted):**
+    - `.gitattributes:6`'s "a CR changes what the rung decodes" is false for rung 0;
+    - LAYOUT:18 omits RECOVERY;
+    - "7 before 3" is too broad, because a failed open or fstat of OUT is 3 before the same-file test;
+    - forward references ("rung", "watc", hex-check's path);
+    - the expected results live in `hex0-contract.sh`, which no README points to;
+    - `ff.hex0` is easily confused with `reject-ff.hex0`;
+    - neither README says how to run the gate.
+- **probare: 0 L1, 2 L2.** The bytes have substance:
+  - 178 data lines carry all 537 bytes, and every one is commented.
+  - The 156 instruction comments are machine-checked.
+  - The 22 ELF field comments hold by hand.
+  - R24, R25 and R26 hold, measured.
+
+  Findings:
+  - **L2:** R25 does not hold. The header says "this target does not restate them", yet lines 17–59 restate the
+    input language, the open order, 7-before-3, SIGXFSZ, and what OUT holds after each status. Nothing compares the
+    two copies, and they have already drifted (wait/shell 153). Measured: a mutant header line `status 4: untouched`
+    passes both layout.sh and seed-audit. The header keeps only what the bytes need.
+  - **L2:** two headings mislabel their bytes. `### ftruncate` also heads the read-loop setup at 0x153–0x15c, and
+    `### fstat OUT` heads the save of IN's identity at 0xdf–0xe3. This was the second vigilia's intueri L2. I did not
+    draw it into round 5; that was my omission.
+  - **L3 (not counted):**
+    - "7 before 3" (as nesciens);
+    - "as root" should be "with CAP_DAC_OVERRIDE": `unshare -r` with the capability dropped gives 3;
+    - "pop into edi" is `pop %rdi`;
+    - rcx is not named as the digit scratch register;
+    - `exit42.hex0:1` carries its stale name;
+    - the gate prints "no core" and then replays timeout's "dumped core" line.
