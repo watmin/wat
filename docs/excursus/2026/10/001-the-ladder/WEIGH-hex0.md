@@ -1941,3 +1941,18 @@ Checkpointed. R47 makes the step cheap.
   - the fast tier's measured time is in SCORE and is under 2 minutes on this laptop;
   - `--prove` still goes red with one row function forced to `return 0`;
   - the setsid-escape proof is still red-proven.
+
+## R47 received — weighed (2026-10-04)
+
+- **Fast tier, live:** rc 0 in **98 s**, empty stderr, and `.git` byte-identical. The last line names the skip.
+- **`--prove`, live:** rc 0 in **299 s** (it was about 30 min at R45). Empty stderr, and `.git` byte-identical. 24 row
+  functions are red under row-proof, and the last line says `proved`.
+- **The step:** 30 ms per call (Grok's mean over 20 calls), down from 301 ms. The escape scan is one `grep -z` over
+  `/proc`, and a pid must still carry the mark on a second read.
+- **The escape scan earned its keep.** The cheaper scan found that sandbox `git commit` was starting a detached
+  `git maintenance run --auto`, which carried the step mark and outlived its step. That is a real escape, closed with
+  `maintenance.auto=false` in `git-sandbox`. After my runs, `ps` lists no `git maintenance` process.
+- **A slip of my own:** my first leftover check used `pgrep -f`, which counts its own shell (a standing rule says
+  never). I re-checked with a `ps` listing.
+
+Checkpointed. Next: vigilia 4, against this checkpoint.

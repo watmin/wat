@@ -13,6 +13,7 @@ cfg=(
   -c user.email=hex0-gate@example.invalid
   -c commit.gpgsign=false
   -c core.fsmonitor=false
+  -c maintenance.auto=false
 )
 extra=()
 while [ $# -gt 0 ]; do

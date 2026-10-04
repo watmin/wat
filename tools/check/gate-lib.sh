@@ -66,18 +66,29 @@ _on_signal() {
 trap '_on_signal INT' INT
 trap '_on_signal TERM' TERM
 
+# One grep reads every environ. -s skips the unreadable ones. Pids come from the paths.
+# A pid that exits during that scan is not alive: it has to still carry the mark.
 _marks_alive() {
   local mark=$1
-  local envf pid
-  local found=""
-  for envf in /proc/[0-9]*/environ; do
-    [ -r "$envf" ] || continue
-    pid=${envf#/proc/}
+  local path pid found="" hits
+  hits=$(
+    shopt -u nullglob
+    grep -l -s -z -x -F "HEX0_STEP_MARK=$mark" /proc/[0-9]*/environ
+  ) || true
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    pid=${path#/proc/}
     pid=${pid%/environ}
-    if { tr '\0' '\n' <"$envf" | grep -qx "HEX0_STEP_MARK=$mark"; } 2>/dev/null; then
+    case $pid in
+      ''|*[!0-9]*) continue ;;
+    esac
+    [ -r "/proc/$pid/environ" ] || continue
+    if grep -q -s -z -x -F "HEX0_STEP_MARK=$mark" "/proc/$pid/environ"; then
       found="$found $pid"
     fi
-  done
+  done << EOF
+$hits
+EOF
   printf '%s' "$found"
 }
 
