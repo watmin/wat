@@ -36,20 +36,16 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `895cdc8`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `6e62c47`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** rounds 1–4 and R21–R23 are weighed and checkpointed. The latest checkpoint is `1e41957`; the gate fails
-  closed (proven by breaking each module). A **second vigilia** is in flight: 19 wards, then circumspicere last.
-  18 of 19 are recorded in WEIGH "The second vigilia"; peragrare (one agent, five instruments) is outstanding. Every
-  L1 is in the gate, not the seed (experiri CONVERGED; purgare and struere found no seed defect). The headliners: a
-  FIFO OUT hangs (`O_NONBLOCK`); modules exit 0 when `gate-lib.sh` fails to load from another cwd; layout and lint
-  failures are silent; nested guards survive an outer timeout kill; the fuzz writes into the repo; rule 5 breaks with
-  a second target; layout allowances let ELF-in-brand/, tracked `out/`, and `out/fault` substrings through.
-- **Next:** collect the remaining ward reports into WEIGH; cast circumspicere; draw round 5 from the deduplicated
-  findings; Grok strikes; the orchestrator re-runs and checkpoints; vigilia again. **The seed lands only when vigilia
-  converges.**
-- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief.
+- **State:** the second vigilia is complete (cast at `1e41957`). The verdict is DIVERGES; experiri alone converged.
+  Round 5 (R24–R33) is drawn at the end of WEIGH and was knocked to Grok. It has one seed change: `O_NONBLOCK` on the
+  OUT open, so a FIFO OUT is refused.
+- **Next:** read Grok's SCORE. Re-run the gate myself, breaking every module and a seed byte. Checkpoint, push, then
+  vigilia again. **The seed lands only when vigilia converges.**
+- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief. The GitHub
+  repository description is stale ("algebraic cognition"); changing it is the builder's call.
 
 ## How work moves
 
