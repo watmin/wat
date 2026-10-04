@@ -2860,3 +2860,21 @@ After R55: my weigh breaks a comparison inside each judge, then checkpoint, then
 - **The sequencer is bash.** For hex1, bash issues `hex0 hex1.hex0 hex1` and the gate checks the result. DESIGN's
   "What is given" lists bash as the sequencer. The question returns at M0's brief, where a seed-built shell becomes
   cheap.
+
+## R55 received — holds (2026-10-04)
+
+Grok's self-weigh (SCORE, "R55 — self-weigh") follows the protocol. Each of the 16 judges went red with only its
+comparison neutered. The stale-index and after-`touch` copies are green with `.git` unchanged. The `_static` shape is
+red under the AST lint, and `_static` no longer exists in the gate's code. **My spot check:** in a copy, the
+`Syscalls` judge's "extra name" comparison was replaced with `False`, and the gate went red with
+`row 8 syscalls: mutant extra stayed green`. Checkpoint `21641bb` (Grok's) stands. Grok proceeds to hex1 per
+HANDOFF-grok.
+
+**Open with the builder:** the orchestrator proposed R56, which takes git out of the gate. It would delete:
+- the candidate commit and the clone rows;
+- the outer-repository hash;
+- the git-isolation wrapper and its probes.
+
+The CRLF risk would be checked instead by fixture sha256s and a no-CR scan. Layout would walk the disk, and there would
+be one commit per checkpoint. The reason: git surface caused about a third of the last three vigilias' findings, with
+no real risk behind it for one builder on one laptop.
