@@ -2294,3 +2294,41 @@ each rune's reason. circumspicere is cast last.
     - fault.c's header gaps and arch check;
     - `fact` and `nr_of` duplicate each other;
     - "pop into edi".
+- **conferre: 0 L1, 8 L2.**
+  - Both tiers are green, and RECOVERY's "Green is" matches both final lines.
+  - The seed agrees with its contract at every point compared:
+    - 156 instructions, with no `call` or `ret`;
+    - the register table, the flags and the classify ranges;
+    - the `gate.tsv` patterns at their offsets;
+    - the strace order;
+    - odd input gives 5, and a directory IN gives 6.
+
+  Findings:
+  - **L2:** rule 5 still misses `exit status:` in lowercase, `Status 9`, and `status: 9`.
+  - **L2:** rule 7 sees only shell syntax. A Python tool writing `out/h9` and copying over the seed is green.
+  - **L2:** rule 9 strips every double-quoted span, an unstated exemption that is also greedy:
+    `"a" see excursus 001 "b"` passes.
+  - **L2:** anything named `.git` at any depth is invisible: an ELF named `tests/.git`, and a BRIEF inside a target's
+    `.git/`, are both green.
+  - **L2:** rule 2's stated scope ("anywhere else") is not its real scope (not-ignored files only): a git-ignored
+    `__pycache__/x.pyc` with ELF magic is green.
+  - **L2:** EXPECTATIONS and what verify prints still do not line up:
+    - rows 0, 16 and 17 print no number;
+    - the git, trunc, fault and row-proof lines have no row;
+    - row 7 prints 25 cases, and EXPECTATIONS names 9.
+  - **L2:** EXPECTATIONS row 13 claims an FD range check that the gate never runs.
+  - **L2:** MACHINE omits that the gate needs a hard NOFILE limit of at least 524288. With 65536, a correct seed is red
+    (`fd300 run rc 97`).
+  - **A rune that earns its standing:** `driver-test.sh:4`'s peragrare(stub). A real `aarch64-linux` target makes the
+    gate red, but DESIGN says aarch64 is not a target, and the gate fails closed. (L3: the rune sits away from the
+    colliding site.)
+  - **L3 (not counted):**
+    - the README's objdump line;
+    - `--adjust-vma`;
+    - "runs first";
+    - DESIGN's `in_fd`/`out_fd`, the TSV column order and `uname` matching;
+    - MACHINE's gcc helpers, awk/grep and the git ≥ 2.31 requirement;
+    - row 4's decode;
+    - the decode provenance;
+    - dead layout code;
+    - layout allows a `$prog` file in any rung.
