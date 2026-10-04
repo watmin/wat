@@ -37,15 +37,17 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `1df1074`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `52a7cd3`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** round 7 is checkpointed (`1df1074`): the gate is one Python program (`tools/verify`, `tools/gate/`), 8 s,
-  one tier. Green is rc 0 and the last line `verify: judged, outer repository unchanged`. Two classes remain: verdicts
-  laundered through `_static`, and missing `GIT_OPTIONAL_LOCKS=0`. R55 was knocked to Grok.
-- **Next:** read R55's SCORE, then weigh it myself (break a comparison inside each judge; run on a `cp -a` copy).
-  Then checkpoint and LAND hex0, with no vigilia (the builder's ruling). Then hex1: crawl stage0-posix's hex1, then
-  draw DESIGN, BRIEF and EXPECTATIONS. Bash is the sequencer until M0.
+- **State:** the orchestrator ran out of credits (2026-10-04). **Grok drives per
+  `docs/excursus/2026/10/001-the-ladder/HANDOFF-grok.md`:** R55 and its self-weigh, then hex1 on the PROVISIONAL
+  defaults in CRAWL-hex1. Grok commits CHECKPOINTS only, and never lands.
+- **Next, on return:**
+  - read HANDOFF, then the newest sections of SCORE-hex0 and SCORE-hex1;
+  - check `git log` after `52a7cd3`;
+  - weigh everything since then by breaking COMPARISONS myself;
+  - land hex0 (no vigilia, by the builder's ruling), then hex1 when it holds.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
   - the sequencer is ruled (bash until M0's brief);
