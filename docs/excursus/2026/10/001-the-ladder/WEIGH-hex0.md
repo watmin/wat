@@ -2074,3 +2074,36 @@ each rune's reason. circumspicere is cast last.
     - the alignment binding is by description;
     - MACHINE:53 says "the row is red" as root, but the gate refuses root first;
     - 299 s under load 27.
+- **experiri: 0 L1, 3 L2.** **1,179 cells driven with its own instruments, 0 mismatches against the README table.**
+  Calibration passed. The cells were:
+  - 1,024 byte-class drives;
+  - 45 injected failures (EIO/EINTR/EAGAIN at every occurrence of 7 syscalls);
+  - about 110 state and status cells.
+
+  Round 6's rewordings hold when driven:
+  - the status order;
+  - FIFO with and without a reader;
+  - both SIGXFSZ dispositions;
+  - real ENOSPC;
+  - a real fchmod EPERM;
+  - the capability cases: `unshare -r` gives 7, the capability dropped, an unmapped owner and a read-only bind
+    mount give 3;
+  - totality under every forced failure;
+  - blocking IN;
+  - the disassembly line, 156 of 156.
+
+  Findings:
+  - **L2:** README:24 "a root-owned file whose owner is not the caller can still be status 3" is false when driven: a
+    uid-1 caller with an effective CAP_DAC_OVERRIDE on a uid-0 444 file gets 7. What really gives 3 there is
+    `fs.protected_regular=1`, which refuses an O_CREAT open in a sticky world-writable directory. The README does not
+    name it.
+  - **L2:** the root guard keys on `EUID`, but the condition is CAP_DAC_OVERRIDE. A non-root caller with the
+    capability passes the guard, and the read-only row goes red on a correct seed (`row 7 read-only rc 7`). Root with
+    the capability dropped is refused needlessly. The README's capability case (7) has no fixture.
+  - **L2:** rsi takes six values (gdb at each syscall), not four. The third report of this.
+  - **L3 (not counted):**
+    - umask 077 gives a new OUT mode 0700 at statuses 2 and 3, against "created … 0755";
+    - a blocked SIGXFSZ is not named;
+    - a FIFO IN blocks in `open`, not `read`;
+    - "prints nothing";
+    - 323 s for the fast tier under load.
