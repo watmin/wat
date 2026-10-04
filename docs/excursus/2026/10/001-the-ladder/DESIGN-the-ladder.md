@@ -43,6 +43,67 @@ architecture or OS later is a new target directory under each rung, held to the 
 its own hand-auditable seed. A host runs the contract rows for every target it can execute, and checks every target's
 bytes (decode and byte identity), which needs no execution.
 
+Syscall numbers are per target. The table is `ladder/<n>-<name>/<arch>-<os>/syscalls.tsv`: one row for each call
+that target makes, the number and the name. The fault rows and the syscall allow-list read it. The brief that adds
+the second executable target is the one that cuts the gate over to that table. With one target, the x86-64 Linux
+numbers stay in the hex0 contract check.
+
+## Which targets, and nothing more
+
+The builder, 2026-10-04: *"i want to discard as much legacy stuff as possible here.. i have zero intentions on
+targetting all possible things.... for now this laptop (probably an rpi i have laying around later for early arm
+support....) we'll move on to other cpu archs (riscv if i can get my hands on one) and cpu extensions"*.
+
+Targets are machines in hand, in order. There is no portability for its own sake.
+
+| target | the machine | ISA baseline it may assume |
+|---|---|---|
+| `x86_64-linux` | this laptop: Intel i7-1270P, Linux 7.2, 4 KiB pages | **x86-64-v3**: AVX2, BMI2, FMA, MOVBE (measured from `/proc/cpuinfo` and the loader, 2026-10-04). **No AVX-512.** |
+| `aarch64-linux` | a Raspberry Pi, later | to measure on the board when it arrives |
+| `riscv64-linux` | if one is acquired | to measure then |
+
+A CPU extension enters a target only when a machine in hand has it. Code may use anything its target's baseline
+guarantees; nothing below it is kept for an older CPU nobody here runs.
+
+## Calling convention: wat's own, not SysV
+
+The builder, 2026-10-04: *"we are not targetting any FFI with anything"*, and *"i want us to be unburdened by classical
+techniques.. this is modern and needs to behave like a modern solution"*.
+
+**wat calls only wat.** There is no foreign function interface, so no C ABI is owed: no System V AMD64 calling
+convention, no AAPCS. The only outside contracts are the kernel's, at the boundary, where they are not a choice:
+- **the Linux syscall ABI:** on x86-64, the number in `rax`, arguments in `rdi rsi rdx r10 r8 r9`, the result in
+  `rax`, and `rcx`/`r11` clobbered;
+- **the process entry state `execve` builds:** argc at `[rsp]`, then argv and envp;
+- **the ELF file format.**
+
+Everything inside is wat's. One convention per target, written down once, follows. The x86-64 row is the partition
+watc already designed (the-little-wat, `elf/lib/x86.wat`, the comment above `:c::nargregs`):
+
+| role | `x86_64-linux` | `aarch64-linux` |
+|---|---|---|
+| arguments | `rdi rsi rdx rcx r8 r9 r10 r11` (eight) | `x0`–`x7` (eight) |
+| return | `rax` | `x0` |
+| preserved across a call | `rbx r12 r13 rbp` | chosen with the target |
+| reserved, never allocated | `rsp`; `r14` runtime header; `r15` heap top | chosen with the target |
+
+**Discarded, deliberately:**
+- **16-byte stack alignment at every call.** That is SysV's, inherited from SSE. The stack is aligned only where an
+  instruction needs it.
+- **Mandatory frame pointers and prologue rituals.** A routine keeps what it uses.
+- **A red zone.**
+- **varargs.**
+- **Callee-saved registers chosen for C's sake.**
+
+**Each is decided once, here, before the first rung with routines (wat0, and M0 if it has any):**
+- **Q6.** The syscall shim on x86-64. The kernel takes its fourth argument in `r10` and clobbers `rcx` and `r11`, which
+  are wat argument registers. Where is the one place the shim moves them?
+- **Q7.** Frame pointers. Keep them for gdb backtraces in the ladder's rungs, or drop them everywhere?
+- **Q8.** Stack alignment. Where it is actually needed: AVX2 loads, if wat0 uses them.
+
+The seed (rung 0) has no routines at all: 0 `call`, `ret`, `enter` or `leave` instructions. It meets only the kernel's
+contracts. Its `push imm; pop reg` is a 3-byte constant load, not a frame.
+
 ## The rules every rung follows
 
 1. **Each rung is its own source.** A rung's program is written in the language of the rung below it and checked in
