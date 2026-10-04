@@ -61,6 +61,6 @@ The gate runs statuses 8, 9, and 11 once with OUT absent and once with OUT alrea
 
 ## The target
 
-`x86_64-linux/hex1.hex0` is the program in hex0's language. `x86_64-linux/hex1.hex1` is the same program with labels. Neither file is in the tree yet. `x86_64-linux/syscalls.tsv` is the call list: hex0's calls, plus `lseek` 8.
+`x86_64-linux/hex1.hex0` is the program in hex0's language. `x86_64-linux/hex1.hex1` is the same program with labels. `x86_64-linux/syscalls.tsv` is the call list: hex0's calls, plus `lseek` 8.
 
-When `gate.tsv` exists, the disassembly row reads `objdump_machine`, `insn_width`, `code_base`, and `size`. The size row reads `size` and compares it to the file length and to `p_filesz` and `p_memsz`. The lseek fault row reads `lseek_nth`. That table is not in the tree yet.
+`x86_64-linux/gate.tsv` names `objdump_machine`, `insn_width`, `code_base`, `size`, and `lseek_nth`. The disassembly row reads the first four. The size row reads `size` and compares it to the file length and to `p_filesz` and `p_memsz`. The lseek fault row reads `lseek_nth`.
