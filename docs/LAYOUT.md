@@ -15,7 +15,8 @@ wat/
   ladder/               the bootstrap, one directory per rung, in build order
     0-hex0/             README.md (the contract) · tests/ (contract fixtures, shared by every target)
       x86_64-linux/     hex0.hex0 (source, in this target's code) · hex0 (the seed for this target)
-    1-hex1/ …           each rung: README.md · tests/ · one <arch>-<os>/ per target, holding its source
+    1-hex1/             each rung: README.md · tests/ · one <arch>-<os>/ per target, holding its source
+    2-hex2/             same shape. The README is the contract. Its source and tests are not in the tree yet
   tools/                CHECKS only, never builds a rung (one declared exception: the seed, below): verify, gate/, check/
   docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE, RECOVERY); everything else in an excursus
     excursus/YYYY/MM/NNN-<slug>/   one excursus: its design, crawls, briefs, expectations, scores, weighs

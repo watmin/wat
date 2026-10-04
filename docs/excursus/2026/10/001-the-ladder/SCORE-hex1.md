@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. `ladder/2-hex2/README.md` is the next rung's contract. Its spellings are unruled, and its source is not in the tree. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -184,3 +184,11 @@ Row 35 went green on the first copy. Replacing `obs.length != self.want` with `F
 Stale index, no `git status` before the gate: exit 0 in 10.756403769 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `828f255ad8d5835165de3baef30e67ecc90a5620f9add574663ef257cdfb2f8d` (60 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 10.143844255 seconds, stderr empty, same last line, same `.git` listing.
 
 Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 9.037892642 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
+
+## Hex2 — the rung directory (2026-10-04)
+
+`ladder/2-hex2/README.md` is the contract. Hex2 accepts hex1's language and is the rung for an 8-bit relative, a 16-bit relative, an absolute address, and a label longer than one byte. The spelling of each form is unruled. No fixture and no target source are in the tree. `build` does not run this rung. Statuses 0–11 stay hex1's. A number past 11 is unruled.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 39 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 11.598681197 seconds. The log is `/var/tmp/hex2-verify-files.log`, and the stderr is `/var/tmp/hex2-verify-files.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
