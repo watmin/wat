@@ -2,7 +2,8 @@
 
 The builder, 2026-10-03: *"we've been burned many times working on holon and wat with letting llms run wild... we just
 need to be mindful"*. Mindfulness alone is a convention, and conventions rot. So this layout is CHECKED:
-`tools/layout.sh` runs first in `tools/verify.sh`, and a file in the wrong place is a red build. To change the layout,
+`tools/layout.sh` runs first in `tools/verify.sh`, and a file in the wrong place, or written in a retired syntax, is
+a red build. To change the layout,
 amend this document and the gate together, in one commit, on purpose.
 
 ```
@@ -32,3 +33,8 @@ wat/
 5. **Every rung's `README.md` states its contract:** its input language, what it outputs, and every exit status.
 6. **`archived/` is frozen.** Its tracked files must equal the list at `c45603e`, the archive commit, byte for byte.
 7. **`tools/` checks; it never builds.** No rung's output in `out/` may be produced by anything under `tools/`.
+8. **Only Clojure/EDN-compliant syntax.** No tracked file outside `archived/` and `docs/` contains a token with `::`
+   (a colon path such as `:wat::core::+`), or a bare `<-` or `->` used as a type annotation. Names are namespaced
+   symbols (`wat.core/+`), and types are ascribed with `:-`. The builder, 2026-10-04: *"we are not going to support
+   any of the non-clojure/edn compliant syntax... our new tooling must not inherit any of this syntax... if there's
+   any doubts... ask me"*. A spelling that is not settled is asked about, never guessed.

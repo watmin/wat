@@ -14,7 +14,7 @@ Written 2026-10-03, before the strike. Every row must be a command in `tools/ver
 | 8 | Syscalls are only the honest ones | `strace -f ladder/0-hex0/hex0 …` on row 3 | only `execve` (the kernel's), then `open`, `read`, `write`, `close`, `exit` |
 | 9 | Every encoded instruction is what its comment says | `objdump -D -b binary -m i386:x86-64` on the code bytes, read beside `hex0.hex0` | every instruction comment matches the disassembly |
 | 10 | Small enough to read | `wc -c ladder/0-hex0/hex0` | ≤ 512 bytes |
-| 0 | The layout | `tools/layout.sh`, the seven rules of `docs/LAYOUT.md`, plus one mutant per rule: a stray top-level file, a second ELF, a brief inside a rung, a gap in rung numbers, a rung README without an exit table, an edit under `archived/`, a `tools/` script writing into `out/` | `layout: ok` on the tree; each mutant red, naming its rule, then reverted |
+| 0 | The layout | `tools/layout.sh`, the eight rules of `docs/LAYOUT.md`, plus one mutant per rule: a stray top-level file, a second ELF, a brief inside a rung, a gap in rung numbers, a rung README without an exit table, an edit under `archived/`, a `tools/` script writing into `out/`, a tracked `.wat` file containing `:wat::core::+` | `layout: ok` on the tree; each mutant red, naming its rule, then reverted |
 | 11 | Commented throughout | every line of `hex0.hex0` that carries a hex digit also carries a comment (checked by `tools/check/hex-check.py --lint`) | 0 bare lines |
 
 **Runtime prediction:** 1–3 hours.

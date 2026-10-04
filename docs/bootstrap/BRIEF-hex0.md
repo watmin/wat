@@ -44,7 +44,7 @@
   reproduce `ladder/0-hex0/hex0` from its own source.
 - **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
   rule 5).
-- **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: the seven rules of `docs/LAYOUT.md`, each a check
+- **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: the eight rules of `docs/LAYOUT.md`, each a check
   that fails loudly. It then runs every row of `EXPECTATIONS-hex0.md`, building into `out/`, and exits nonzero on any
   failure.
 

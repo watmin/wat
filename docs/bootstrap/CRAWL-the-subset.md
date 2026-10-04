@@ -1,11 +1,13 @@
 # CRAWL — the subset watc is written in (wat0's specification)
 
 2026-10-03. Measured on watmin/the-little-wat `7714f83`, files `elf/compile.wat` plus `elf/lib/{asm,prim,reader,runtime,x86}.wat`.
-That is 15,136 lines and 19,404 list forms. Reproduce with:
+That is 15,136 lines and 19,404 list forms, counted once by a throwaway tokenizer that tallied every list head.
 
-```
-python3 docs/bootstrap/vocab.py elf/compile.wat elf/lib/*.wat
-```
+**Syntax ruling (the builder, 2026-10-04): this repository supports only Clojure/EDN-compliant syntax.** Every name is
+a namespaced symbol (`wat.core/defn`, `wat.core/+`), types are ascribed with `:-`, and the colon-path spellings are
+not supported here, nor are the `<-`/`->` annotations. watc's source in the-little-wat is still written in the retired
+syntax, so moving watc here means translating it first (see "What carries the risk"). The vocabulary below is written
+in the compliant spelling.
 
 ## Why this is the first step
 
@@ -20,27 +22,31 @@ Every list head, by kind:
 
 | head kind | uses | what wat0 provides |
 |---|---:|---|
-| a `:wat::…` language operation | 8,893 | the 53 operations below |
-| a call to a user function | 8,673 | `defn` (1,121 functions); calls, and self tail calls as loops |
-| a record accessor (`:c::Out/code`) | 738 | `defrecord` (29 records): positional fields |
-| an enum variant (`:rd::Kind.List`) | 205 | `defenum` (3 enums: `:rd::Kind`, `:rd::Fault`, `:c::Read`) |
-| `:else` | 153 | `cond`'s last clause |
-| a record constructor (`(:c::Out :base b …)`) | 99 | keyword-argument construction |
+| a language operation (`wat.core/…`, `wat.string/…`, …) | 8,893 | the 53 operations below |
+| a call to a user function | 8,673 | `wat.core/defn` (1,121 functions); calls, and self tail calls as loops |
+| a record field read | 738 | `wat.core/defrecord` (29 records); how a field is read is to be settled |
+| an enum variant (`u/Box.Full` in the compliant spelling) | 205 | `wat.core/defenum` (3 enums: the reader's node kind and fault, and the compiler's read kind) |
+| `:else` | 153 | `wat.core/cond`'s last clause |
+| a record constructor (`(u/some-rec :something 42 :another 32)`) | 99 | keyword-argument construction |
 
-**The 53 operations**, with both spellings (`:wat::core::+` and `wat.core/+`) merged:
+**The 53 operations**:
 
-- **forms:** `defn` `defrecord` `defenum` `typealias` `if` `let` `cond` `do` `and` `or` `not` `match`
-  `load-file!`
-- **i64:** `+` `-` `*` `/` `quot` `rem` `=` `not=` `<` `<=` `>` `>=` `bit-and` `bit-or` `bit-shift-left`
-  `bit-shift-right` `i64::to-string`
-- **String:** `concat` `length` `byte-length` `subs` `byte-subs` `byte-at` `starts-with?`
-- **Vector:** `Vector` (construction) `nth` `length` `conj` `assoc`
-- **Bytes and I/O:** `Bytes::from-hex` `Bytes::to-hex` `io::read-file` `IOReader/open-file` `IOReader/read-all`
-  `IOWriter/open-file` `IOWriter/write-all` `IOWriter/flush` `IOWriter/close` `kernel::println`
-- **failure:** `kernel::assertion-failed!` `test::assert-eq`
+- **forms:** `wat.core/defn` `wat.core/defrecord` `wat.core/defenum` `wat.core/if` `wat.core/let` `wat.core/cond`
+  `wat.core/do` `wat.core/and` `wat.core/or` `wat.core/not` `wat.core/match`, plus a type alias and a file load
+- **i64:** `wat.core/+` `-` `*` `/` `quot` `rem` `=` `not=` `<` `<=` `>` `>=`; `wat.i64/bit-and` `bit-or`
+  `bit-shift-left` `bit-shift-right` `to-string`
+- **String:** `wat.string/concat` `length` `byte-length` `subs` `byte-subs` `byte-at` `starts-with?`
+- **Vector:** construction, `wat.core/nth` `length` `conj` `assoc`
+- **Bytes and I/O:** hex ↔ bytes, read a whole file, open/write-all/flush/close a file for writing,
+  `wat.kernel/println`
+- **failure:** `wat.kernel/assertion-failed!` and a test equality assertion
 
-**Types:** `i64`, `String`, `bool`, `nil`, `Vector`, records, the three enums, and `Option` (one `Some`, one
-`None`).
+Where the compliant spelling of an operation is not settled yet (the I/O and Bytes operations, the type alias, the file
+load, the test assertion), it is described rather than spelled. Those names come from wat-rs main's surface, or from
+the builder. They are not guessed here.
+
+**Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
+`Option` (one `Some`, one `None`).
 
 **What it does not use:** `fn` (closures), maps and sets, macros, services, threads, the holon algebra, `try`, and
 floats. The interpreter wat0 has to be is a small, strict Scheme with records and tagged unions. It is not wat.
@@ -50,7 +56,7 @@ floats. The interpreter wat0 has to be is a small, strict Scheme with records an
 1. **Byte-identical output.** wat0's stage-1 watc must be byte-identical to the one wat-rs's stage 0 builds. That is
    Wheeler's diverse double-compiling, and it is wat0's acceptance gate. Every operation has to match wat-rs's
    semantics exactly where watc's source exercises it. For example: `length` versus `byte-length` on the strings the
-   source contains, `quot`/`rem`/`/` on negatives, and `i64::to-string`.
+   source contains, `quot`/`rem`/`/` on negatives, and the i64-to-string conversion.
 2. **Memory.** wat0 runs once, so an arena that never frees is the simplest heap. But an interpreter allocates far
    more than compiled code does: watc compiling itself natively peaked at ~446 MB before freeing existed. Measure
    before choosing between an arena and counts. wat-rs's stage-0 peak RSS is a first, rough reference.
@@ -58,6 +64,10 @@ floats. The interpreter wat0 has to be is a small, strict Scheme with records an
    ones are not). So wat0 needs self tail calls as loops, and a native stack deep enough for its non-tail recursion.
 4. **Time.** Today's stage 0 interprets watc compiling 103 programs (~31–48 min on wat-rs). The bootstrap needs only
    one of them: watc compiling itself.
+5. **The syntax translation.** watc's ~15,000 lines must be translated to the compliant syntax before wat0 can run
+   them, and watc's reader must accept only that syntax. The translation is mechanical. A tool reads the old form and
+   prints the new one, and wat-rs (which still reads the old form) checks that both spellings mean the same program.
+   But it is real work, and it comes before wat0.
 
 ## The ladder below wat0 — to be drawn next
 
