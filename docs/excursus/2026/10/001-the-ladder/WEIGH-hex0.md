@@ -1503,3 +1503,42 @@ arrive.
     - the stale timing basis in gate-lib;
     - systemd-coredump still starts on every run;
     - the layout re-run after the mutants.
+- **struere: 2 L1, 11 L2.** The seed is clean after O_NONBLOCK:
+  - all 33 branches recomputed by hand, each landing on its commented target;
+  - 537 bytes, equal to `p_filesz`;
+  - 0x841 and the stat offsets;
+  - every register lifetime holds.
+  Its own probes left two crash entries in the journal.
+
+  Findings:
+  - **L1:** fuzz says it kept the failing input, then deletes it. On a hang, its own `finally` removes it; on a
+    disagreement, verify's trap removes it (measured through a full verify). R28 and R29 fail.
+  - **L1:** a Python crash is reported as a check failure in disasm-check, syscalls-check and fuzz. When layout's
+    rule-2 scanner raises, it prints an empty `rule 2:`. R27 fails.
+  - **L2:** an interrupt leaves the running step alive after the verdict. `set -m` puts each step in its own group;
+    on SIGINT or SIGTERM the driver dies and reap_group never runs. Measured: the step wrote a file 4 s after the
+    verdict. R28's "owns its processes" fails. Trap INT and TERM, and kill `-$pid`.
+  - **L2:** fault.c's ptrace path (NTH ≥ 2) resumes every signal with 0. SIGTERM is swallowed, and a SEGV re-faults
+    forever until the timer kills it, so a crashing seed would be reported as "timed out". Re-inject `WSTOPSIG`.
+  - **L2:** `timed_out` decides from the rc alone (as mora and conformare found).
+  - **L2:** fault.c narrows `long` to `int` unchecked. NTH 2^32+1 becomes 1, NR 2^32 becomes `read`. Range-check,
+    then exit 93.
+  - **L2:** fault.c's "every fd from 3 up is closed" is false at NOFILE 524288 (fd 300 survives). Use `close_range`.
+  - **L2:** layout.sh's temp directory is a fixed `$HEX0_SCRATCH/layout-tmp`. It is adopted and then deleted (a
+    pre-existing `keep.txt` vanished), and two runs sharing a scratch directory went red 5 times in 6 trials, each
+    with the wrong cause. Use `mktemp -d`.
+  - **L2:** the time knob: 0 removes all limits, "08" is an octal error, and fuzz's `timeout=5` is unscaled.
+  - **L2:** the status mutant accepts any kind.
+  - **L2:** seven Python steps and two `cp -a` run unguarded; the trunc mutant's exit is never checked.
+  - **L2:** the register table hides rsi's four values (the stat buffer, 0x1ED, 0, then the byte buffer). Trusting
+    it, a reader would judge `+0153 mov %rsp,%rsi` redundant. List each register's values in order, with offsets.
+  - **L2:** the header restates the contract (the eighth report).
+  - **L3 (not counted):**
+    - the FIFO-reader row cannot tell ENXIO from S_ISREG;
+    - "no core" cannot fail;
+    - seccomp has no arch check and compares only the low 32 bits;
+    - the dead `ALLOWED`;
+    - a README restore taken from HEAD;
+    - the knobs are undocumented;
+    - reap_group silently kills leaks;
+    - the fact lookups have no presence check.
