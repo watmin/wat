@@ -1618,3 +1618,54 @@ arrive.
     - rule 3 accepts a lone `gate.tsv`.
 
 All 19 inward wards are in. circumspicere is cast last.
+- **circumspicere (cast last): 1 L1, 5 L2.** These surroundings hold:
+  - a path with a space and brackets;
+  - an inherited fd 3;
+  - real argc 0 on kernels before 5.18;
+  - an ASCII source;
+  - no leaked sandboxes.
+
+  Findings:
+  - **L1:** the gate runs the user's git hooks. `cp -a .` copies `.git/hooks`, and the candidate's commits run them.
+    - Measured: a pre-commit hook of `exec tools/verify.sh` is red, with the wrong cause. A marker hook ran 3 times
+      per verify, and a global `core.hooksPath` hook ran too. A policy hook (`exit 1`) turns a correct tree red.
+    - This breaks LAYOUT's "depends on nothing outside the repository", and it blocks the obvious enforcement (verify
+      as a pre-commit hook).
+    - It is distinct from sequi's leak in the other direction. Closure: hooks off, global and system config off, and
+      `--template=` on clone, for every sandbox git call.
+  - **L2:** a fresh machine with no git identity is red (`unable to auto-detect email address`). **This corrects my
+    R34 weigh,** which withdrew the concern: my probe emptied HOME, but `XDG_CONFIG_HOME` still supplied the
+    identity. Closure: a fixed `-c user.name/user.email` in the sandbox.
+  - **L2:** row 9 cannot parse an instruction longer than 7 bytes. objdump splits a `movabs imm64` across two lines,
+    giving a phantom empty instruction. The seed passes only because its longest instruction is exactly 7 bytes;
+    hex1 will exceed that. Closure: `--insn-width=15`.
+  - **L2:** nothing sequences the ladder except the bash gate. DESIGN claims "not given: … no compiler from
+    elsewhere", but no build entry point exists, and LAYOUT forbids `tools/` from building. stage0-posix closes this
+    with a seed-built shell (kaem). DESIGN must say what sequences the rungs before hex1's brief. This is a design
+    question for the builder.
+  - **L2:** the GitHub page:
+    - "bootstrapped" is present tense, while the README says "not landed";
+    - the languages bar shows C (`fault.c`), and the gate links three C programs against glibc, against "no C";
+    - the homepage is the superseded era's site.
+    The builder's call.
+  - **L2:** README presents RECOVERY as a stranger-facing doc, but it is an agent-session map (datamancy, `~/Work/holon`
+    paths, pulsare).
+  - **L3 (not counted):**
+    - the ASCII invariant is unasserted: a Latin-1 comment byte makes `sed|xxd` locale-dependent;
+    - row 9 matches binutils 2.47's spelling exactly;
+    - accretion: WEIGH is 112 KB and SCORE 40 KB for 537 bytes, one finding was counted 8 times, and `brand/` is
+      6.2 MB;
+    - an aarch64 host is red by design;
+    - fsmonitor daemons.
+
+### The third vigilia's verdict — DIVERGES
+
+The seed has converged:
+- no ward found a defect in its bytes or behaviour;
+- experiri drove 62 cells, all discriminated;
+- every branch and register was traced by hand twice;
+- the remaining seed work is its header (a restated contract) and its register table.
+
+The gate has not. Several round-5 claims do not hold (R25, R27, R28, R29, R31), and the new round-5 surface carries
+the new L1s (git environment, worktrees, hooks, clone rows). The builder ruled on 2026-10-04: L2s may be runed with
+reasons, and tooling comes first, until it is sufficient. Round 6 is drawn as consolidation, not as line items.

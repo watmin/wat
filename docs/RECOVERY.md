@@ -37,15 +37,22 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `9b334d1`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `76855c9`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** round 5 and R34 are checkpointed (`3e54e66`, `9b334d1`). The gate is green before the commit, and
-  injected breaks went red with their causes named. The **third vigilia** is in flight: 19 wards cast at `9b334d1`,
-  with scratch under `/var/tmp/vigilia3-hex0/<ward>/`. Which wards are in is listed in WEIGH "The third vigilia".
-- **Next:** record each report in WEIGH as it arrives, then cast circumspicere last. If it converges, land the seed
-  (a separate commit). If not, draw the next round.
-- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief.
+- **State:** the third vigilia is complete, cast at `9b334d1`, and it DIVERGES. The seed itself has converged; the gate
+  has not. The builder ruled that L2s may be runed with reasons, and that tooling (guardrails) comes first, until it
+  is sufficient. "Sufficient" means each paid-for failure mode below has a wall, and the gate has converged.
+- **Next:** draw round 6 as consolidation:
+  - shrink the seed header to a pointer;
+  - give the gate a trust core, with mutants that invoke their rows;
+  - class-level fixes: git isolation, one step helper, per-target facts in `gate.tsv`;
+  - a failure-mode → wall table;
+  - rune or fix the L2s.
+
+  Then re-run and break it, checkpoint, and cast vigilia 4.
+- **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief. Also open: what sequences the rungs (bash given, or a seed-built shell);
+  the GitHub description and homepage overclaim (circumspicere C3-5).
 
 ## How work moves
 
