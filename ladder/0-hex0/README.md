@@ -1,14 +1,14 @@
 # hex0
 
-Usage: `hex0 IN OUT` on x86-64 Linux.
+Usage: `hex0 IN OUT`.
 
-One per target: that target's seed, written as commented hex so every byte can be audited by hand. The contract is this rung's: this file and `tests/`. The machine code and the syscalls belong to the target `x86_64-linux`. The source is `ladder/0-hex0/x86_64-linux/hex0.hex0`, and the seed is `ladder/0-hex0/x86_64-linux/hex0`. From the repository root, a stranger checks the bytes with:
+One per target: that target's seed, written as commented hex so every byte can be audited by hand. The contract is this rung's: this file and `tests/`. The machine code and the syscalls belong to the target `x86_64-linux`. The source is `ladder/0-hex0/x86_64-linux/hex0.hex0`, and the seed is `ladder/0-hex0/x86_64-linux/hex0`. Its sha256 is `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`. From the repository root, a stranger checks the bytes with:
 
 ```
 sed 's/[#;].*//' ladder/0-hex0/x86_64-linux/hex0.hex0 | xxd -r -p | cmp - ladder/0-hex0/x86_64-linux/hex0
 ```
 
-That decode shares no code with `tools/check/hex-check.py`, which is a second reader of the same source. Running this seed on that source proves self-consistency, not trust. A stranger disassembles the seed with `objdump -D -b binary -m i386:x86-64 --start-address=0x78 hex0`. `objdump -d hex0` prints nothing. Registers, the 144-byte stat slot and the file offsets live in the source header.
+That decode shares no code with `tools/check/hex-check.py`, which is a second reader of the same source. Both readers agree byte for byte. The trust is the hand audit, not which reader ran first. Running this seed on that source proves self-consistency, not trust. The disassembly recipe, the registers and the file offsets live in the target header and in `ladder/0-hex0/x86_64-linux/gate.tsv`.
 
 A ladder is the sequence of programs that builds watc, each one built by the one below it. A rung is one program in that sequence. The design is `docs/excursus/2026/10/001-the-ladder/DESIGN-the-ladder.md`.
 
@@ -21,7 +21,7 @@ The input language is commented hex, read one byte at a time.
 
 It writes those bytes to OUT. OUT is created or truncated with mode `0755`. The mode is 0755 once `fchmod` has succeeded, including on every later status. `fchmod` runs before `ftruncate`, so a failed chmod leaves the previous bytes in place. The order on OUT is: a failed open or fstat is 3, then the same file is 7, then a file that is not regular is 3. A device or FIFO is refused before `fchmod`. A FIFO opened with no reader fails the open. A FIFO opened with a reader fails the regular-file check. Both are status 3, and the mode is unchanged.
 
-`hex0 /dev/null /dev/null` exits 7. Status 7 applies only once OUT opened. A read-only same file is status 3 unless the open succeeds, which needs `CAP_DAC_OVERRIDE` effective over that inode on a writable mount. With the capability, a root-owned file whose owner is not the caller can still be status 3. Opening a device can have driver side effects. Unchanged means mode and bytes.
+`hex0 /dev/null /dev/null` exits 7. Status 7 applies only once OUT opened. A read-only same file is status 3, unless the open succeeds, which needs `CAP_DAC_OVERRIDE` effective over that inode on a writable mount, and then it is 7. `fs.protected_regular` can refuse the open in a sticky world-writable directory. Opening a device can have driver side effects. Unchanged means mode and bytes.
 
 With the default `SIGXFSZ` disposition, a file-size limit kills hex0 (shell status 153). With `SIGXFSZ` ignored, the failed write is status 6 and the bytes written before it are kept. A FIFO or terminal used as IN can block.
 

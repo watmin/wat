@@ -1,0 +1,34 @@
+"""The row module. It names each row. Comparisons live in the judges."""
+
+from tools.gate import drive
+
+
+def all_rows(gate):
+    drive.row_prover(gate)
+    drive.row_hex_check(gate)
+    drive.row_sed(gate)
+    drive.row_fixpoint(gate)
+    drive.row_exit42(gate)
+    drive.row_mode(gate)
+    drive.row_formats(gate)
+    drive.row_refusals(gate)
+    drive.row_syscalls(gate)
+    drive.row_disasm(gate)
+    drive.row_size(gate)
+    drive.row_lint(gate)
+    drive.row_fuzz(gate)
+    drive.row_faults(gate)
+    drive.row_sigxfsz(gate)
+    drive.row_capability(gate)
+    drive.row_empty_argv(gate)
+    drive.row_fd300(gate)
+    drive.row_sha(gate)
+    drive.row_layout(gate)
+    drive.row_outer(gate)
+    drive.row_clone(gate)
+    drive.row_hostile(gate)
+    drive.row_signals(gate)
+    drive.row_lock(gate)
+    drive.row_ast(gate)
+    drive.row_effect(gate)
+    drive.finish(gate)

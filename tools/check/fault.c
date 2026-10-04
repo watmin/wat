@@ -3,7 +3,7 @@
  * FD >= 0 fails that syscall only when arg0 equals FD.
  * FD < 0 fails that syscall on any descriptor.
  * ERRNO is in 1..4095. NTH is the 1-based matching call to fail.
- * NTH 1 is installed with seccomp. A later NTH is counted with ptrace,
+ * Every NTH is counted with ptrace, so one call fails on that path.
  * and the call is skipped before the kernel runs it.
  * Exit codes:
  *   93  bad NR, FD, ERRNO, or NTH
@@ -177,22 +177,6 @@ int main(int argc, char **argv) {
   int watch_fd;
   int err;
   int nth;
-  int prep;
-  struct sock_filter anyfd[] = {
-    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),
-    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
-  };
-  struct sock_filter onefd[] = {
-    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, nr)),
-    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 3),
-    BPF_STMT(BPF_LD | BPF_W | BPF_ABS, offsetof(struct seccomp_data, args[0])),
-    BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, 0, 0, 1),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ERRNO),
-    BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_ALLOW),
-  };
-  struct sock_fprog prog;
 
   if (argc < 6) {
     fprintf(stderr, "usage: fault NR FD ERRNO NTH prog args...\n");
@@ -222,34 +206,5 @@ int main(int argc, char **argv) {
   watch_fd = (int)fd_l;
   err = (int)err_l;
   nth = (int)nth_l;
-  if (nth > 1) {
-    return trace_nth(nr, watch_fd, err, nth, argv + 5);
-  }
-  anyfd[1].k = (unsigned)nr;
-  onefd[1].k = (unsigned)nr;
-  onefd[3].k = (unsigned)watch_fd;
-  anyfd[2].k = SECCOMP_RET_ERRNO | (err & SECCOMP_RET_DATA);
-  onefd[4].k = SECCOMP_RET_ERRNO | (err & SECCOMP_RET_DATA);
-  if (watch_fd < 0) {
-    prog.len = 4;
-    prog.filter = anyfd;
-  } else {
-    prog.len = 6;
-    prog.filter = onefd;
-  }
-  prep = prepare_fds();
-  if (prep != 0) {
-    return prep;
-  }
-  if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
-    perror("nnp");
-    return 97;
-  }
-  if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog)) {
-    perror("seccomp");
-    return 96;
-  }
-  execv(argv[5], argv + 5);
-  perror("execv");
-  return 95;
+  return trace_nth(nr, watch_fd, err, nth, argv + 5);
 }

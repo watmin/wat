@@ -21,6 +21,8 @@ ladder/0-hex0     the seed: hand-auditable; turns commented hex into bytes ← r
 
 The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap) proved. The code is our own.
 
+The gate checks artifacts. It does not build a rung and it does not sequence the ladder. Running the seed on a fixture is an observation. For hex1, a separate build step will produce hex1 and the gate will check it. What issues that build is open.
+
 ## What is given, and what is not
 
 - **Given:** each target's architecture, and the Linux kernel on that architecture. Programs talk to it only through
@@ -33,8 +35,8 @@ The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap
 
   Every artifact above the seed is built by the rung below it.
 - **Checking is not building.** Shell, `xxd` and Python may CHECK a rung. `sed` and `xxd` decode the seed
-  independently. `hex-check.py` is a second reader of the same source. The fixpoint proves self-consistency, not trust.
-  No rung's OUTPUT may come from them.
+  independently. `hex-check.py` is a second reader of the same source. The two agree byte for byte. The trust is the hand audit, not which reader ran first. The fixpoint proves self-consistency, not trust.
+  No rung's OUTPUT may come from them. The gate does not sequence the ladder.
 
 ## Targets
 
@@ -48,7 +50,7 @@ Syscall numbers are per target. The table is `ladder/<n>-<name>/<arch>-<os>/sysc
 that target makes, the number and the name. That file exists for the x86-64 Linux seed, and the fault rows and the
 syscall allow-list read it.
 
-Per-target facts the gate reads live in `gate.tsv` in that same directory. One row is a key, a tab, and a value. The x86-64 Linux file holds the seed size, the objdump machine, the instruction width, the code base, the row-9 mutant text, the fuzz patterns, and the two truncate-order byte sequences. `trunc_fchmod_then_ftruncate` is fchmod then ftruncate. `trunc_ftruncate_then_fchmod` is the reverse: a faulted fchmod then leaves the file truncated.
+Per-target facts the gate reads live in `gate.tsv` in that same directory. The column order is the key, then a tab, then the value. One row is a key, a tab, and a value. The x86-64 Linux file holds the seed size, the objdump machine, the instruction width, the code base, the row-9 mutant text, the fuzz patterns, and the two truncate-order byte sequences. `trunc_fchmod_then_ftruncate` is fchmod then ftruncate. `trunc_ftruncate_then_fchmod` is the reverse: a faulted fchmod then leaves the file truncated.
 
 ## Which targets, and nothing more
 
@@ -58,11 +60,11 @@ support....) we'll move on to other cpu archs (riscv if i can get my hands on on
 
 Targets are machines in hand, in order. There is no portability for its own sake.
 
-| target | the machine | ISA baseline it may assume |
-|---|---|---|
-| `x86_64-linux` | this laptop: Intel i7-1270P, Linux 7.2, 4 KiB pages | **x86-64-v3**: AVX2, BMI2, FMA, MOVBE (measured from `/proc/cpuinfo` and the loader, 2026-10-04). **No AVX-512.** |
-| `aarch64-linux` | not a target until a machine is in hand | measured on that machine |
-| `riscv64-linux` | not a target until a machine is in hand | measured on that machine |
+| target | the machine | ISA baseline it may assume | in hand |
+|---|---|---|---|
+| `x86_64-linux` | this laptop: Intel i7-1270P, Linux 7.2, 4 KiB pages | **x86-64-v3**: AVX2, BMI2, FMA, MOVBE (measured from `/proc/cpuinfo` and the loader, 2026-10-04). **No AVX-512.** | yes |
+| `aarch64-linux` | not a target until a machine is in hand | measured on that machine | no |
+| `riscv64-linux` | not a target until a machine is in hand | measured on that machine | no |
 
 A CPU extension enters a target only when a machine in hand has it. Code may use anything its target's baseline
 guarantees; nothing below it is kept for an older CPU nobody here runs.
@@ -79,15 +81,15 @@ convention, no AAPCS. The only outside contracts are the kernel's, at the bounda
 - **the process entry state `execve` builds:** argc at `[rsp]`, then argv and envp;
 - **the ELF file format.**
 
-Everything inside is wat's. One convention per target, written down once, follows. The x86-64 row is the partition described for watc (the-little-wat, `elf/lib/x86.wat`). rune:exigere(prose) — watc's register partition is described here, not checked by the hex0 gate.
+Everything inside is wat's. One convention per target, written down once, follows. The x86-64 row is the partition described for watc (the-little-wat, `elf/lib/x86.wat`). The hex0 gate does not check that partition. The aarch64 column stays out of this table until a machine is in hand.
 
-| role | `x86_64-linux` | `aarch64-linux` |
-|---|---|---|
-| arguments | `rdi rsi rdx rcx r8 r9 r10 r11` (eight) | `x0`–`x7` (eight) |
-| return | `rax` | `x0` |
-| preserved across a call | `rbx r12 r13` | chosen with the target |
-| frame pointer, always | `rbp` | `x29` |
-| reserved, never allocated | `rsp`; `r14` runtime header; `r15` heap top | `sp`; chosen with the target |
+| role | `x86_64-linux` |
+|---|---|
+| arguments | `rdi rsi rdx rcx r8 r9 r10 r11` (eight) |
+| return | `rax` |
+| preserved across a call | `rbx r12 r13` |
+| frame pointer, always | `rbp` |
+| reserved, never allocated | `rsp`; `r14` runtime header; `r15` heap top |
 
 **Discarded, deliberately:**
 - **A red zone.**

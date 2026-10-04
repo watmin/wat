@@ -27,25 +27,12 @@
     - A byte's two digits may be split by whitespace or a comment.
     - `0-9`, `a-f` and `A-F` are hex digits, two per output byte, high nibble first.
   - **Output.** It writes each byte to OUT, created or truncated with mode `0755`, so the output runs directly. The mode is 0755 once `fchmod` has succeeded. With the default `SIGXFSZ` disposition a file-size limit kills hex0 (shell status 153). With `SIGXFSZ` ignored, the failed write is status 6 and the bytes written are kept. A FIFO OUT is status 3. A FIFO or terminal IN can block.
-- **Refusals.** Total means every failure stops with a named status, within DESIGN's bound: a signal or a blocked read is not a status. hex0 does not report done after a failure. Each status says what OUT holds. The table lives in the rung README. The source header points at it and does not restate it.
-
-  | exit | meaning | OUT |
-  |---|---|---|
-  | 0 | done | the decoded bytes, mode 0755 |
-  | 1 | wrong argument count | not created |
-  | 2 | IN cannot be opened, or fstat on IN failed | not created when the open of IN failed. When fstat on IN failed: not truncated, so a new file is empty and an existing file still holds its old bytes |
-  | 3 | OUT cannot be opened, or is not a regular file, or fchmod failed, or fstat on OUT failed. A read-only same file fails here | not created when the open failed. When fstat on OUT failed, fchmod failed, or OUT is not a regular file: not truncated, so a new file is empty and an existing file or device is unchanged, mode included |
-  | 4 | a byte that is not a digit, a comment, or whitespace (exactly space, tab, CR, LF) | truncated, then the bytes decoded before the bad byte, mode 0755 |
-  | 5 | an odd number of digits at end of input | truncated, then the bytes decoded before the trailing nibble, mode 0755 |
-  | 6 | a read, write, close or truncate failed | a failed truncate leaves the old bytes, mode already 0755. A failed read or write leaves the bytes written before that failure, after the truncate, mode 0755. A failed close leaves the full decoded bytes, mode 0755 |
-  | 7 | IN and OUT are the same file, and OUT opened | untouched |
-
-- **The seed.** One per target: that target's seed, written as commented hex so every byte can be audited by hand. `ladder/0-hex0/x86_64-linux/hex0` is that ELF, produced ONCE by decoding `ladder/0-hex0/x86_64-linux/hex0.hex0` with `sed` and `xxd`. `tools/check/hex-check.py` is a second reader of the same source. That one decode is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the script only checks. hex0 then has to
+- **Refusals.** Total means every failure stops with a named status, within DESIGN's bound: a signal or a blocked read is not a status. hex0 does not report done after a failure. Each status says what OUT holds. The table lives in the rung README (`ladder/0-hex0/README.md`). The source header points at it and does not restate it.
+- **The seed.** One per target: that target's seed, written as commented hex so every byte can be audited by hand. `ladder/0-hex0/x86_64-linux/hex0` is that ELF. `sed` then `xxd`, and `tools/check/hex-check.py`, agree on it byte for byte. The trust is the hand audit of the commented source, not which reader ran first. The commit that first wrote the seed is not named here. That agreement is the declared exception to "tools never build" (`docs/LAYOUT.md` rule 4); afterwards the gate only checks. hex0 then has to
   reproduce `ladder/0-hex0/x86_64-linux/hex0` from its own source.
 - **The rung's README.** `ladder/0-hex0/README.md` states the contract and the exit-status table (`docs/LAYOUT.md`,
   rule 5).
-- **The harness.** `tools/verify.sh` runs `tools/layout.sh` first: every rule of `docs/LAYOUT.md`, each a check
-  that fails loudly. It then runs every row of `EXPECTATIONS-hex0.md`. The fault injector is built in the sandbox, not
+- **The harness.** `tools/verify` is one Python program. It checks every rule of `docs/LAYOUT.md` and every row of `EXPECTATIONS-hex0.md`. The fault injector is built in the sandbox, not
   in `out/`. The gate exits nonzero on any failure.
 
 ## SKETCH — the shape, in prose

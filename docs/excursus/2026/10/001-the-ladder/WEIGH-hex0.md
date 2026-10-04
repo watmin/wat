@@ -2790,3 +2790,63 @@ progress: a full-source bootstrap from a 537-byte hand-auditable hex seed, with 
 The homepage stays https://algebraic-intelligence.dev/ until it moves to wat.algebraic-intelligence.dev. Still to fix
 in the next round's documents: README:10's present-tense "Built from a seed you can read." becomes "Being built from a
 seed you can read."
+
+## Round 7 received — the shape is right where it is used; two classes remain (2026-10-04)
+
+**What holds, measured live:**
+- `tools/verify` exits 0 in **8.2 s** (Grok measured 6.26 s), with empty stderr, `.git` byte-identical, and no new
+  `/var/tmp` leftovers (the index-copy count is unchanged).
+- The seed's bytes are unchanged. Only its comments changed.
+- The gate went from about 3,870 lines in 15 files to about 2,400. The 11 bash and helper files are deleted.
+- **The parity table maps every old check.** Where the new shape is used it is right: the refusal rows (`row 7`),
+  formats, exit42, the mode, faults, SIGXFSZ, the capability, empty argv and the clone are all
+  `gate.run` → `prove(Expect, Observation)`.
+
+**Found by breaking comparisons myself:**
+- **L1: verdicts laundered through `_static`.** Several rows compute their verdict inline, then wrap the boolean as a
+  fake Observation (`_static(0 if ok else 1)`) for a judge that only checks `status == 0`.
+  - The real comparisons are unproven:
+    - the row-8 syscall set;
+    - row 9's disassembly;
+    - row 10's length, `p_filesz` and `p_memsz`;
+    - row 11's lint and ASCII;
+    - the row-21 outer hash;
+    - the row-27 tree hash;
+    - and others.
+  - Their mutants flip only the trivial 0/1.
+  - **Measured:** with the `extra` and `missing` syscall comparisons in a copy replaced by `[]`, the gate printed
+    `row 8: syscalls`.
+  - The AST lint (`row 26`) reads only `tools/gate/rows.py`, the 34-line dispatcher. The rows live in `drive.py`, so
+    the lint never sees them. This is the hollow-proof class again, behind a new name.
+- **L1: the gate writes the outer index.** git runs without `GIT_OPTIONAL_LOCKS=0`. Round 6's `git-sandbox` had it,
+  and the rewrite lost it.
+  - On any tree with stale stat data (a `cp -a` copy, or after `touch`), the gate's own `git status` refreshes the
+    index. Row 21 then correctly reports `row 21 outer` red, so the gate is red on a correct tree.
+  - **Measured:** an unmodified copy is red at row 21. The same copy after a prior `git status` is green.
+- **L3:** `finish()`'s `if os.listdir(...) is None: pass` does nothing. `probe_crlf` is defined twice (lines 690 and
+  1025), so the first definition is dead.
+
+Checkpointed. R55 removes both classes.
+
+## R55 — every comparison lives in a judge, and the gate never writes the outer repository (2026-10-04)
+
+- **Delete `_static`.**
+  - Each fact a row compares becomes an observed field, judged by a judge that does the comparison itself and
+    declares mutants of that fact. The facts are:
+    - the traced syscall list;
+    - the ELF fields and file length;
+    - the disassembly's (offset, bytes, text) triples against the comments;
+    - the lint result and the non-ASCII bytes;
+    - the before and after hashes.
+  - Examples: the syscall judge refuses an extra name, a missing name and a second `execve`. The size judge refuses
+    `p_filesz` ≠ length.
+- **The AST lint covers every `row_*` function, wherever it is defined.** It also refuses any construction of an
+  Observation from a computed boolean. Its mutant files include the `_static(0 if a == b else 1)` shape, which must
+  be red.
+- **Every git call sets `GIT_OPTIONAL_LOCKS=0`.**
+  - **Proof:** the gate is green on a `cp -a` copy with stale index stats, and on a tree after `touch` of every
+    file. In both cases the outer `.git` is byte-identical.
+- **Remove the dead `finish()` test and the first `probe_crlf`.**
+- **README:10 says "Being built from a seed you can read."** This is the builder's ruling recorded above.
+
+After R55: my weigh breaks a comparison inside each judge, then checkpoint, then vigilia 5.

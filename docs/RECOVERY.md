@@ -26,17 +26,14 @@ orientation, prune it.
 
 ## Where the truth lives
 
-- `docs/LAYOUT.md`: where everything goes, enforced by `tools/layout.sh` (a red gate on any violation).
+- `docs/LAYOUT.md`: where everything goes, enforced by `tools/verify` (a red gate on any violation).
 - `docs/WARDS.md`: which datamancy wards are cast at each weigh.
 - `docs/MACHINE.md`: the tools a fresh box needs.
 - `docs/excursus/YYYY/MM/NNN-<slug>/`: each piece of work. Its DESIGN, CRAWL, BRIEF and EXPECTATIONS are what was
   drawn; SCORE is what the executor reports; WEIGH is the orchestrator's verdict, round by round, and its newest
   section is the current state.
-- `tools/verify.sh`: the gate, in two tiers. The fast tier takes no argument and is for every edit and every executor
-  strike. Green on that tier is rc 0 and a last line that names the skip: `verify: sandbox candidate, clone layout,
-  outer repository unchanged, row-proof not run`. `tools/verify.sh --prove` is the same gate plus row-proof. Green on
-  that tier is rc 0 and a last line that says `proved`. A checkpoint, a landing, and vigilia require `--prove`. The
-  flag is the only switch. An unknown argument is refused. Anything else is red.
+- `tools/verify`: the gate, one tier. Green is rc 0 and the last line `verify: judged, outer repository unchanged`.
+  An unknown argument is refused. Anything else is red.
 
 ## NOW (replace this section; never append to it)
 

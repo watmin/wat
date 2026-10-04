@@ -2,7 +2,7 @@
 
 2026-10-04. Nothing here is landed. Checkpoints exist and are not a landing. This strike does not commit. The tree is dirty on purpose.
 
-Current seed, after the R47 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`. That run of `tools/verify.sh` exited 0. Stderr was empty. Its last line was `verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run`. The timed command took 103.76s. This strike does not commit. The R46 section records the earlier run of that same last line, which took 522.14s. The R45 section records the earlier run whose last line was `verify: sandbox candidate, clone layout, outer repository unchanged`. The Round 6 section records the earlier run with that same last line. The R34 section records the earlier run whose last line was `verify: working tree, committed in the sandbox and cloned`. The round 5 section records the run that exited 1. The R23 section records the earlier gate, which printed `verify: ok`. The R22 section records the modular gate. The R21 section records the move into the target directory. The round-4 section records that same seed at `ladder/0-hex0/hex0`, before that move. The round-3 section records the 514-byte seed, after the stat slot grew to 144 bytes. The 511-byte seed was the weigh before that.
+Current seed, after the Round 7 section below: `ladder/0-hex0/x86_64-linux/hex0` is 537 bytes, mode `755`, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`. That run of `tools/verify` exited 0. Stderr was empty. Its last line was `verify: judged, outer repository unchanged`. The timed command took 6.26s. This strike does not commit. The R47 section records the earlier bash gate, whose last line was `verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run`, in 103.76s.
 
 The first run, before that weigh, was 455 bytes. Its log follows.
 
@@ -2012,4 +2012,81 @@ autocrlf clone: lf
 mutant autocrlf attribute: red
 mutant autocrlf without lf: red
 verify: sandbox candidate, clone layout, outer repository unchanged, row-proof not run
+```
+
+## Round 7 — one Python gate, one tier
+
+`tools/verify` is the gate. It re-executes under `env -i` and `python3 -I`. Python is 3.14.7. git is 2.55.0. The child subreaper is set. The seed bytes were not changed: the sha256 above is the same before the comment edits and after them. Mode stayed `755`.
+
+Two earlier runs of this same program were red, and those logs were kept. `/var/tmp/hex0-verify-r7-lint.log` exited 1 in 0.758 s. Stdout ends at `row 10: 537 bytes`. Stderr is `verify: row 11 lint`. The new register comment used a non-ASCII dash. That dash was replaced with ASCII, and the seed file's bytes did not change. `/var/tmp/hex0-verify-r7-fuzz.log` exited 1 in 1.070 s. Stdout ends at `row 11: lint`. Stderr is `verify: fuzz reference disagrees` and the input. A comment between two digits of one byte had dropped the pending nibble. The reference keeps that nibble. Neither log was re-run as the official result.
+
+The official command is one `timeout -s KILL 300` of `tools/verify` from `/home/watmin/Work/holon/wat`, snapshots excluded. It exited 0. Stderr was empty (0 bytes). The log is `/var/tmp/hex0-verify-r7.log`, 30 lines. The timed command took 6.26 s (`6258596697` ns). That is under 2 minutes. The last line is `verify: judged, outer repository unchanged`.
+
+HEAD stayed `6f29d6503b6169bbcf39c800e4b3fa9090a405ab`. The index sha256 stayed `b8917c0f9967a5a334f9de4fabbf9f113b15e548cbfbfa2ffbaa5a9327c74f5b`. The `HEAD` file sha256 stayed `28d25bf82af4c0e2b72f50959b2beb859e3e60b9630a5e8c603dad4ddb2b6e80`. The config sha256 stayed `a1c6972edf8a01940533811e5d92583eb51d307a781df3cd0795011e530e951e`. A tar of `.git` `HEAD`, `index`, `config`, and `refs` hashed `57cebb5d5fb8cd34e058d16656a0b60a17a6a9a918a891de8e7ba374c2aca377` both before and after. `git status --porcelain` was the same listing before and after: the round 7 edits, the deleted bash scripts, `tools/check/fault.c`, and untracked `tools/gate/` and `tools/verify`. Nothing was left under `/var/tmp` from this run's sandbox. This strike does not commit. This section is written after those snapshots.
+
+Wards were not cast. The rung is not landed. hex1 was not started. What sequences the rungs, and the GitHub description and homepage, are still open.
+
+### Parity
+
+| old check | where it went |
+|---|---|
+| rows 1 and 2, decode | `row 1: hex-check identical`, `row 2: sed\|xxd identical` |
+| row 3 fixpoint | `row 3: fixpoint` |
+| rows 4 and 5, exit 42 and mode 755 | `row 4: exit 42`, `row 5: 755` |
+| row 6 formats | `row 6: formats` |
+| row 7 refusals, FIFO, `/dev/null`, read-only, links, directory | `row 7: refusals` |
+| row 8 syscalls | `row 8: syscalls` |
+| row 9 disassembly | `row 9: 156 instructions`. The recipe uses `gate.tsv` and does not pass `--adjust-vma` |
+| row 10 size, `p_filesz`, `p_memsz` | `row 10: 537 bytes`, three judges |
+| row 11 lint | `row 11: lint` |
+| row 12 fuzz | `row 12: fuzz 2000`. The reference is the transition table. The old status and letter programs are the observation mutants |
+| row 13 faults | `row 13: faults`. Every Nth goes through `trace_nth` |
+| rows 14 and 15 SIGXFSZ | `row 14: SIGXFSZ default`, `row 15: SIGXFSZ ignored` |
+| capability, empty argv, fd 300, sha256 | rows 16, 17, 18, 19 |
+| layout and its mutants | `row 20: layout` and `layout mutants: red` |
+| outer repository | `row 21: outer repository unchanged`, including a directory `.git` and a gitfile |
+| clone rows and CR | `row 22: clone` |
+| hostile environment | `row 23: hostile startup is red` |
+| signals | `row 24: signals` |
+| two concurrent gates | `row 25: out/ lock` |
+| step-lint | deleted. The AST lint is `row 26: ast lint` |
+| row-proof and `--prove` | deleted. One prove loop runs on every verify. `row 0` is that loop refusing an always-accept judge |
+| driver-test and `HEX0_DRIVER_TEST` | deleted. The timer flag and the signal rows cover a step that exits and a step that is killed |
+| `HEX0_SANDBOX`, `HEX0_SCRATCH`, `HEX0_TIME_SCALE`, `HEX0_ROW_PROOF_ONLY` | deleted. No environment variable chooses the sandbox or scales a budget |
+| outer tar hash | deleted. The hash walks the resolved git dir and the common dir |
+| fd 300 via raising the hard NOFILE limit | deleted. `row 18` sets the soft limit to 301 and does not raise the hard limit |
+| rule 7 spelling scan | deleted. `row 27: tree unchanged` is the hash of the visible tree |
+| two tiers | deleted. There is one tier |
+
+```
+row 0: prover refuses an always-accept judge
+row 1: hex-check identical
+row 2: sed|xxd identical
+row 3: fixpoint
+row 4: exit 42
+row 5: 755
+row 6: formats
+row 7: refusals
+row 8: syscalls
+row 9: 156 instructions
+row 10: 537 bytes
+row 11: lint
+row 12: fuzz 2000
+row 13: faults
+row 14: SIGXFSZ default
+row 15: SIGXFSZ ignored
+row 16: capability 7
+row 17: empty argv
+row 18: fd 300
+row 19: sha256
+row 20: layout
+layout mutants: red
+row 21: outer repository unchanged
+row 22: clone
+row 23: hostile startup is red
+row 24: signals
+row 25: out/ lock
+row 26: ast lint
+row 27: tree unchanged
+verify: judged, outer repository unchanged
 ```

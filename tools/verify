@@ -1,0 +1,98 @@
+#!/usr/bin/env -S python3 -I
+import os
+import sys
+
+sys.dont_write_bytecode = True
+
+if sys.version_info < (3, 11):
+    sys.stderr.write("verify: Python 3.11 is required\n")
+    raise SystemExit(1)
+
+_ALLOW = {
+    "PATH": "/usr/bin:/bin",
+    "LC_ALL": "C",
+    "HOME": "/var/tmp",
+    "WAT_GATE_CLEAN": "1",
+}
+if os.environ.get("WAT_GATE_CLEAN") != "1" or dict(os.environ) != _ALLOW:
+    script = os.path.abspath(__file__)
+    os.execvpe(
+        "/usr/bin/env",
+        [
+            "env", "-i",
+            "PATH=/usr/bin:/bin",
+            "LC_ALL=C",
+            "HOME=/var/tmp",
+            "WAT_GATE_CLEAN=1",
+            "python3", "-I", script, *sys.argv[1:],
+        ],
+        {},
+    )
+
+import atexit
+import fcntl
+import shutil
+import signal
+
+os.umask(0o022)
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(_ROOT)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from tools.gate.drive import Gate, assert_git
+from tools.gate import layout
+from tools.gate.rows import all_rows
+
+_gate = None
+_lock = None
+
+
+def _die(signum, _frame):
+    if _gate is not None:
+        _gate.close()
+    raise SystemExit(128 + signum)
+
+
+def _locked_out():
+    global _lock
+    out = os.path.join(_ROOT, "out")
+    os.makedirs(out, exist_ok=True)
+    handle = open(os.path.join(out, ".gate.lock"), "a", encoding="utf-8")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.stderr.write("out/ is locked\n")
+        raise SystemExit(1)
+    _lock = handle
+
+
+def main(argv):
+    global _gate
+    if argv not in ([], ["--layout-only"]):
+        sys.stderr.write("verify: unknown argument\n")
+        raise SystemExit(2)
+    assert_git()
+    _locked_out()
+    if argv == ["--layout-only"]:
+        try:
+            text = layout.check(_ROOT, "git")
+        except layout.LayoutError as exc:
+            sys.stderr.write("verify: %s\n" % exc)
+            raise SystemExit(1)
+        sys.stdout.write(text + "\n")
+        return 0
+    _gate = Gate(_ROOT)
+    atexit.register(_gate.close)
+    signal.signal(signal.SIGINT, _die)
+    signal.signal(signal.SIGTERM, _die)
+    signal.signal(signal.SIGHUP, _die)
+    all_rows(_gate)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main(sys.argv[1:]))
+    except BrokenPipeError:
+        raise SystemExit(1)

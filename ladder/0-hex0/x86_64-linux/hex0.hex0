@@ -10,13 +10,14 @@
 # them. A stranger checks the bytes by stripping comments and packing the
 # hex with sed and xxd, then comparing. hex-check.py is a second reader.
 # Running this seed on its own source proves self-consistency, not trust.
-# Disassemble the code with:
-#   objdump -D -b binary -m i386:x86-64 --start-address=0x78 hex0
+# Disassemble the code, from the repository root, with the machine, the
+# code base and the instruction width from gate.tsv:
+#   objdump -D -b binary -m i386:x86-64 --start-address=0x78 --stop-address=0x219 --insn-width=15 ladder/0-hex0/x86_64-linux/hex0
 #
 # Instruction comments are AT&T syntax, in file offsets only. Each begins
 # with the file offset of that instruction. Jump targets in those comments
-# are file offsets too. objdump is given --adjust-vma so its addresses are
-# file offsets (the code begins at file offset 0x78, virtual 0x400078).
+# are file offsets too. `-b binary` already numbers bytes from the start
+# of the file (the code begins at file offset 0x78).
 # The bad-byte push, die (pop into edi), and exit (syscall 60) are the
 # three ways out of the loop. Success jumps to exit with edi = 0.
 # p_filesz is the sum 0x78 + 417 = 537.
@@ -27,18 +28,30 @@
 # Registers, and the file offset that sets each value:
 #   r12   fd of IN, set at +009d (mov %eax,%r12d) after open IN
 #   r13   fd of OUT, set at +00bf (mov %eax,%r13d) after open OUT
-#   r14b  1 when a high nibble is waiting, else 0. Cleared at +0159 and +01c8
+#   rdi   the path or the fd, in the order the code writes it:
+#           +0086 mov 0x10(%rsp),%rdi (IN path), +00a0 mov 0x18(%rsp),%rdi (OUT path),
+#           +00cf mov %r12d,%edi (fstat IN), +00eb mov %r13d,%edi (fstat OUT),
+#           +0129 mov %r13d,%edi (fchmod), +0141 mov %r13d,%edi (ftruncate),
+#           +0161 mov %r12d,%edi (read), +01cb mov %r13d,%edi (write),
+#           +0200 mov %r13d,%edi (close), +020d xor %edi,%edi (exit 0),
+#           +0213 pop %rdi (the refusal)
+#   rax   the syscall number, by each pop %rax; cleared at +015f (xor %eax,%eax)
+#           for read; the input byte at +0177 (movzbl (%rsp),%eax)
+#   r14b  1 when a high nibble is waiting, else 0. Set at +01b8 (mov $0x1,%r14b).
+#           Cleared at +0159 and +01c8
 #   r15b  that high nibble, set at +01b5 (mov %al,%r15b)
 #   r10b  1 while skipping a comment, set at +01dc, cleared at +015c and +01ec
 #   rbp   st_dev of IN, set at +00df (mov (%rsp),%rbp) from offset 0 of the stat buffer
 #   r8    st_ino of IN, set at +00e3 (mov 0x8(%rsp),%r8) from offset 8
-#   rsi   four values, in order:
+#   rsi   six values, in order:
+#           0, set at +008b (xor %esi,%esi) for open IN
+#           0x841, set at +00a5 (mov $0x841,%esi) for open OUT
 #           the stat buffer, set at +00c9 (mov %rsp,%rsi), reused by fstat OUT
 #           0x1ED, set at +012c (mov $0x1ed,%esi) for fchmod
 #           0, set at +0144 (xor %esi,%esi) for ftruncate
 #           the one-byte buffer, set at +0153 (mov %rsp,%rsi) for read and write
 #   rdx   0x1ED at +00aa (mov $0x1ed,%edx) for open OUT, then 1 at +0158 (pop %rdx)
-#   rcx   clobbered by syscall
+#   rcx   the digit scratch, set at +0198 (mov %eax,%ecx). A syscall clobbers it.
 #   [rsp] the one-byte buffer, inside the 144-byte stack slot
 # The slot is 144 bytes because that is the x86-64 ABI's struct stat.
 # fstat is passed rsp. st_dev is offset 0, st_ino is offset 8, st_mode is offset 24.
@@ -164,7 +177,7 @@ E9 C0 00 00 00  # +014e jmp 0x213
 48 89 E6  # +0153 mov %rsp,%rsi
 6A 01  # +0156 push $0x1
 5A  # +0158 pop %rdx
-# safety-margin: xor clears the whole register; the flag lives in the low byte
+# rune:circumspicere(entry) - the psABI leaves these registers unspecified at process entry. The xor pair is dead on Linux. The bytes stay: clearing them would change the seed.
 45 31 F6  # +0159 xor %r14d,%r14d
 45 31 D2  # +015c xor %r10d,%r10d
 # ### read loop

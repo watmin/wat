@@ -44,14 +44,14 @@ On Ubuntu, `linux-perf` is `linux-tools-common linux-tools-$(uname -r)`. On olde
 
 ## What the gate runs
 
-The gate runs `bash`, `python3`, `git`, `gcc`, `objdump`, `strace`, `sed`, `xxd`, `cmp`, `timeout` and the core utilities those scripts call. `gcc` builds the fault injector and the argc helpers in the sandbox. It does not build a rung.
+The gate is `tools/verify`. It needs Python ≥ 3.11 and git ≥ 2.32. It runs `sed`, `xxd`, `objdump`, `strace`, `gcc` and `unshare`. `gcc` builds the fault injector and the argc helper in the sandbox. It does not build a rung. `sed` then `xxd`, and `tools/check/hex-check.py`, agree on the seed byte for byte. The trust is the hand audit, not which reader ran first.
 
-`nasm`, `yasm`, `gdb`, `perf`, `valgrind`, `ltrace`, `hexyl` and `gh` are measurement tools. None of them is on the gate's path. A measurement is bound to the rung that names it.
+`nasm`, `yasm`, `gdb`, `perf`, `valgrind`, `ltrace`, `hexyl` and `make` are measurement tools. None of them is on the gate's path. A measurement is bound to the rung that names it. This rung names none of them. `gh` is the disaster-recovery client, not a gate tool.
 
 ## What the gate needs
 
-- A non-root user. As root, the read-only same-file row is red on a correct seed: status 7 happens only when the open succeeds.
+- A user without `CAP_DAC_OVERRIDE` effective. The plain read-only row refuses to run while that capability is effective, and names the capability. The capability row reproduces the other result under `unshare -U`.
+- A soft `NOFILE` limit of about 301. The gate does not raise the hard limit.
 - A git working tree, not merely a checkout of files. Rule 6 compares `archived/` with commit `c45603e`, which a source archive does not contain.
-- Exec permission on `/var/tmp`. The sandbox and the fault injector are created there. `HEX0_SANDBOX`, when set, is a canonical path under `/var/tmp` that does not yet exist.
+- Exec permission on `/var/tmp`. The sandbox is one directory the gate creates there. No environment variable chooses it.
 - `kernel.yama.ptrace_scope` of 0 or 1, so the fault injector can trace the Nth matching syscall of a child it spawned.
-- `HEX0_TIME_SCALE` matches `^[1-9][0-9]*$`. It multiplies every step's seconds. The default is 1.
