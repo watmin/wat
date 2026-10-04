@@ -2107,3 +2107,48 @@ each rune's reason. circumspicere is cast last.
     - a FIFO IN blocks in `open`, not `read`;
     - "prints nothing";
     - 323 s for the fast tier under load.
+- **intueri: 0 L1, 15 L2.** What speaks:
+  - the seed's headings;
+  - the 156 matched comments;
+  - the `gate.tsv` trunc keys, documented in DESIGN;
+  - rows 1–15 and 18 labelled;
+  - every layout mutant names its rule;
+  - the distinct tier lines;
+  - RECOVERY's green line;
+  - the helper comments.
+
+  `--prove` on a copy is rc 0, `proved`. The complectens(helper) runes are clear.
+
+  Findings:
+  - **L2:** gate-lib's header says it holds the only things that run a command, but `capture_red` runs `("$@")` with no
+    timer and no escape scan. step-lint whitelists it, so `capture_red x y cmp …` passes the lint.
+  - **L2, which I weigh as the most serious here:** in `text:` mode, `_run` never reads the rc. So `mutant_expect`
+    and the step-lint mutant print "red" whenever the expected text appears, even at rc 0. Measured: `echo
+    "layout: rule 1: …"; exit 0` gives `mutant demo: red`. This is the hollow-red class again, in a narrower form.
+  - **L2:** `driver-test: skipped on the nested run` in a green top-level log contains the token that the real skip
+    prints.
+  - **L2:** `row4_status` prints "cmp identical", and `row3_same` prints "exit 0". Each claims what another function
+    checked.
+  - **L2:** the autocrlf mutant is called `noattr` while it ADDS an attribute, and it prints two red lines for one
+    mutant.
+  - **L2:** LAYOUT:5 and BRIEF:47 say layout runs first in verify, but step-lint runs first.
+  - **L2:** the header's `--adjust-vma` sentence (the third report).
+  - **L2:** the register table's r14b omits its set at `+01b8`.
+  - **L2:** these third-vigilia items have no fix and no rune, though R44 said "fixed or runed":
+    - the contract helpers and tokens (`fact`, `assert_out`, `pair`, `fix_ok`, `same`, `samebytes:755`, `empty`)
+      are undocumented, and so is `row_did`;
+    - `--expect-disagree` names nothing;
+    - the byte classes are raw decimals;
+    - the timer comments do not match their use;
+    - `HEX0_DRIVER_TEST` reads as its opposite;
+    - the trunc mutant has four names;
+    - rows 0, 16 and 17 print no `row N`.
+  - **L3 (not counted):**
+    - row-proof prints a cumulative `$SECONDS`;
+    - log noise (`rm 'out/h1'`, `HEAD is now at`);
+    - EXPECTATIONS' row order and "amended through R46";
+    - small header and seed wordings;
+    - `fact` and `nr_of` duplicate each other;
+    - DESIGN omits `in_fd`/`out_fd`;
+    - MACHINE's gcc list;
+    - 616 s for row-proof under load.
