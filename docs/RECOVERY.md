@@ -36,12 +36,15 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at `22ebf3b`. The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `cf3b194`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
 - **State:** rounds 1–4 and R21–R23 are weighed and checkpointed. The latest checkpoint is `1e41957`; the gate fails
   closed (proven by breaking each module). A **second vigilia** is in flight: 19 wards, then circumspicere last.
-  Results are recorded in WEIGH "The second vigilia". So far: probare, a FIFO OUT hangs (`O_NONBLOCK` is missing).
+  Results are recorded in WEIGH "The second vigilia". Six of 19 are in so far: probare, nesciens, exigere, cernere,
+  conferre, intueri, solvere. The headliners: a FIFO OUT hangs (`O_NONBLOCK` is missing; four wards); modules lose
+  `gate-lib.sh` when called from another directory and exit 0 (solvere); rule 5 breaks with a second target; the
+  fuzz writes into the repository.
 - **Next:** collect the remaining ward reports into WEIGH; cast circumspicere; draw round 5 from the deduplicated
   findings; Grok strikes; the orchestrator re-runs and checkpoints; vigilia again. **The seed lands only when vigilia
   converges.**

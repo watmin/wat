@@ -653,3 +653,44 @@ circumspicere is cast last. Reports are recorded here as they arrive.
     - EXPECTATIONS row 13 still says `out/fault`;
     - `SCORE-hex0.md:3` "Nothing was committed" is stale against the checkpoints;
     - `verify.sh:66` probes a nonexistent `aarch64-linux` every run.
+- **cernere: 1 L1, 1 L2.** Everything traces to x86-64 and the Linux ABI, including `st_mode` +24 and S_IFMT/S_IFREG.
+  The FIFO OUT hang is reproduced independently (L1). L2: `fuzz-hex0.py:31` says "'x' follows 'f'", which is false.
+- **conferre: 1 L1, 3 L2.** The fstat slot ends exactly at argc (gdb). The FIFO OUT hang (L1).
+  - **L2:** "0755 on every later status" contradicts the failed-fchmod row.
+  - **L2:** the precedence of 7 over 3 is unstated.
+  - **L2 (new):** "a read-only same file is status 3" holds only without CAP_DAC_OVERRIDE. Under root (`unshare -r`) the
+    open succeeds and the result is 7, still untouched. Qualify it.
+- **intueri: 4 L1, 17 L2.**
+  - **L1:** the 0755 sentence.
+  - **L1:** the FIFO OUT bound.
+  - **L1:** the stale `out/fault` allowance in `layout.sh:236,249`, which keeps a real hole in rule 7.
+  - **L1:** `verify.sh`'s header says it never modifies the tree, but `fuzz-hex0.py:240` writes
+    `ladder/0-hex0/tests/fuzz-disagree.hex0` into the repository on a disagreement.
+  - **L2s:**
+    - headings: read setup; keep IN's identity; comment start;
+    - "row N" labels with no pointer to EXPECTATIONS;
+    - a dead `old` variable in `seed-audit.sh`;
+    - `skip=120` unnamed;
+    - opaque names: `same`, `pair`, `fix_ok`;
+    - fds 3 and 4 assumed, unstated;
+    - the hidden `py.bin` channel;
+    - the opaque trunc-mutant hex;
+    - fuzz flag and kind names;
+    - raw byte literals;
+    - `ALLOWED` used as `EXPECTED`;
+    - the aarch64 self-probe;
+    - mutants hard-coding today's docs.
+- **solvere: 5 L1, 7 L2.**
+  - **L1, worst:** a module's library location depends on how it is called. `here=$(dirname …)` is used after `cd`,
+    so `gate-lib.sh` fails to load from any other working directory. `die` is then undefined, every `|| die` is
+    "command not found", and the module EXITS 0. Measured: `seed-audit.sh … --size 999` from `/var/tmp` exited 0, and
+    `layout-mutants.sh` printed fake reds. Resolve the root absolutely, source from it, and fail if the source fails.
+  - **L1:** rule 5 reads the `Exit status:` block from a TARGET source. Adding a second target makes the gate red
+    ("found 2"), against LAYOUT's promise. The contract check belongs to the README only.
+  - **L1:** `hex0-contract.sh` claims to be per-rung but embeds x86-64 facts (syscall numbers, fds, mutant bytes).
+  - **L1:** the fuzz writes into the live repository (as intueri found).
+  - **L1:** the layout mutants hard-code `docs` contents; adding the next excursus breaks the counter-gap mutant
+    (measured).
+  - **L2:** the `py.bin` channel; the seed layout written in four places; the target-name grammar written three
+    times; the decoder's scan loop duplicated; the stale `out/fault` exception; the driver self-testing in the driver;
+    `argc0.c` as a heredoc.
