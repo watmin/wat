@@ -48,6 +48,8 @@ orientation, prune it.
   - check `git log` after `52a7cd3`;
   - weigh everything since then by breaking COMPARISONS myself;
   - land hex0 (no vigilia, by the builder's ruling), then hex1 when it holds.
+- **Held by the builder until the orchestrator returns (2026-10-04):** R56, taking git out of the gate (see WEIGH, "R55
+  received"). Grok drives hex1 unchanged meanwhile; any cleanup happens on return.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
   - the sequencer is ruled (bash until M0's brief);
