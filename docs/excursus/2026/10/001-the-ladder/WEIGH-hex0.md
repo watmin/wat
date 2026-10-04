@@ -2054,3 +2054,23 @@ each rune's reason. circumspicere is cast last.
     - README:24's wording;
     - the ELF field and register comments have no gate row;
     - 280 s for the fast tier under load.
+- **exigere: 1 L1, 4 L2.** The seed, the gate scripts and the fixtures are clean of deferral prose.
+  RECOVERY's green line, "There is no CI." and the alignment binding hold.
+  - **L1:** CRAWL:122-123 "LAYOUT rule 8 … should state this rule once it is next edited". **This is my own sentence.**
+    LAYOUT was edited twice after it (`7f3898f`, `74b8f03`), and rule 8 still states neither the first-slash rule
+    nor namespace ownership (`wat.*` reserved, `$bound` binders, `user/` rendezvous). The trigger fired and the
+    promise lapsed. It goes into the next round as a named item, and CRAWL's sentence points at that item.
+  - **L2:** R42 does not hold for MACHINE. It still describes C comparisons, perf reports, ltrace, valgrind, yasm and
+    hexyl work that no rung or excursus names, and "bound to the rung that names it" names none. `make` is
+    installed, and nothing calls it.
+  - **L2:** the rune `DESIGN:82 rune:exigere(prose)` is itself the finding. `prose` is not an exigere category, and
+    the reason hides the deferral: watc's partition is "eventually eight, three today" (F-181, in the-little-wat's
+    `x86.wat`).
+  - **L2:** DESIGN's aarch64 column ("chosen with the target", twice) belongs to a non-target.
+  - **L2:** `driver-test.sh:4`'s rune carries an unbound "a real second seed is a later target".
+  - **L3 (not counted):**
+    - `.gitignore:9`'s present tense;
+    - EXPECTATIONS "amended through R46";
+    - the alignment binding is by description;
+    - MACHINE:53 says "the row is red" as root, but the gate refuses root first;
+    - 299 s under load 27.
