@@ -1170,3 +1170,42 @@ arrive.
     - a lease holder gets SIGIO;
     - FIFO IN==OUT discards pending data;
     - row 6's "no core" checks only the cwd, while WCOREDUMP is still set.
+- **complectens: 1 L1, 7 L2.** These second-vigilia items hold:
+  - layout output is replayed;
+  - `py.bin` is gone;
+  - the unreachable dies are gone;
+  - row 9's mutant greps its reason;
+  - lint is shown red;
+  - each mutant's reversion is proven, because layout must be ok on TREE after every mutant.
+
+  Findings:
+  - **L1:** "mutant row 1 (byte)" never runs row 1. It writes its own Python comparator, compares a flipped copy, and
+    greps its own output. With row 1 and row 2 replaced by `true` and seed byte 10 flipped (a header byte row 9 does
+    not see), seed-audit printed `row 1: cmp identical`, then `mutant row 1 (byte): red`, rc 0. A seed that differs
+    from its source passes while the gate prints a red-proof for the deleted row. This breaks R31.
+    - **My weigh missed it.** I credited the printed "mutant row 1: red" from the SCORE. My own byte-300 injection
+      exercised the live row 1, not the mutant, so it could not have seen this.
+  - **L2:** six comparisons can be neutered with the full gate still rc 0: row 2, row 10, contract rows 3 and 4, and
+    the layout half of both clone rows. The noattr mutant re-implements the CR grep inline, inverted, instead of
+    calling the row.
+  - **L2:** driver-test's hang proof proves the stub's own timer: the stub calls `check … 2` itself. The driver has
+    no timer, so a module blocking outside `check` hangs verify for good (a probe was killed at 45 s).
+  - **L2:** gate-lib has no proof of its own: no test of `check`'s replay, of `reap_group` (R28's "no descendant
+    alive"), or of `secs_of`'s refusal. An ad-hoc probe shows they work, so this is unproven, not broken.
+  - **L2:** R27's "every unguarded step goes through `check`" does not hold. Heredoc pythons, the layout-mutants `cp`
+    and git calls, and the FIFO reader are still bare. Measured: a generator failure was blamed on the comparator.
+  - **L2:** `disasm-check.py:8` documents exit 99 for an unexpected failure, but it has no handler; a missing file
+    exits 1, the same as a mismatch.
+  - **L2:** the fuzz status mutant still accepts any disagreement kind; it is right today by the luck of case order.
+    R31 was claimed but not implemented.
+  - **L2:** the argc and same-file scenarios are still inlined. Round 5 never drew this; my omission.
+  - **L3 (not counted):**
+    - `prove_fail` does not grep `rc 1`;
+    - the stub scaffold is written three times;
+    - the row-9 mutant generators could share one helper;
+    - `sleep 30` for the FIFO reader;
+    - three layout fail sites are never visited;
+    - the git-status comparison is vacuous if git fails.
+
+  **Lesson for my weigh:** a printed "mutant …: red" is the executor's claim. Before crediting a mutant, I break the
+  ROW it guards and watch the gate go red.
