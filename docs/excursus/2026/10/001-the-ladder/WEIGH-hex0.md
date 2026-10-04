@@ -1274,3 +1274,39 @@ arrive.
   - **L2:** tracebacks in syscalls-check and fuzz are rc 1. R27 holds only for hex-check and disasm-check.
   - **L2:** rule 3 accepts any non-`hex0` file as "the source" (a target with only `gate.tsv` is green). The
     target-name grammar is written three times.
+- **purgare: 0 L1, 9 L2.** The seed holds no dead thought:
+  - CFG 156 of 156 reachable;
+  - every branch driven both ways;
+  - the O_NONBLOCK change left nothing dead, and the FIFO-reader row discriminates (an S_ISREG `je`→`jmp` mutant is
+    red 300 of 300).
+  - The `xor r14d`/`r10d` pair is dead on Linux; NOPed, it is 2000 agree and self-builds identical. Its rune covers
+    only one line, and its reason describes the encoding rather than the margin (L3).
+
+  Findings:
+  - **L2:** fuzz deletes the hung input it names (as mora found).
+  - **L2:** fuzz's `exists` is a constant, so two arms and two counters are dead. This is the second vigilia's L2, not
+    drawn.
+  - **L2:** syscalls-check holds the dead `ALLOWED`, two dead regexes (0 of 11,967 lines), and an always-taken
+    `execve` insert. This is the second vigilia's L2, not fixed.
+  - **L2:** rule 3's "target has no source" can no longer fire; `gate.tsv` satisfies it. Measured: `git rm`
+    `hex0.hex0` gives layout ok. (Also solvere.)
+  - **L2:** the non-x86 seed-audit path cannot succeed, so row 10's empty-size path is dead. driver-test stubs
+    seed-audit. (Also solvere.)
+  - **L2:** R31's "post-mutant leftover checks deleted" does not hold; `layout-mutants.sh:317-324` still checks the
+    live tree.
+  - **L2:** the "no core" check cannot fail. It looks for a core file in the sandbox and the repo root; under a pipe
+    `core_pattern` none is ever written.
+  - **L2:** `disasm-check.py` documents 99 but exits 1 on a traceback (also complectens).
+  - **L2:** steps that R27 claimed guarded are unguarded, and the mutant generators' "found nothing" exits are never
+    read (also complectens).
+  - **L3 (not counted):**
+    - verify:44 is unreachable;
+    - `HEX0_SCRATCH` is re-exported;
+    - gate-lib's `124` disjunct is dead under `-s KILL`;
+    - driver-test's guard;
+    - fault ERRNO is always 1;
+    - nine identical control runs;
+    - a dead line in hex-check;
+    - layout.sh dead patterns, redundant `rm`s, the visible list fetched three times;
+    - unread TSV numbers;
+    - a `__pycache__` from an importer outside the gate.
