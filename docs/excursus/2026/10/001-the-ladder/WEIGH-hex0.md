@@ -880,3 +880,135 @@ circumspicere is cast last. Reports are recorded here as they arrive.
 experiri alone CONVERGED. Every inward ward that found an L1 found it in the gate or the documents, never as a seed
 defect, with one exception: the seed's open of OUT has no `O_NONBLOCK`, so a FIFO OUT blocks, and the README promises a
 status for every failure. Round 5 is drawn from the deduplicated findings above.
+
+## Round 5 — one seed fix; the gate says why it failed, owns its time, and is proven at every check (2026-10-04)
+
+Drawn from the second vigilia, deduplicated. Each item names the wards behind it; the entries above hold every
+finding in full. The seed changes in ONE place (R24). Everything else is the gate and the documents.
+
+- **R24 — a FIFO OUT is refused, not waited on** (probare, cernere, conferre, intueri, vocare, peragrare).
+  - Open OUT with `O_WRONLY|O_CREAT|O_NONBLOCK` (`0x841`). A FIFO with no reader then fails `open` (ENXIO), and one
+    with a reader fails `S_ISREG`. Both are status 3, with OUT unchanged.
+  - Re-audit every offset and jump. If the size changes, change `--size` and every place that names 537.
+  - Add contract rows for a FIFO OUT with no reader and with a reader. Both must give 3, with the mode unchanged.
+- **R25 — the contract says exactly what holds** (probare, nesciens, conferre, conformare, intueri, circumspicere).
+  - Write "0755 once `fchmod` has succeeded", not "on every later status".
+  - 7 is tested before 3: `hex0 /dev/null /dev/null` exits 7. Say so.
+  - "A read-only same file is 3" holds only without CAP_DAC_OVERRIDE. As root it is 7, still untouched.
+  - SIGXFSZ: with the default disposition, hex0 is killed (rc 153, core). With it ignored, the result is status 6
+    and the bytes written are kept. Add a contract row for each.
+  - The fixpoint proves self-consistency, not trust. Say so beside the independent decode.
+  - Opening a device OUT can change device state (no `O_NOCTTY`). "Unchanged" means mode and bytes.
+  - The header keeps what the bytes need and points to the README for the contract. Status meanings live in the
+    README only, and the header's `Exit status:` block is a pointer, so they cannot drift.
+  - Put a `safety-margin` note on the `xor r14d` and `xor r10d`.
+  - Complete the register table: rsi from fstat IN is reused by fstat OUT; rdx is unset by design for open IN.
+  - Comment addresses use ONE space: file offset. disasm-check and seed-audit use `--adjust-vma`.
+- **R26 — the independent decode is independent** (circumspicere C2-1; struere).
+  - Row 2 becomes `sed 's/[#;].*//' hex0.hex0 | xxd -r -p`, compared byte for byte with the seed. It shares no code
+    with `hex-check.py`.
+  - The README's verification line for a stranger is that one-liner.
+  - MACHINE and DESIGN describe what each decode is.
+  - `hex-check.py` has one tokenizer, which both `decode` and `--digits` consume.
+- **R27 — every failure names its row and shows its evidence** (conformare, complectens, struere, purgare, sequi,
+  mora).
+  - Add one helper in `gate-lib.sh`: `check LABEL SECS -- cmd…`. It captures stdout and stderr, and on failure or
+    timeout it dies with the label, the rc, whether the timer fired, and the captured output.
+  - Every guarded step uses it. Delete the about 19 unreachable `rc=$?; … || die` lines.
+  - Every currently unguarded step goes through it too: dd, objdump, xxd, the heredoc pythons, the `hex0-contract`
+    xxd and :304.
+  - Check tools document their exit codes. A Python traceback is a distinct code (an uncaught exception is never
+    "check failed"). hex-check's usage and missing-file codes are stated, not mirrored by accident. fault.c's
+    header lists 93–98 and the fd layout it guarantees.
+  - `fill_find` takes the rule number, as `visible_list` does.
+- **R28 — the gate owns its processes and its time** (mora, sequi, circumspicere, struere).
+  - **Remove the nesting, not the escape.**
+    - Only steps are guarded. The driver calls modules without a timer.
+    - Every step inside a module is guarded (R27), so no module can hang unbounded.
+    - With one level of timers, no inner timer can outlive an outer kill, and no budget can be inverted.
+    - Prove it: after a step's timer fires, no descendant of that step is alive.
+  - Write the durations once, in `gate-lib.sh`, with the measured basis beside them. One knob scales all of them.
+  - The fuzz bounds each case and, on a hang, names and keeps the input that hung.
+  - The hang stub blocks on an event that never arrives, not on `sleep 300`.
+  - Hang proofs assert that the timer fired: "timed out" in the message.
+  - The sandbox:
+    - `mktemp -d /var/tmp/hex0-verify.XXXXXX` by default;
+    - `HEX0_SANDBOX` must not exist yet and must be under `/var/tmp`;
+    - nothing is adopted;
+    - concurrent runs cannot collide.
+  - The fuzz work directory lives inside the sandbox.
+  - layout.sh's temp files are in a `trap`-cleaned directory under its caller's scratch, not `/tmp`.
+- **R29 — modules are self-contained and never touch the repo** (sequi, solvere, vocare, struere, intueri,
+  complectens).
+  - Each module resolves the repo root absolutely before any `cd`, sources gate-lib from it, and exits 2 if the
+    source fails.
+  - Each module creates every directory it writes to; it needs nothing the driver set up (`out/`).
+  - The contract hashes HEX0 at its own start and compares at the end. No `py.bin`.
+  - fuzz writes a disagreement into the sandbox it is given, and prints the path.
+  - `hex0-contract.sh` holds no x86 facts. Syscall numbers, fds and mutant bytes come from the target directory, as
+    a declared per-target file. This makes DESIGN's `syscalls.tsv` real, with rule 3 admitting it. Otherwise DESIGN
+    stops naming it.
+- **R30 — layout.sh has no allowances it cannot justify** (excusare, purgare, struere, intueri, cohaerere, solvere,
+  peragrare, temperare).
+  - Delete the `fault.c` / `out/fault` allowance.
+  - Rule 2 checks ELF magic everywhere, including `brand/`. Only the NUL check is exempt there.
+  - A tracked `out/` path is a rule-1 failure, and the `out/*` skip is deleted.
+  - Rule 5 compares the README's status set with each target's statuses. Under R25 the target holds a pointer, so a
+    second target cannot make it red.
+  - Replace the `shellcheck disable=SC1091` lines with `# shellcheck source=tools/check/gate-lib.sh`, and give
+    gate-lib a `# shellcheck shell=bash` line. Do not add a shellcheck gate this round.
+  - Each rule scans in one batched pass over a list fetched once, so a grep error stays distinct from no-match.
+  - Remove the dead patterns and the redundant writes.
+  - Mutants derive the docs counters from the tree; they do not hard-code today's docs.
+- **R31 — every comparison is shown going red** (peragrare, complectens, vocare, purgare).
+  - **seed-audit:**
+    - row 1 with a seed byte flipped;
+    - row 9 offset and count, where a count mismatch must be fatal (no silent `zip`);
+    - row 11 with a bare hex line.
+    Each mutant greps for its own refusal text, and a timer kill never counts as red.
+  - **contract:**
+    - read and write failures after one or more bytes, for absent and existing OUT (fault.c learns to fail the Nth
+      call);
+    - true argc 1;
+    - delete the vacuous argc-0 and argc-1 OUT assertions;
+    - the trunc-first mutant greps its reason.
+  - **fuzz:** force (status 5, comment open at EOF) with and without bytes before. Each self-test stops at its first
+    qualifying disagreement and says so.
+  - **layout:**
+    - a mutant for every `fail` site peragrare listed as unvisited (1b, 3a, 3b, 4a, 5a, 6b, 7 tee/mv/dd/install/-o,
+      8 arrow, 9b, 9c, 9d, 9f, 9h);
+    - an ELF in `brand/`;
+    - a force-added `out/` file;
+    - a `fault.c … out/fault` line;
+    - a second target with its own source;
+    - each mutant greps the specific check's text, not only the rule number.
+  - **driver:** hang proofs for seed-audit and the contract as well.
+  - The post-mutant leftover checks are deleted; the git-status comparison covers them.
+- **R32 — the driver tests nothing it does not have** (purgare, vocare, excusare, struere).
+  - Delete `verify.sh:63-66` and the dead `|| die` at :55. `skip_execution` becomes an `is_host` predicate plus a
+    report line.
+  - Prove the skip path in driver-test with a copied tree that holds a non-host target.
+  - `HEX0_DRIVER_TEST=1` skips only the driver test and prints what it skipped. The fresh-clone row always runs.
+  - The final line names what was verified: the working tree, and the HEAD clone.
+- **R33 — the documents agree with each other and with the repo** (cohaerere, exigere, circumspicere, nesciens).
+  - EXPECTATIONS row 13, BRIEF:49 and LAYOUT rule 2: the injector lives in the sandbox. Scope rule 2 to "binaries a
+    rung produces".
+  - "Never builds", in rule 7, MACHINE:3 and BRIEF:12, points to the seed exception (rule 4).
+  - DESIGN: one committed binary per target; "each target's architecture"; aarch64 and riscv are "not a target until
+    a machine is in hand"; the 16-byte alignment check is bound to "the first rung with a `call`".
+  - MACHINE states what the gate needs: a full clone, a git worktree, exec on `/var/tmp`, and `ptrace_scope` ≤ 1.
+  - `.gitattributes` starts with `* text=auto eol=lf`, keeping the binary and `-text` overrides after it. Prove it
+    with a clone under `core.autocrlf=true`.
+  - README:
+    - drop the claim that watc exists;
+    - add a status line ("rung 0: in weigh, not landed");
+    - list RECOVERY.md among the standing docs, as LAYOUT does.
+  - LAYOUT's "a red build" means "red when `tools/verify.sh` runs, which is before every checkpoint". There is no CI
+    yet.
+  - SCORE:3's "Nothing was committed" is stale.
+  - Fix `fuzz-hex0.py:31` ("'x' follows 'f'").
+
+**Not in this round:** the GitHub repository description, which is stale ("algebraic cognition"). Changing it is
+the builder's outward call, so it is asked, not briefed.
+
+After round 5: my re-run, with every module broken in turn; a checkpoint; then vigilia again.
