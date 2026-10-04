@@ -28,6 +28,18 @@ fill_find() {
   fi
 }
 
+# Files a commit could carry: tracked, plus untracked that are not git-ignored.
+visible_list() {
+  local rule=$1
+  VISIBLE=$(mktemp)
+  git ls-files -co --exclude-standard -z >"$VISIBLE"
+  local rc=$?
+  if [ "$rc" -ne 0 ]; then
+    rm -f "$VISIBLE"
+    fail "$rule" "git ls-files failed"
+  fi
+}
+
 # 1. Top level is exactly the allowed names. out/ may exist. .git is metadata.
 # brand/ image files are part of this rule.
 allowed=" README.md LICENSE NOTICE .gitignore .gitattributes ladder watc tools docs brand archived out "
@@ -58,16 +70,16 @@ fi
 
 # 2. One committed binary per target: ladder/0-hex0/<arch>-<os>/hex0.
 # brand/ is not skipped by rules that read text; it is skipped here because
-# its images are binaries on purpose. out/ is build output.
-fill_find "$ROOT" -path "$ROOT/.git" -prune -o -path "$ROOT/out" -prune -o -type f -print0
-while IFS= read -r -d '' f; do
-  rel=${f#"$ROOT"/}
+# its images are binaries on purpose. Ignored build output is not a commit.
+visible_list 2
+while IFS= read -r -d '' rel; do
   if [[ $rel =~ ^ladder/0-hex0/[a-z0-9_]+-[a-z0-9_]+/hex0$ ]]; then
     continue
   fi
   case $rel in
     out|out/*|brand|brand/*) continue ;;
   esac
+  f=$ROOT/$rel
   if [ ! -r "$f" ]; then
     fail 2 "unreadable file: $rel"
   fi
@@ -85,8 +97,8 @@ while IFS= read -r -d '' f; do
   elif [ "$crc" -gt 1 ]; then
     fail 2 "cmp failed on $rel"
   fi
-done <"$FIND_LIST"
-rm -f "$FIND_LIST"
+done <"$VISIBLE"
+rm -f "$VISIBLE"
 
 # 3. A rung holds README.md, tests/, and <arch>-<os>/ directories.
 # A target directory holds that target's source. Process documents stay in docs/.
@@ -260,8 +272,8 @@ o_re='-o'
 o_re+='[[:space:]]+out/'
 scan_out "$o_re" "a tools file names -o into out/"
 
-# 8. Tracked files outside archived/ and docs/ use Clojure/EDN syntax.
-# brand/ is not excluded: a colon path or a bare arrow in a tracked image source is a red.
+# 8. Files outside archived/ and docs/ use Clojure/EDN syntax.
+# Every file a commit could carry, tracked or not. brand/ is not excluded.
 # The patterns are built so this script does not contain the tokens it rejects.
 colon_re=':{2}'
 arrow_re='(^|[^A-Za-z0-9_])('
@@ -271,13 +283,7 @@ arrow_re+='|'
 arrow_re+='-'
 arrow_re+='>'
 arrow_re+=')([^A-Za-z0-9_]|$)'
-GIT_LIST=$(mktemp)
-git ls-files -z >"$GIT_LIST"
-grc=$?
-if [ "$grc" -ne 0 ]; then
-  rm -f "$GIT_LIST"
-  fail 8 "git ls-files failed"
-fi
+visible_list 8
 while IFS= read -r -d '' f; do
   case $f in
     archived/*|docs/*) continue ;;
@@ -296,8 +302,8 @@ while IFS= read -r -d '' f; do
   elif [ "$grc" -gt 1 ]; then
     fail 8 "grep failed on $f"
   fi
-done <"$GIT_LIST"
-rm -f "$GIT_LIST"
+done <"$VISIBLE"
+rm -f "$VISIBLE"
 
 # 9. docs/ is standing markdown plus excursus/YYYY/MM/NNN-slug/.
 for entry in "$ROOT"/docs/* "$ROOT"/docs/.[!.]*; do
@@ -358,13 +364,7 @@ fi
 bare_re='(^|[^A-Za-z0-9_])('
 bare_re+='excursus|arc'
 bare_re+=')[[:space:]]+[0-9]+([^0-9-]|$)'
-GIT_LIST=$(mktemp)
-git ls-files -z >"$GIT_LIST"
-grc=$?
-if [ "$grc" -ne 0 ]; then
-  rm -f "$GIT_LIST"
-  fail 9 "git ls-files failed"
-fi
+visible_list 9
 while IFS= read -r -d '' f; do
   case $f in
     archived/*) continue ;;
@@ -376,8 +376,8 @@ while IFS= read -r -d '' f; do
   elif [ "$grc" -gt 1 ]; then
     fail 9 "grep failed on $f"
   fi
-done <"$GIT_LIST"
-rm -f "$GIT_LIST"
+done <"$VISIBLE"
+rm -f "$VISIBLE"
 
 echo "layout: ok"
 exit 0

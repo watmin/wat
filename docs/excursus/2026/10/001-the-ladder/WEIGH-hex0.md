@@ -557,3 +557,43 @@ From `partire` (SPLIT: three cuts) and what committing revealed.
   - Name the table's place now, in DESIGN's Targets section.
 
 Then the orchestrator re-runs everything, checkpoints, and casts `vigilia` on the modular gate.
+
+## R22 received — and the modular gate FAILS OPEN (2026-10-04)
+
+**R22's shape is right:**
+- `tools/verify.sh` is a 66-line driver;
+- `gate-lib.sh`;
+- three modules: `layout-mutants.sh`, `seed-audit.sh` (which never runs the seed) and `hex0-contract.sh`;
+- the truncate mutant patched during the run;
+- rules 2, 8 and 9 see untracked files;
+- the syscall table's place named.
+
+**But the driver ignores every module's exit status.** `guard` (`gate-lib.sh`) returns the callee's status. The driver
+calls `guard 180 tools/check/layout-mutants.sh "$SANDBOX"`, and every other module the same way, with no `|| die`, and
+the script has no `set -e`.
+
+**Shown, not argued.** I ran the gate in a fresh copy that holds exactly the files a commit would carry, in a new
+repository without `c45603e`:
+- `layout-mutants.sh` died: `verify: layout rc 1 (layout: rule 6: git diff failed …)`;
+- the driver went on to print every row and `verify: ok`, rc 0.
+
+Rule 6 failing there is correct, because that repository has no history (a real clone carries it). What failed is the
+driver. So R22's `verify: ok`, including my own run on the real tree, shows only that the driver reached its last
+line. `partire` named the test that catches this ("stub modules that exit 0 or 1, and assert the dispatch"), and I did
+not require it in R22. My miss.
+
+## R23 — the gate fails closed, by construction (2026-10-04)
+
+- **Remove the class, not the instance.** `guard` itself dies when the callee fails or times out:
+  `timeout … "$@" || die "<module or command> rc $?"`. Every module call inherits that, with nothing to forget at a
+  call site.
+- **Where a caller deliberately expects a failure,** as the mutant runners and the refusal fixtures do, give it a
+  separately named helper that returns the status (`run_status`), so the default is the safe one.
+- **Prove the driver.** Add `tools/check/driver-test.sh`: run `tools/verify.sh` against stub modules in a scratch copy.
+  - Each stub module exits 1 in turn: `layout-mutants`, `seed-audit`, `hex0-contract`.
+  - Each must make the driver exit non-zero and print which module failed.
+  - Then one stub that never returns must be killed by its guard and reported.
+- **Prove a fresh clone.** The gate's own last row clones the repository into the sandbox with `git clone` (full
+  history, so rule 6 holds) and runs the layout check there. That catches any dependency on untracked state.
+
+The R22 tree is checkpointed now, for disaster recovery, with this defect named in the commit.
