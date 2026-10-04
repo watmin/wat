@@ -219,3 +219,25 @@ The bare-reference check is in, and its mutant is red naming rule 9. The rewritt
 document keep the rule's meaning ("the name, a space, then digits"), and they are accepted. Verify then stopped on rule
 1 at `brand/`. That is not a defect in the strike: `brand/` arrived in `9fa2eb5` while the strike ran. Its gate change
 is "The brand arrives", above. Do that, then run verify to the end.
+
+### peragrare, on the fuzz (row 12): the corpus does NOT span the instrument's discrimination space
+
+**The census.** Anchor passed (populated, empty, and moving 267 of 267). 2,000 members, none dropped. 7 axes in 4
+grids, derived from `reference()`'s branches: decoder state × event, high × low digit class, hex character × nibble
+position, and reject byte × state. 553 cells: 331 read, 13 hollow, 180 empty (20 filed, 160 with no hypothesis), and
+29 exempt as covered elsewhere (rows 3 and 4 decode the seed's own source). **33 findings.** All 33 hypotheses were
+refuted by targeted runs (all 484 digit pairs, 228 reject bytes after a pending nibble, 15 comment-while-pending
+inputs). The seed is right today, and the gate would not see a regression in these cells.
+
+**The ones that matter most:**
+- **The fuzz compares decoded bytes on only 4 values** (`00`, `41`, `42`, `AA`). Its random cases hit a reject within a
+  byte or two, so status-0 cases come almost only from forced literals.
+- **No gate reads the decoded value of a lowercase digit.** `ladder/0-hex0/tests/lower.hex0` is `61 62`, decimal digits
+  whose output happens to spell "ab". Confirmed by my own reading. The fixture is named for what it never tests.
+- **A comment between a byte's two digits** (state comment-while-pending) is visited by no instrument: 11 cells. The
+  defects hiding there include clearing the pending flag on a comment, and testing pending before comment.
+- **Reject bytes after a pending nibble** (`0x2F`, `0x40`, `0x80`, `0xFF`) are unvisited. A range check applied only
+  to the high nibble would hide there.
+- **Assumption 4 is broken:** the instrument reads OUT and ignores it on any non-zero status. OUT after a refusal is
+  unspecified (conferre D3), so nothing checks it.
+- **The discriminating mutant is caught by status alone.** No mutant proves the BYTE comparison discriminates.
