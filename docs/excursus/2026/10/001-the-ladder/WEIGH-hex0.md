@@ -714,3 +714,86 @@ circumspicere is cast last. Reports are recorded here as they arrive.
   - **L2:** "then reverted" is unproven; the leftover checks look at the live tree, which mutants never touch.
   - **L2:** the argc and same-file trios are inlined.
   - **L2:** lint has never been shown failing.
+- **vocare: 0 L1, 5 L2.** The checks call from the caller's side, and every README status has a fixture or a fault.
+  - **L2:** `hex0-contract.sh:344` reads seed-audit's `py.bin`. Run alone, the contract dies with a false "row 12 seed
+    changed". It also compares against the decoded source, not against the seed as it was before the fuzz.
+  - **L2:** the fuzz writes `fuzz-disagree.hex0` into the live tree.
+  - **L2:** the argc-1 "OUT not created" check at :150 and :157 tests a path that hex0 is never given.
+  - **L2:** there is no FIFO-OUT row. With a reader, the result is rc 3 and mode unchanged; with none, hex0 blocks.
+  - **L2:** `verify.sh:66` probes a target that does not exist, and is a false red on an aarch64 host.
+  - **Notes:** fuzz's "independent" reference uses the same algorithm as hex-check. fault.c cannot fail the Nth call.
+    No check flags a fixture that is not named.
+- **sequi: 3 L1, 8 L2.** The seed's register thread holds on every path.
+  - **L1:** modules cd and then source `$here/gate-lib.sh`. Run from `wat/tools`, `die` and `guard` are not found, and
+    the module exits **0** after printing "row 1/2/11 ok" against empty files.
+  - **L1:** the `py.bin` coupling (as vocare reports).
+  - **L1:** fuzz derives ROOT from `__file__` and writes into `tests/`. The git-status before/after check cannot see it
+    once the file exists.
+  - **L2:** the contract needs `out/`, which only the driver creates.
+  - **L2:** layout.sh's `FIND_LIST`/`VISIBLE` temp files leak on every `fail`, about 20 per run into `/tmp`.
+  - **L2:** the fuzz work directory is outside the sandbox; a KILL leaves it behind.
+  - **L2:** `HEX0_SANDBOX` and the `*_GUARD` knobs are undocumented, and `HEX0_SANDBOX=.` makes `rm -rf` delete the
+    repo.
+  - **L2:** one verdict covers two trees: the fresh clone is HEAD, while everything else checks the working tree.
+  - **L2:** the seed's register table omits rsi and rdx. fstat OUT relies on rsi left by fstat IN.
+  - **L2:** the code base is written three times: e_entry, `skip=120`, `CODE_BASE`.
+  - **L2:** helper functions write globals.
+- **conformare: 2 L1, 7 L2.** The seed is conformant; every finding is in the gate.
+  - **L1:** a failing layout or lint check prints only `rc 1`. The diagnostic goes to a redirected file that the
+    sandbox trap deletes. Shown with a STRAY file and a lint break. The proposed fix is one labelled checked run in
+    gate-lib, which captures output and replays it on failure.
+  - **L1:** `fill_find` reports every find failure as rule 2, including failures inside rules 1, 3, 5 and 9.
+  - **L2:** about 19 row labels are unreachable after `guard`.
+  - **L2:** the row-9 and trunc-first mutants accept any failure.
+  - **L2:** the check tools' exit codes collide: a Python traceback is 1, the same as a real failure; hex-check's
+    usage and missing-file codes invert hex0's; fault.c's codes 93–98 are undocumented; `cd || exit 2` exits silently.
+  - **L2:** the 0755 sentence contradicts status 3.
+  - **L2:** status meanings are written in three copies, and rule 5 compares only the numbers.
+  - **L2:** fuzz writes into the tree.
+  - **L2:** steps that are unchecked or have no timeout.
+- **experiri: CONVERGED.** All 32 cells were driven and discriminated, with its own ptrace injector (fail the Nth
+  syscall).
+  - Every status cause was driven against every OUT prior state, with the outcome as declared. FIFO and pty OUT give
+    rc 3 with the mode unchanged; the pty case proves S_ISREG precedes fchmod.
+  - Not driven: block-device OUT, FIFO or terminal IN, and errnos other than EIO, EPERM and ENOSPC.
+- **purgare: 2 L1, 14 L2.** The seed has no dead instruction, write or branch (CFG walk: 156 of 156).
+  - **L1:** the `skip_execution` checks at `verify.sh:55` and :63–66 test nothing; :66 is a false red on aarch64.
+  - **L1:** the `fault.c` / `out/fault` allowance in layout.sh is dead, and it is a standing hole in rule 7.
+  - **L2:** the 19 rc checks after guard.
+  - **L2:** the argc-one and argc-0 assertions on paths hex0 is never given.
+  - **L2:** dead regexes in syscalls-check.
+  - **L2:** the `old` variable at `seed-audit.sh:62`.
+  - **L2:** the non-x86 seed-audit path cannot succeed.
+  - **L2:** fuzz's `reference()` always says the file exists, and an early return is dead.
+  - **L2:** fault's ERRNO is always 1.
+  - **L2:** redundant writes and patterns in layout.sh.
+  - **L2:** duplicate post-checks in layout-mutants.
+  - **L2:** the seed's `xor r14d` and `xor r10d` need a safety-margin comment.
+  - **L2:** the driver-test guard.
+- **excusare: 8 L1, 1 L2.** 14 exemptions weighed; 5 hold.
+  - **L1:** five reasonless `# shellcheck disable=SC1091` lines (×5). The fix is `# shellcheck source=…`. Shellcheck is
+    not a gate; gate-lib has no shell directive.
+  - **L1:** the `out/fault` allowance. It is a substring match, so `cp … out/hex1 # fault.c out/fault` stays green.
+  - **L1:** brand/ skips rule 2's ELF check as well as its NUL check. `brand/evil.png` with ELF magic stays green.
+  - **L1:** the `out/*` skip only ever applies to force-added files, so `git add -f out/h1` stays green.
+  - **L2:** `HEX0_DRIVER_TEST=1` also silently skips the fresh-clone check.
+- **struere: 4 L1, 14 L2.** Every seed jump target was checked by hand; it has no per-instruction defect.
+  - **L1:** `fill_find` reports the wrong rule (shown).
+  - **L1:** rule 5 counts Exit-status blocks per rung, so a second target is red (shown).
+  - **L1:** nothing checks that `out/` is untracked, although LAYOUT claims it is enforced (shown).
+  - **L1:** fuzz writes into the tree (shown).
+  - **L2:** the `py.bin` coupling.
+  - **L2:** fault.c's ERRNO is masked to 16 bits, so `65536` injects nothing; it should reject values outside
+    1..4095.
+  - **L2:** fault.c's fd-layout guarantee is not in its header.
+  - **L2:** the global temp files leak.
+  - **L2:** the stale `out/fault` hole.
+  - **L2:** the dead rc checks.
+  - **L2:** steps without guard.
+  - **L2:** the `old` variable.
+  - **L2:** hex-check's `digit_text` duplicates the tokenizer.
+  - **L2:** `reference` exists=True.
+  - **L2:** the contract's stringly expectation tokens (a typo falls through to cmp).
+  - **L2:** `skip_execution` is a predicate that prints.
+  - **L2:** the seed comments use two address spaces (file offset and target). The fix is objdump `--adjust-vma`.
+  - **L2:** `HEX0_SANDBOX` is passed to `rm -rf` unchecked.
