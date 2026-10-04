@@ -96,7 +96,22 @@ Measured with `clj` 1.12, under both `clojure.core/read-string` (the Clojure rea
 
 The EDN spec's prose ("`/` … used once in the middle of a symbol") is stricter than its reference reader, which
 accepts `u/rec/n`. wat's rule is therefore a deliberate superset of both readers, a dialect choice and not a bug.
-Any symbol either reader accepts, wat reads the same way. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
+Any symbol either reader accepts, wat reads the same way.
+
+**wat is always fully qualified (the builder, 2026-10-04).** No expression leaves a name in doubt, so a reader never
+has to guess between namespace and name:
+- a top-level name always carries its namespace, and the first slash splits it;
+- the only unqualified symbols are local bindings, which belong to their binding form.
+
+```clojure
+(wat.core/defn u/fn [] :- wat.type/nil  ;; {:ns u :name fn}
+  (wat.kernel/println nil))
+
+(wat.core/let [x 42]                    ;; {:ns $bound :name x}
+  (wat.kernel/println x))
+```
+
+The builder accepts wat-rs's reader being more lax on pathological spellings. The rule is the first slash. The repository's "Clojure/EDN-compliant" wording (LAYOUT rule 8) should
 state this rule once it is next edited.
 
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
