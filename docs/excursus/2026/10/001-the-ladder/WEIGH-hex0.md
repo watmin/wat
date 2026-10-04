@@ -844,3 +844,39 @@ circumspicere is cast last. Reports are recorded here as they arrive.
     - L2: 3d is hollow, because the mutant reads only the rule number.
   - **driver-test (2 L1):** seed-audit hang and contract hang are unvisited. They cannot be filled as configured: the
     30 s module guard exceeds the 20 s hang bound.
+- **circumspicere (cast last): 1 L1, 5 L2.**
+  - **L1:** the "independent" decode is not independent. Row 2's `xxd` only packs digits chosen by
+    `hex-check.py --digits`, and every source-to-seed path goes through one tokenizer, which the README also hands to
+    strangers. MACHINE:27 and DESIGN:35-36 claim independence. An external decode matches today:
+    `sed 's/[#;].*//' hex0.hex0 | xxd -r -p | cmp - hex0`. Make that the row-2 decode and the README's verification
+    line.
+  - **L2:** the sandbox is a fixed name in sticky `/var/tmp`. `rm -rf` failure is unchecked, then `mkdir -p` adopts a
+    directory another user owns, and the gate compiles and executes there. Concurrent runs delete each other's
+    sandbox. The fix is `mktemp -d`, and refuse an existing or foreign `HEX0_SANDBOX`.
+  - **L2:** the SIGXFSZ sentence depends on the inherited disposition. With the default, rc is 153 and a core is
+    dumped; with it ignored, rc is 6 and 1024 bytes are kept (CPython parents ignore it). State both, and add a row
+    for each.
+  - **L2:** the gate needs a full clone (rule 6 reads `c45603e`), a git worktree rather than an archive, an executable
+    `/var/tmp`, and `ptrace_scope` ≤ 1. Each fails closed, but MACHINE states none of them.
+  - **L2:** `.gitattributes` pins the rung's bytes but not the gate. Under `core.autocrlf=true`, every tools script
+    checks out as CRLF and dies with `bash\r`. The next rung's extension gets no eol pin. The fix is a first line
+    `* text=auto eol=lf`, keeping the overrides after it.
+  - **L2:** the public claims run ahead of the repo:
+    - the GitHub description is stale ("algebraic cognition");
+    - the README says "watc … compiles itself", but there is no watc;
+    - the README shows no "not landed" status;
+    - LAYOUT's "a red build" has no CI or hook behind it, and the branch is unprotected.
+  - **L3 (not counted):**
+    - the ELF has no `PT_GNU_STACK`;
+    - opening a device OUT is not a no-op: there is no `O_NOCTTY`, and opening it can change tty, tape or DTR state;
+    - a default ACL survives the fchmod;
+    - the seed has no provenance outside the repo: commits are unsigned and there are no tags;
+    - RECOVERY.md is not listed as a standing doc;
+    - SIGXFSZ dumps core;
+    - `out/` holds the stale files `pre600` and `fault`.
+
+### The second vigilia's verdict — DIVERGES
+
+experiri alone CONVERGED. Every inward ward that found an L1 found it in the gate or the documents, never as a seed
+defect, with one exception: the seed's open of OUT has no `O_NONBLOCK`, so a FIFO OUT blocks, and the README promises a
+status for every failure. Round 5 is drawn from the deduplicated findings above.
