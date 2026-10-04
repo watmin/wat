@@ -1079,3 +1079,10 @@ After R34: my re-run, a checkpoint, then the third vigilia.
   run outside `check`.
 
 Checkpointed. Next: the third vigilia.
+
+## The third vigilia (2026-10-04) — in flight
+
+Cast at checkpoint `9b334d1`, after round 5 and R34. The same 19 inward wards as the second, each fetching its full
+signed text. Each derives its findings fresh and checks every round-5 claim rather than trusting it. peragrare adds
+a sixth instrument: verify's candidate and clone rows. circumspicere is cast last. Reports are recorded here as they
+arrive.

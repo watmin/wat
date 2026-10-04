@@ -36,16 +36,14 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `90332d8`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `9b334d1`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** round 5 is weighed and checkpointed as `3e54e66`. The live gate is green, and the injected breaks went
-  red with their causes named (see WEIGH). R34 is drawn and was knocked to Grok. It covers three things:
-  - the clone rows test the candidate tree, not HEAD;
-  - no core dump per run;
-  - replayed output keeps its line breaks.
-- **Next:** read Grok's SCORE and re-run the gate, breaking it again. Checkpoint, then the **third vigilia**: 19
-  wards, then circumspicere. **The seed lands only when vigilia converges.**
+- **State:** round 5 and R34 are checkpointed (`3e54e66`, `9b334d1`). The gate is green before the commit, and
+  injected breaks went red with their causes named. The **third vigilia** is in flight: 19 wards cast at `9b334d1`,
+  with scratch under `/var/tmp/vigilia3-hex0/<ward>/`. Which wards are in is listed in WEIGH "The third vigilia".
+- **Next:** record each report in WEIGH as it arrives, then cast circumspicere last. If it converges, land the seed
+  (a separate commit). If not, draw the next round.
 - **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief.
 
 ## How work moves
