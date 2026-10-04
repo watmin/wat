@@ -1310,3 +1310,82 @@ arrive.
     - layout.sh dead patterns, redundant `rm`s, the visible list fetched three times;
     - unread TSV numbers;
     - a `__pycache__` from an importer outside the gate.
+- **intueri: 1 L1, 14 L2.** What speaks:
+  - the seed's per-instruction comments are matched to objdump;
+  - the named entry points;
+  - `check`, `run_status`, `reap_group` and the prove_* helpers;
+  - most mutant labels;
+  - the fault.c header.
+
+  Findings:
+  - **L1:** the "mutant row 1 (byte)" never exercises row 1 (as complectens). Measured: row 1 disabled and
+    `hex-check.py` dropping a byte gives seed-audit rc 0.
+  - **L2:** three seed headings do not say what their block does (`fstat OUT`, `ftruncate`, `comment`). This is the
+    second vigilia's L2, which I did not draw and recorded no reason for.
+  - **L2:** the `gate.tsv` keys `trunc_old`/`trunc_new` are opaque, and one thing has three names. No file documents
+    the keys.
+  - **L2:** the contract helpers `fact`, `assert_out`, `pair` and `fix_ok` are opaque, and so are the tokens `same`,
+    `samebytes:755` and `empty`. Second vigilia, not drawn.
+  - **L2:** `ALLOWED` is dead, and the docstring understates the check. Not drawn.
+  - **L2:** the "status mutant" accepts any kind (measured: the letter mutant passes it at case 49, kind 5). The flag
+    `--expect-disagree` names nothing.
+  - **L2:** magic numbers: the kinds 3/4/5 double as exit codes, and the byte classes are raw decimals. Not drawn.
+  - **L2:** the SIGXFSZ checks are labelled "row 6" (Format edges), and "no core" is printed beside "dumped core".
+  - **L2:** disasm-check exits 1 on a traceback, and so do syscalls-check and fuzz.
+  - **L2:** rule 7's "a rung's output" names both what is forbidden and what is permitted.
+  - **L2:** the "fault allowance bypass" mutant names an allowance that no longer exists.
+  - **L2:** RECOVERY's green line. Fixed in `74b3234`.
+  - **L2:** the gate-lib timer comments do not support the numbers. `DUR_LONG` also times `cp -a`.
+  - **L2:** `HEX0_DRIVER_TEST=1` reads as the opposite of what it does.
+  - **L2:** no "row N" label points to EXPECTATIONS. Not drawn.
+  - **L3 (not counted):**
+    - wait/shell 153;
+    - seed-audit's header claims mutants for rows 2 and 10;
+    - fault.c fork returns 94;
+    - one scratch directory has four names;
+    - the rule-8 heading overclaims "Clojure/EDN";
+    - LAYOUT:18;
+    - rsi is called both "the stat buffer" and "the one-byte buffer";
+    - a duplicate `layout: ok`;
+    - gate-lib's "about 34 s".
+- **conformare: 4 L1, 4 L2.** The seed's statuses conform, as does fault.c's set of codes.
+  - **L1:** "timed out" is guessed from rc 124/137. `sh -c 'kill -9 $$'` and `exit 124` both print "timed out", and a
+    hang stub that kills itself passes all three hang proofs (as mora). Decide the timer field from the captured
+    `sending signal KILL` line.
+  - **L1:** the fuzz never delivers its failing input. The hang file is deleted by its own `finally`, and
+    `fuzz-disagree.hex0` is deleted by the sandbox trap (measured through a full verify). Fix: print the input bytes
+    in the message; `check` replays it.
+  - **L1:** a Python crash is reported as a failed check:
+    - disasm-check, syscalls-check and fuzz exit 1 on a traceback;
+    - fuzz's rc 1 means three different things;
+    - layout's rule-2 heredoc crashed on a non-UTF-8 filename and was reported as an empty rule-2 violation.
+    Only hex-check conforms.
+  - **L1:** steps still run with no timer, and the driver relies on there being none. These are the heredoc pythons,
+    the layout-mutants `cp` and git calls, and verify's clone-row lines. A shim making `python3 -` hang hung
+    seed-audit with no verdict. verify:202 counts grep's rc 2 as "no CR" and passes.
+  - **L2:** `run_status` is a second vocabulary with no label; seven callers each hand-write their own message. One
+    `expect LABEL SECS WANT -- cmd` would close it.
+  - **L2:** a bare `die` after `cmp -s` or `stat` prints only a label, with no got and no want, and the trap deletes
+    the evidence.
+  - **L2:** `HEX0_TIME_SCALE`: 0 disables the timers, and a non-number dies only inside a subshell, so the step then
+    fails as rc 125.
+  - **L2:** RECOVERY's green line (fixed in `74b3234`).
+- **vocare: 1 L1, 6 L2.** The contract checks call from the caller's side, and all 21 fixtures run. Row 8 (strace),
+  `gate.tsv`'s fds, and the binary mutants are legitimate audits.
+  - **L1:** the row-1 mutant tests a stand-in (third independent report).
+  - **L2:** the SIGXFSZ-default row greps bash's localized job notice. Under `de_DE` it goes red while hex0 behaves.
+    Assert rc 153 only, or pin `LC_ALL=C`.
+  - **L2:** "no core" cannot be observed under a pipe `core_pattern`.
+  - **L2:** the README's root case (7) has no fixture, and the gate goes red as root. It can be fixtured with
+    `unshare -r` (rc 7, unchanged).
+  - **L2:** the clone rows do not check the fixture pin. With `.gitattributes`'s `tests/* -text` line deleted, verify
+    is green, both clones hold `crlf.hex0` as LF, and the CRLF fixtures still pass, because `4\n1` decodes the same.
+  - **L2:** the header restates the contract (fourth report).
+  - **L2:** the rung README holds x86 facts (as solvere).
+  - **L3 (not counted):**
+    - the trunc mutant uses its own assertions;
+    - the FIFO-reader race was reproduced in 2 of 300 replays;
+    - the three hang proofs are one proof;
+    - x86 mutant facts in shared tools;
+    - nothing checks hex0's stdout or stderr;
+    - unguarded heredocs.
