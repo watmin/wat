@@ -68,7 +68,7 @@ open(sys.argv[1], "w", encoding="utf-8").write(text2)
 PY
 rc=$?
 [ "$rc" -eq 0 ] || die "row 9 mutant build rc $rc"
-guard 30 python3 tools/check/disasm-check.py "$SANDBOX/bad-comment.hex0" "$SANDBOX/code.bin" "$SANDBOX/objdump.txt" >"$SANDBOX/row9m.out" 2>"$SANDBOX/row9m.err"
+run_status 30 python3 tools/check/disasm-check.py "$SANDBOX/bad-comment.hex0" "$SANDBOX/code.bin" "$SANDBOX/objdump.txt" >"$SANDBOX/row9m.out" 2>"$SANDBOX/row9m.err"
 rc=$?
 [ "$rc" -ne 0 ] || die "row 9 mutant stayed green"
 echo "mutant row 9 (comment): red"

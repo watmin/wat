@@ -597,3 +597,21 @@ not require it in R22. My miss.
   history, so rule 6 holds) and runs the layout check there. That catches any dependency on untracked state.
 
 The R22 tree is checkpointed now, for disaster recovery, with this defect named in the commit.
+
+## R23 received — the gate fails closed, proven by breaking it (2026-10-04)
+
+`guard` dies on any failure or timeout (`gate-lib.sh`), and `run_status` is the named helper for an expected status.
+`tools/check/driver-test.sh` proves that each module's exit 1, and a hang, are fatal. A fresh `git clone` runs the
+layout check.
+
+**My own injections,** in a full copy of the repository, independent of Grok's driver test. Each made `tools/verify.sh`
+exit 1, with a message naming the module:
+- `seed-audit.sh` replaced by `exit 1`;
+- `hex0-contract.sh` replaced by `exit 1`;
+- `layout-mutants.sh` replaced by `exit 1`;
+- one byte of the seed flipped (offset 300).
+
+The real run on the live tree: `verify: ok`, rc 0, and `git status` identical before and after.
+
+**For the next watch (L2):** `HEX0_DRIVER_TEST=1` silently skips the driver test and the fresh-clone row. It is a
+nesting hook, but a silent skip is the same shape as the fail-open just removed; it should announce itself.

@@ -52,11 +52,11 @@ pair() {
   rm -f "$abs"
   cp "$SANDBOX/olddata" "$pre"
   chmod 640 "$pre"
-  guard 30 "$HEX0" "$src" "$abs"
+  run_status 30 "$HEX0" "$src" "$abs"
   local rc=$?
   [ "$rc" -eq "$want" ] || die "$label absent rc $rc"
   assert_out "$label absent" "$abs" "$abs_exp"
-  guard 30 "$HEX0" "$src" "$pre"
+  run_status 30 "$HEX0" "$src" "$pre"
   rc=$?
   [ "$rc" -eq "$want" ] || die "$label pre rc $rc"
   assert_out "$label pre" "$pre" "$pre_exp"
@@ -81,7 +81,7 @@ rc=$?
 cat "$SANDBOX/sys.out"
 cp "$SANDBOX/trace" "$SANDBOX/trace-mut"
 printf '0 socket(2, 1, 0) = 3\n' >> "$SANDBOX/trace-mut"
-guard 30 python3 tools/check/syscalls-check.py "$SANDBOX/trace-mut" >"$SANDBOX/sys-mut.out" 2>"$SANDBOX/sys-mut.err"
+run_status 30 python3 tools/check/syscalls-check.py "$SANDBOX/trace-mut" >"$SANDBOX/sys-mut.out" 2>"$SANDBOX/sys-mut.err"
 rc=$?
 [ "$rc" -ne 0 ] || die "row 8 mutant stayed green"
 grep -q 'unexpected socket' "$SANDBOX/sys-mut.err" || die "row 8 mutant said $(cat "$SANDBOX/sys-mut.err")"
@@ -98,7 +98,7 @@ guard 30 "$HEX0" "$TESTS/exit42.hex0" out/exit42
 rc=$?
 [ "$rc" -eq 0 ] || die "row 4 build rc $rc"
 cmp out/exit42 "$SANDBOX/probe.bin" || die "row 4 cmp"
-guard 30 out/exit42
+run_status 30 out/exit42
 rc=$?
 [ "$rc" -eq 42 ] || die "row 4 run rc $rc"
 echo "row 4: cmp identical, exit 42"
@@ -150,7 +150,7 @@ fix_ok "$TESTS/crlf-two.hex0" "$SANDBOX/exp-two" crlf-two
 rm -f "$SANDBOX/abs-argc-one"
 cp "$SANDBOX/olddata" "$SANDBOX/pre-argc-one"
 chmod 640 "$SANDBOX/pre-argc-one"
-guard 30 "$HEX0" "$SANDBOX/pre-argc-one"
+run_status 30 "$HEX0" "$SANDBOX/pre-argc-one"
 rc=$?
 [ "$rc" -eq 1 ] || die "argc-one pre rc $rc"
 assert_out "argc-one pre" "$SANDBOX/pre-argc-one" same
@@ -170,7 +170,7 @@ rc=$?
 rm -f "$SANDBOX/abs-argc0"
 cp "$SANDBOX/olddata" "$SANDBOX/pre-argc0"
 chmod 640 "$SANDBOX/pre-argc0"
-guard 30 "$SANDBOX/argc0" "$HEX0"
+run_status 30 "$SANDBOX/argc0" "$HEX0"
 rc=$?
 [ "$rc" -eq 1 ] || die "row 7 argc 0 rc $rc"
 assert_out "argc 0 absent" "$SANDBOX/abs-argc0" missing
@@ -179,11 +179,11 @@ echo "row 7: argc 0 exit 1"
 rm -f "$SANDBOX/abs-argc4"
 cp "$SANDBOX/olddata" "$SANDBOX/pre-argc4"
 chmod 640 "$SANDBOX/pre-argc4"
-guard 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/abs-argc4" extra
+run_status 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/abs-argc4" extra
 rc=$?
 [ "$rc" -eq 1 ] || die "row 7 argc 4 absent rc $rc"
 assert_out "argc 4 absent" "$SANDBOX/abs-argc4" missing
-guard 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/pre-argc4" extra
+run_status 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/pre-argc4" extra
 rc=$?
 [ "$rc" -eq 1 ] || die "row 7 argc 4 pre rc $rc"
 assert_out "argc 4 pre" "$SANDBOX/pre-argc4" same
@@ -202,14 +202,14 @@ pair odd 5 "$TESTS/odd.hex0" empty empty
 pair odd-after 5 "$TESTS/odd-after.hex0" file:"$SANDBOX/exp-one" file:"$SANDBOX/exp-one"
 
 rm -rf "$SANDBOX/absent-dir"
-guard 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/absent-dir/out"
+run_status 30 "$HEX0" "$TESTS/lower.hex0" "$SANDBOX/absent-dir/out"
 rc=$?
 [ "$rc" -eq 3 ] || die "row 7 missing dir rc $rc"
 [ ! -e "$SANDBOX/absent-dir/out" ] || die "row 7 missing dir created"
 echo "row 7: missing OUT directory exit 3, absent stays absent"
 
 dev_before=$(stat -c %a /dev/null)
-guard 30 "$HEX0" "$TESTS/lower.hex0" /dev/null
+run_status 30 "$HEX0" "$TESTS/lower.hex0" /dev/null
 rc=$?
 dev_after=$(stat -c %a /dev/null)
 [ "$rc" -eq 3 ] || die "row 7 non-regular rc $rc"
@@ -218,7 +218,7 @@ echo "row 7: non-regular exit 3, mode unchanged"
 
 cp "$SANDBOX/olddata" "$SANDBOX/ro"
 chmod 444 "$SANDBOX/ro"
-guard 30 "$HEX0" "$SANDBOX/ro" "$SANDBOX/ro"
+run_status 30 "$HEX0" "$SANDBOX/ro" "$SANDBOX/ro"
 rc=$?
 [ "$rc" -eq 3 ] || die "row 7 read-only rc $rc"
 cmp "$SANDBOX/ro" "$SANDBOX/olddata" || die "row 7 read-only bytes"
@@ -228,7 +228,7 @@ echo "row 7: read-only same file exit 3, unchanged"
 
 cp "$SANDBOX/olddata" "$SANDBOX/same"
 chmod 640 "$SANDBOX/same"
-guard 30 "$HEX0" "$SANDBOX/same" "$SANDBOX/same"
+run_status 30 "$HEX0" "$SANDBOX/same" "$SANDBOX/same"
 rc=$?
 [ "$rc" -eq 7 ] || die "row 7 same path rc $rc"
 assert_out "same path" "$SANDBOX/same" same
@@ -236,7 +236,7 @@ echo "row 7: same path exit 7"
 printf '41 extra\n' > "$SANDBOX/hard"
 chmod 640 "$SANDBOX/hard"
 ln "$SANDBOX/hard" "$SANDBOX/hard.link"
-guard 30 "$HEX0" "$SANDBOX/hard" "$SANDBOX/hard.link"
+run_status 30 "$HEX0" "$SANDBOX/hard" "$SANDBOX/hard.link"
 rc=$?
 [ "$rc" -eq 7 ] || die "row 7 hard link rc $rc"
 cmp "$SANDBOX/hard" <(printf '41 extra\n') || die "row 7 hard link bytes"
@@ -246,7 +246,7 @@ echo "row 7: hard link exit 7"
 printf '41\n' > "$SANDBOX/sym.target"
 chmod 640 "$SANDBOX/sym.target"
 ln -s sym.target "$SANDBOX/sym.link"
-guard 30 "$HEX0" "$SANDBOX/sym.target" "$SANDBOX/sym.link"
+run_status 30 "$HEX0" "$SANDBOX/sym.target" "$SANDBOX/sym.link"
 rc=$?
 [ "$rc" -eq 7 ] || die "row 7 symlink rc $rc"
 cmp "$SANDBOX/sym.target" <(printf '41\n') || die "row 7 symlink bytes"
@@ -254,7 +254,7 @@ mode=$(stat -c %a "$SANDBOX/sym.target")
 [ "$mode" = 640 ] || die "row 7 symlink mode $mode"
 echo "row 7: symlink exit 7"
 rm -f "$SANDBOX/absent-same"
-guard 30 "$HEX0" "$SANDBOX/absent-same" "$SANDBOX/absent-same"
+run_status 30 "$HEX0" "$SANDBOX/absent-same" "$SANDBOX/absent-same"
 rc=$?
 [ "$rc" -eq 2 ] || die "row 7 absent same rc $rc"
 [ ! -e "$SANDBOX/absent-same" ] || die "row 7 absent same created"
@@ -276,11 +276,11 @@ fault_both() {
   rm -f "$abs"
   cp "$SANDBOX/olddata" "$pre"
   chmod 640 "$pre"
-  guard 30 "$SANDBOX/fault" "$nr" "$fd" 1 "$HEX0" "$src" "$abs"
+  run_status 30 "$SANDBOX/fault" "$nr" "$fd" 1 "$HEX0" "$src" "$abs"
   rc=$?
   [ "$rc" -eq "$want" ] || die "row 13 $label absent rc $rc"
   assert_out "row 13 $label absent" "$abs" "$abs_exp"
-  guard 30 "$SANDBOX/fault" "$nr" "$fd" 1 "$HEX0" "$src" "$pre"
+  run_status 30 "$SANDBOX/fault" "$nr" "$fd" 1 "$HEX0" "$src" "$pre"
   rc=$?
   [ "$rc" -eq "$want" ] || die "row 13 $label pre rc $rc"
   assert_out "row 13 $label pre" "$pre" "$pre_exp"
@@ -324,7 +324,7 @@ chmod 755 "$SANDBOX/trunc-first"
 cp "$SANDBOX/olddata" "$SANDBOX/trunc-pre"
 chmod 640 "$SANDBOX/trunc-pre"
 printf '41\n' > "$SANDBOX/trunc-in"
-guard 30 "$SANDBOX/fault" 91 4 1 "$SANDBOX/trunc-first" "$SANDBOX/trunc-in" "$SANDBOX/trunc-pre"
+run_status 30 "$SANDBOX/fault" 91 4 1 "$SANDBOX/trunc-first" "$SANDBOX/trunc-in" "$SANDBOX/trunc-pre"
 rc=$?
 mode=$(stat -c %a "$SANDBOX/trunc-pre")
 if [ "$rc" -eq 3 ] && [ "$mode" = 640 ] && cmp -s "$SANDBOX/trunc-pre" "$SANDBOX/olddata"; then

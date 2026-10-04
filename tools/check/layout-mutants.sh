@@ -27,7 +27,7 @@ cp -a . "$TREE"
 
 mutant_expect() {
   local rule=$1 label=$2
-  guard 60 tools/layout.sh "$TREE" >"$SCRATCH/mut.out" 2>"$SCRATCH/mut.err"
+  run_status 60 tools/layout.sh "$TREE" >"$SCRATCH/mut.out" 2>"$SCRATCH/mut.err"
   rc=$?
   [ "$rc" -ne 0 ] || die "mutant rule $rule ($label) stayed green"
   grep -q "layout: rule ${rule}:" "$SCRATCH/mut.out" || die "mutant rule $rule ($label) said $(cat "$SCRATCH/mut.out" "$SCRATCH/mut.err")"

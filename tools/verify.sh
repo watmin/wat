@@ -12,8 +12,11 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 2
 . tools/check/gate-lib.sh
 umask 0022
 
-SANDBOX=/var/tmp/hex0-verify
+SANDBOX=${HEX0_SANDBOX:-/var/tmp/hex0-verify}
 HOST=$(uname -m)-$(uname -s | tr '[:upper:]' '[:lower:]')
+LAYOUT_GUARD=${LAYOUT_GUARD:-180}
+SEED_GUARD=${SEED_GUARD:-60}
+CONTRACT_GUARD=${CONTRACT_GUARD:-180}
 rm -rf "$SANDBOX"
 mkdir -p "$SANDBOX" out
 trap 'rm -rf "$SANDBOX"' EXIT
@@ -27,7 +30,7 @@ skip_execution() {
   return 0
 }
 
-guard 180 tools/check/layout-mutants.sh "$SANDBOX"
+guard "$LAYOUT_GUARD" tools/check/layout-mutants.sh "$SANDBOX"
 
 shopt -s nullglob
 found_host=0
@@ -40,13 +43,13 @@ for rung in ladder/*/; do
     case $rname in
       0-hex0)
         if [ "$tgt" = x86_64-linux ]; then
-          guard 60 tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" --size 537
+          guard "$SEED_GUARD" tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX" --size 537
         else
-          guard 60 tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX"
+          guard "$SEED_GUARD" tools/check/seed-audit.sh "${rung}${tgt}" "$SANDBOX"
         fi
         if [ "$tgt" = "$HOST" ]; then
           found_host=1
-          guard 180 tools/check/hex0-contract.sh \
+          guard "$CONTRACT_GUARD" tools/check/hex0-contract.sh \
             "${rung}${tgt}/hex0" "${rung}${tgt}/hex0.hex0" "${rung}tests" "$SANDBOX"
         else
           skip_execution "$tgt" || die "non-host target $tgt fell through to execution"
@@ -61,6 +64,15 @@ if skip_execution "$HOST"; then
   die "host target was not executed"
 fi
 skip_execution aarch64-linux || die "aarch64-linux stayed silent"
+
+# A nested proof sets HEX0_DRIVER_TEST so this driver does not call itself.
+if [ "${HEX0_DRIVER_TEST:-}" != 1 ]; then
+  guard 90 tools/check/driver-test.sh "$SANDBOX"
+  guard 60 git clone --quiet "$PWD" "$SANDBOX/clone"
+  guard 60 tools/layout.sh "$SANDBOX/clone" >"$SANDBOX/clone.layout"
+  cat "$SANDBOX/clone.layout"
+  echo "fresh clone: layout ok"
+fi
 
 echo "verify: ok"
 exit 0
