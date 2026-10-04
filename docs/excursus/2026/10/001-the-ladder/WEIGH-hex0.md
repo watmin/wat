@@ -2504,3 +2504,35 @@ each rune's reason. circumspicere is cast last.
     - syscalls-check's `missing` branch is never red;
     - an outside SIGKILL of verify leaves module groups running;
     - `function name {` is invisible to row-proof and step-lint.
+- **mora: 3 L1, 3 L2.** These waits are honest:
+  - the FIFO reader rendezvous (`exec 3<>`);
+  - the single-level timer kill (40 of 40 trials correct, no child left);
+  - the hang and escape timers.
+
+  Findings:
+  - **L1:** "timed out" is matched as text anywhere in the step's stderr, and that file also receives the command's
+    own stderr.
+    - An inner step's replayed `sending signal KILL` makes the OUTER step report "timed out" after 1 s against an
+      1800 s budget. A command that merely prints the phrase is reported as timed out.
+    - Run on the real gate's hang copy: `layout-mutants.sh rc 1 got timed-out` after 3 s, while the driver's timer
+      never fired.
+    - So driver-test's "hang timed out" passes on a misreport. R36 and R45's "from timeout's own line" do not hold.
+  - **L1:** a timer kill, TERM or Ctrl-C leaves nested steps alive. Each nested step makes its own group (`set -m`)
+    and its own mark, and `$(…)` steps register in the subshell's STEP_PIDS.
+    - Shown with three probe shapes, and on the real gate: TERM during row 12 left the fuzz running, reparented, and
+      the sandbox on disk.
+    - Under INT they die only incidentally, from their missing scratch.
+    - driver-test proves only the single-level case.
+  - **L1:** the interrupt proof waits by two guessed `sleep 0.4`. A no-kill mutant whose bash starts slowly goes green
+    (the proof is vacuous), and the correct library with a slow child goes red. The wire events were available: open
+    the FIFO for write, and wait for the launched bash.
+  - **L2:** an overflowing `HEX0_TIME_SCALE` (2^63 or 2^64) wraps to `timeout 0`, which removes every timer.
+  - **L2:** TERM skips the EXIT trap, so the sandbox leaks (INT cleans it; TERM leaves it).
+  - **L2:** the fuzz's per-case `subprocess.run(timeout=)` is CPython's sleep-poll, about 1.5 ms per case.
+  - **L3 (not counted):**
+    - the nested 1800 s budgets are equal, not ordered;
+    - `set -m` job notices;
+    - an `env -i` child is invisible to the mark scan;
+    - SIGHUP is untrapped.
+
+All 19 inward wards are in. circumspicere is cast last.
