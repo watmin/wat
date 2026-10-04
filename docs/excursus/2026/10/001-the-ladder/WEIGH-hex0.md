@@ -212,3 +212,10 @@ we can decorate our readme a bit too?"*
 
 **For Grok (round 3):** F4 and F5 in `ladder/0-hex0/README.md` and the source header. Write "whitespace (exactly
 space, tab, CR, LF)", and say a comment runs "to the next LF; a CR does not end it".
+
+## R6 extended received (2026-10-04)
+
+The bare-reference check is in, and its mutant is red naming rule 9. The rewritten quotations in LAYOUT and this
+document keep the rule's meaning ("the name, a space, then digits"), and they are accepted. Verify then stopped on rule
+1 at `brand/`. That is not a defect in the strike: `brand/` arrived in `9fa2eb5` while the strike ran. Its gate change
+is "The brand arrives", above. Do that, then run verify to the end.
