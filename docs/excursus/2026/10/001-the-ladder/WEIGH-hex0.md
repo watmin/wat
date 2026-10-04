@@ -1478,3 +1478,28 @@ arrive.
     - the fuzz's unscaled `timeout=5`;
     - 7-before-3 for fstat OUT.
   - It withdrew the RECOVERY green-line finding, already fixed.
+- **temperare: 0 L1, 3 L2.** A full verify takes 38.2 s:
+
+  | step | time |
+  |---|---|
+  | layout-mutants (45 layout runs) | 14.4 s |
+  | contract | 10.5 s |
+  | driver-test | 9.5 s |
+  | clone rows | 2.9 s |
+
+  The candidate copies and clones are cheap, and they buy R34's proof. The seed's byte-at-a-time I/O is confirmed
+  exempt. The second vigilia's temperare L1 and L2 are fixed for the content scans and for stopping early.
+  - **L2:** R30's "list fetched once" does not hold. The visible list is fetched three times per run, and the name
+    loops fork `basename`, `grep` and `mktemp` per entry (127 execs per run). A tempered copy using builtins took
+    layout-mutants from 17.3 to 12.3 s, still green.
+  - **L2:** the status self-test's first possible disagreement is case 1043, because the 1024-case sweep runs before
+    `NEAR`. Putting the boundary cases first: 3.02 to 0.16 s, the main fuzz still 2000 agree.
+  - **L2:** the three hang proofs run one identical stub (6.5 s), proving gate-lib's timer three times (as
+    complectens and vocare found).
+  - **L3 (not counted):**
+    - the nested non-host run repeats the clone section;
+    - rule 7's seven `grep -R` runs;
+    - rule 2 reads about 7 MB per run;
+    - the stale timing basis in gate-lib;
+    - systemd-coredump still starts on every run;
+    - the layout re-run after the mutants.
