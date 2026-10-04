@@ -42,3 +42,45 @@ later costs a second audit.
 - **IN is never closed.** Exit releases it, and nothing is lost on the read side.
 - **A read interrupted by a signal returns `-EINTR` and exits 6.** Nothing sends hex0 signals, and the refusal is
   honest, not silent.
+
+## Round 1, continued — the differential fuzz and the environment (2026-10-04)
+
+The builder: *"let's scrutinize the shit out of this - this must be an exemplar at all times"*.
+
+**The fuzz** (`/var/tmp/hex0-fuzz/fuzz.py`, on the round-1 seed, sha256 `5fbc54f4…f52d51a`) generated 20,000 inputs:
+any bytes at all, near-miss bytes (`:` `@` `G` `` ` `` `g` `x` `/` `0x00` `0x7F` `0x80` `0xFF`), comments, CRLF, and
+lengths 0 to 4,096. Each ran through hex0 and through a reference decoder written from this brief's contract alone,
+not from `hex-check.py`. **0 disagreements** in exit status, or in output bytes on success.
+
+**The environment:**
+
+| case | result |
+|---|---|
+| argc 1 / 2 / 4 | 1 / 1 / 1 |
+| IN mode 000 | 2 |
+| OUT is a directory | 3 |
+| OUT is `/dev/full` | 6 |
+| empty IN | 0, empty OUT |
+| existing longer OUT | truncated |
+| 4,000,000 digits | 2,000,000 bytes in 7.3 s: one syscall per byte, fine for rung sources of kilobytes |
+
+Two more things fail Honest. Both go into round 2:
+
+- **R3 — an existing OUT keeps its old mode.** `open`'s mode applies only when the file is CREATED. `hex0 ok.hex0 o5`
+  with `o5` already at mode `600` exits 0 and leaves it at `600`. The contract's "created or truncated with mode 0755,
+  so it runs directly" is false for an existing OUT. Make it true: `fchmod(OUT, 0755)` (syscall 91) after the open,
+  with failure exiting 3. Row 5 gains a case where OUT pre-exists at mode `600`. Row 8's syscall list gains `fchmod`.
+- **R4 — `hex0 X X` destroys X and exits 0.** Opening OUT truncates the shared file. hex0 then reads an empty IN and
+  reports done. A "done" over destroyed source is the worst kind of silent. Refuse it with a new status, **7, "IN and
+  OUT are the same file"**:
+  - `fstat` both descriptors (syscall 5) and compare `st_dev` and `st_ino`;
+  - open OUT WITHOUT `O_TRUNC`, compare, then truncate with `ftruncate(OUT, 0)` (syscall 77), so that the check
+    happens before anything is destroyed.
+
+  This catches hard links and symlinks too. Add fixtures: the same path; a hard link; a symlink. Each exits 7, and IN
+  is byte-identical afterwards.
+- **R1's status 6 wording** then reads "a read, write, close or truncate failed". Every new syscall's failure maps to a
+  status, documented in the source header, the README and the brief's table. The R2 gate checks that they agree.
+
+The seed grows: R1 by a few bytes, R3 and R4 by a few dozen. Keep it under 512, and re-audit every jump displacement:
+row 9's disassembly is where a hand-counted offset shows itself.
