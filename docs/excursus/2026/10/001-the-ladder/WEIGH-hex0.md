@@ -2152,3 +2152,27 @@ each rune's reason. circumspicere is cast last.
     - DESIGN omits `in_fd`/`out_fd`;
     - MACHINE's gcc list;
     - 616 s for row-proof under load.
+- **purgare: 0 L1, 8 L2.** The seed's control flow is unchanged and every branch is driven both ways. Eight
+  third-vigilia purgare items are fixed.
+  - **L2:** `git-sandbox:40-53` copies `.git/index` to `${TMPDIR:-/var/tmp}/hex0-index.XXXXXX` for every read-only
+    call, then `exec`s, so nothing ever removes the copy. 254 files per fast tier, 456 per row-proof. `/var/tmp` held
+    15,747 of them (308 MB) when the ward looked. The copy is redundant: `GIT_OPTIONAL_LOCKS=0` (line 9) already keeps
+    the index untouched (measured). R34's "leaves nothing behind" fails. Delete the block. **I clean `/var/tmp` of
+    these after the vigilia, while no gate run is live.**
+  - **L2:** fuzz's `want_exists` is always True. This is the third vigilia's item, neither fixed nor runed.
+  - **L2:** syscalls-check's unprefixed `execve` branch is reached only by the gate's own pid-less mutant line.
+    Prefix the mutant with a pid, then delete the branch.
+  - **L2:** `layout-mutants.sh:287-302` writes an `empty` that nothing reads. It was added in round 6.
+  - **L2:** layout.sh dead code added in round 6: a loop that only `continue`s, a `pass`, an unreachable rule-4 `fail`,
+    and `rel == "brand"`.
+  - **L2, which I weigh as serious:** row-proof's self-test ("unruned function red") runs a separate
+    `HEX0_ROW_PROOF_ONLY` branch, which never reaches `prove_one` or `accept_red`. A copy whose `accept_red` accepts
+    everything still printed `unruned function red` and `row-proof: ok`, rc 0. **R45's "proof of the module itself"
+    is hollow.** It is the hollow-proof class, now inside the prover.
+  - **L2, which I weigh as serious:** `outer_sum` pipes `tar | sha256sum` with no `pipefail`. Where `.git` is a file
+    (a linked worktree), tar fails, and both hashes are the empty-input hash, so "outer repository unchanged" is
+    printed unconditionally. R37's worktree claim is unproven there.
+  - **L2:** the seed's `safety-margin:` note is not a rune, and its reason explains the encoding, not the ABI edge it
+    guards (the xor pair is dead on Linux; NOPed, the seed still rebuilds identical).
+  - **L3 (not counted):** about 25 small dead arms across gate-lib, verify, the contract, fault.c, the Python checks
+    and layout-mutants.
