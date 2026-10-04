@@ -1,0 +1,9 @@
+read	0
+write	1
+open	2
+close	3
+fstat	5
+lseek	8
+exit	60
+ftruncate	77
+fchmod	91

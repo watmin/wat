@@ -4,14 +4,14 @@ The builder, 2026-10-03: *"we've been burned many times working on holon and wat
 need to be mindful"*. Mindfulness alone is a convention, and conventions rot. So this layout is CHECKED:
 `tools/verify` is the gate: one Python program, one tier. It takes no argument, or `--layout-only` when a clone is
 checking this document's rules and nothing else. An unknown argument is refused. There is no `--prove` and no
-row-proof. The gate checks artifacts. It does not build a rung and it does not sequence the ladder. For hex1, a
-separate build step will produce hex1 and the gate will check it. What issues that build is open. A file in the wrong
+row-proof. The gate checks artifacts. It does not build a rung and it does not sequence the ladder. For hex1, the
+top-level `build` produces hex1 and the gate checks it. Bash issues that build until M0's brief. A file in the wrong
 place, or written in a retired syntax, is red. There is no CI. To change the layout, amend this document and the gate
 together, in one commit, on purpose.
 
 ```
 wat/
-  README.md  LICENSE  NOTICE  .gitignore  .gitattributes
+  README.md  LICENSE  NOTICE  .gitignore  .gitattributes  build
   ladder/               the bootstrap, one directory per rung, in build order
     0-hex0/             README.md (the contract) · tests/ (contract fixtures, shared by every target)
       x86_64-linux/     hex0.hex0 (source, in this target's code) · hex0 (the seed for this target)
@@ -27,7 +27,7 @@ wat/
 ## The rules `tools/verify` enforces
 
 1. **The top level is exactly the list above.** Every name on disk at the top, except `.git`. `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
-   `ladder/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. The compiler's home is its rung, when that rung exists. A
+   `build`, `ladder/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. `build` is bash. It runs the seed on hex1's hex0-language source, then runs that product on hex1's label-using source. The gate does not call it. The compiler's home is its rung, when that rung exists. A
    tracked path under `out/` is a red. Any other top-level name is a red. The image-only check on `brand/` is
    part of this rule: a file there must be a PNG, ICO or SVG by its bytes, and no file there may contain ELF magic.
 2. **One committed binary per target: `ladder/0-hex0/<arch>-<os>/hex0`.** The scope is every file on disk except the

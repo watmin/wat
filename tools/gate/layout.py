@@ -6,7 +6,7 @@ import subprocess
 
 TOP = {
     "README.md", "LICENSE", "NOTICE", ".gitignore", ".gitattributes",
-    "ladder", "tools", "docs", "brand", "archived", "out",
+    "build", "ladder", "tools", "docs", "brand", "archived", "out",
 }
 STANDING = {"LAYOUT.md", "WARDS.md", "MACHINE.md", "RECOVERY.md"}
 # The one quoted demonstration of the bare form. Declared in LAYOUT.
@@ -168,6 +168,16 @@ def rule5(root):
     if "| 0 |" not in text or "| 7 |" not in text:
         fail(5, "readme has no exit statuses: 0-hex0")
     source_status(os.path.join(root, "ladder/0-hex0/x86_64-linux/hex0.hex0"))
+    hex1_readme(root)
+
+
+def hex1_readme(root):
+    path = os.path.join(root, "ladder/1-hex1/README.md")
+    if not os.path.isfile(path):
+        return
+    text = open(path, encoding="utf-8").read()
+    if "| 0 |" not in text or "| 11 |" not in text:
+        fail(5, "readme has no exit statuses: 1-hex1")
 
 
 def rule6(root, git):
@@ -298,6 +308,7 @@ def prove_mutants(scratch):
     one(scratch, "rule 5 colon", "target source states a status meaning:", lambda d: _mut_status(d, "status: 4\n"))
     one(scratch, "rule 5 eq", "target source states a status meaning:", lambda d: _mut_status(d, "status=4\n"))
     one(scratch, "rule 5 table", "target source states a status meaning:", lambda d: _mut_status(d, "| 4 |\n"))
+    one(scratch, "rule 5 hex1", "readme has no exit statuses: 1-hex1", _mut_hex1_readme)
     one(scratch, "rule 8 colon", "colon-path token in", _mut_colon)
     one(scratch, "rule 8 arrow", "bare type arrow in", _mut_arrow)
     one(scratch, "rule 9", "badly formed excursus slug:", _mut_slug)
@@ -355,6 +366,12 @@ def _mut_brief(path):
     os.makedirs(os.path.join(path, "ladder", "0-hex0"))
     open(os.path.join(path, "ladder", "0-hex0", "BRIEF.md"), "w", encoding="utf-8").write("x\n")
     rule3(path, ["x86_64-linux"])
+
+
+def _mut_hex1_readme(path):
+    os.makedirs(os.path.join(path, "ladder", "1-hex1"))
+    open(os.path.join(path, "ladder", "1-hex1", "README.md"), "w", encoding="utf-8").write("| 0 |\n")
+    hex1_readme(path)
 
 
 def _mut_status(path, text):

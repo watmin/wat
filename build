@@ -1,0 +1,11 @@
+#!/bin/bash
+# Sequencer until M0's brief. The gate checks. It does not call this file.
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+mkdir -p "$root/out"
+"$root/ladder/0-hex0/x86_64-linux/hex0" \
+  "$root/ladder/1-hex1/x86_64-linux/hex1.hex0" \
+  "$root/out/hex1"
+"$root/out/hex1" \
+  "$root/ladder/1-hex1/x86_64-linux/hex1.hex1" \
+  "$root/out/hex1-self"

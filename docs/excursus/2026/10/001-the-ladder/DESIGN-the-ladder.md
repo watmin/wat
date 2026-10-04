@@ -21,12 +21,16 @@ ladder/0-hex0     the seed: hand-auditable; turns commented hex into bytes ← r
 
 The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap) proved. The code is our own.
 
-The gate checks artifacts. It does not build a rung and it does not sequence the ladder. Running the seed on a fixture is an observation. For hex1, a separate build step will produce hex1 and the gate will check it. What issues that build is open.
+The gate checks artifacts. It does not build a rung and it does not sequence the ladder. Running the seed on a fixture is an observation. For hex1, the top-level `build` produces hex1 and the gate checks it. Bash issues that build until M0's brief.
 
 ## What is given, and what is not
 
 - **Given:** each target's architecture, and the Linux kernel on that architecture. Programs talk to it only through
   syscalls. wat is a Linux language, so the kernel is the platform, not a dependency.
+- **The sequencer, until M0's brief, is bash.** The top-level `build` runs
+  `ladder/0-hex0/x86_64-linux/hex0` on `ladder/1-hex1/x86_64-linux/hex1.hex0`, writing `out/hex1`, then runs
+  `out/hex1` on `ladder/1-hex1/x86_64-linux/hex1.hex1`, writing `out/hex1-self`. The gate checks those products.
+  It does not call `build`.
 - **Not given:**
   - no libc;
   - no dynamic loader;

@@ -216,6 +216,46 @@ class Disasm:
         ]
 
 
+class Hex1Calls(Syscalls):
+    """The seed's syscall comparisons. The reason names the hex1 row."""
+
+    reason = "row 33 syscalls"
+
+
+class CommentDisasm:
+    """Comment triples against objdump. Empty comments are a refusal, not a pass."""
+
+    def __init__(self, reason):
+        self.reason = reason
+
+    def accept(self, obs):
+        if obs.status != 0:
+            return Verdict(False, self.reason)
+        if len(obs.comments) == 0:
+            return Verdict(False, self.reason)
+        if len(obs.insns) != len(obs.comments):
+            return Verdict(False, self.reason)
+        for left, right in zip(obs.comments, obs.insns):
+            if left != right:
+                return Verdict(False, self.reason)
+        return Verdict(True, "")
+
+    def mutants(self, obs):
+        def bend(part, value):
+            row = list(obs.insns[0])
+            row[part] = value
+            insns = list(obs.insns)
+            insns[0] = tuple(row)
+            return tuple(insns)
+
+        first = obs.insns[0]
+        return [
+            ("offset", replace(obs, insns=bend(0, first[0] + 1))),
+            ("bytes", replace(obs, insns=bend(1, first[1] + b"\x90"))),
+            ("text", replace(obs, insns=bend(2, first[2] + " x"))),
+        ]
+
+
 class Size:
     def __init__(self, want):
         self.want = want
@@ -236,6 +276,14 @@ class Size:
             ("filesz", replace(obs, filesz=obs.filesz + 1)),
             ("memsz", replace(obs, memsz=obs.memsz + 1)),
         ]
+
+
+class Hex1Size(Size):
+    """The seed's size comparisons. The reason names the hex1 row."""
+
+    def __init__(self, want):
+        Size.__init__(self, want)
+        self.reason = "row 35 size"
 
 
 class Lint:
