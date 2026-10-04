@@ -2390,3 +2390,30 @@ each rune's reason. circumspicere is cast last.
     - git 2.55's config-based hooks are not covered by `core.hooksPath` (the sandbox is safe because its config is
       fresh);
     - the interrupt proof relies on a 0.4 s sleep.
+- **temperare: 0 L1, 4 L2.**
+  - **Profile** (a `PROF_LOG` line per step, on a copy):
+    - the fast tier is 1,357 steps, 125 s at load about 6;
+    - row-proof is 365 s of `--prove`.
+  - **Prior L2s:** the list fetched once and the single hang proof are fixed. "Boundary cases first" is not.
+
+  Findings:
+  - **L2:** row-proof spends 87% of its time (cr_check 196 s, clone_layout 121 s) running full nested fast tiers to
+    reach the clone rows. With the modules stubbed, the same needles go red in 4 s and 7 s. Move the clone section
+    before the modules, or stub the modules for the driver-owned proofs. `--prove` would go from about 299 s to about
+    130 s.
+  - **L2:** R39's "boundary cases first" does not hold. The 1,024-case sweep still precedes `NEAR`, and the status
+    mutant stops at case 1043. Reordered, it stops at case 11 (0.14 s), and the main fuzz still agrees 2000 of 2000.
+  - **L2:** layout scans about 6.9 MB line by line in bash, including the 4 MB `brand/logo.svg` three times. Rules 7–9
+    are about 70% of a layout run. With grep and one Python pass, layout-mutants went from 64.9 s to 54.8 s, with
+    byte-identical output.
+  - **L2:** `_run` repeats per-shell work on every step (subshell, mkdir, two mktemps, a grep). A prototype that
+    caches it took the step from 31.6 to 22.4 ms, and the fast tier from 125 to 113 s, with the same reds.
+  - **L3 (not counted):**
+    - the setsid proof idles 5 s;
+    - nested verifies repeat the clone section;
+    - one Python per file for step-lint;
+    - a dead loop;
+    - 7 MB is read twice;
+    - the escape scan scales with the process count;
+    - six separate gcc runs;
+    - "under 2 min" holds solo, not under load.
