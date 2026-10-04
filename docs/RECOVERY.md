@@ -36,14 +36,16 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `6e62c47`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `90332d8`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** the second vigilia is complete (cast at `1e41957`). The verdict is DIVERGES; experiri alone converged.
-  Round 5 (R24–R33) is drawn at the end of WEIGH and was knocked to Grok. It has one seed change: `O_NONBLOCK` on the
-  OUT open, so a FIFO OUT is refused.
-- **Next:** read Grok's SCORE. Re-run the gate myself, breaking every module and a seed byte. Checkpoint, push, then
-  vigilia again. **The seed lands only when vigilia converges.**
+- **State:** round 5 is weighed and checkpointed as `3e54e66`. The live gate is green, and the injected breaks went
+  red with their causes named (see WEIGH). R34 is drawn and was knocked to Grok. It covers three things:
+  - the clone rows test the candidate tree, not HEAD;
+  - no core dump per run;
+  - replayed output keeps its line breaks.
+- **Next:** read Grok's SCORE and re-run the gate, breaking it again. Checkpoint, then the **third vigilia**: 19
+  wards, then circumspicere. **The seed lands only when vigilia converges.**
 - **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief.
 
 ## How work moves
