@@ -2443,3 +2443,36 @@ each rune's reason. circumspicere is cast last.
     - `needle_for`'s default accepts any red;
     - `file_mode` is listed as proven;
     - `outer_sum`'s scope.
+- **excusare: 2 L1, 10 L2.** It weighed 10 runes and 12 unruned exemptions; six runes hold and four are struck.
+  - **L1:** the non-host skip lands a contract-violating seed green under a name the table allows.
+    - A `riscv64-linux` target holding an x86 seed whose argc status is 9 printed "not executed on this host", and
+      verify was rc 0.
+    - Nothing compares `e_machine` with the name, and the table admits names whose rows say "not a target".
+    - This is the third vigilia's excusare L1, recurring. R38 does not hold.
+  - **L1:** `HEX0_ROW_PROOF_ONLY` (the third independent report).
+  - **L2:** `driver-test.sh:4`'s peragrare(stub) rune is struck. Its deferral names no target, and a real
+    `aarch64-linux` collides with layout-mutants' `mkdir -p` and gives the wrong cause. (conferre judged this rune
+    as earning its standing; excusare's demonstration of the wrong cause is the stronger evidence.)
+  - **L2:** `verify.sh:5`'s solvere(scratch) rune is struck. Two concurrent fast tiers, reproduced 2 of 2: the
+    second's `empty out` deleted the first's `out/`, and the first went red as `row 8 cmp`, blaming the seed. A lock
+    on `out/` closes this.
+  - **L2:** `hex0-contract.sh:4`'s circumspicere(phantom) rune is struck. A gate is constructible: a 20-line ptrace
+    program writes argc 0 at the exec stop and observes exit 1.
+  - **L2:** `fuzz-hex0.py:14`'s solvere(duplication) rune is struck. The fuzz never meets hex-check, and its reference
+    is a line-for-line copy of it.
+  - **L2:** gate-lib is exempt from row-proof with no rune. With `capture_red`'s needle comparison removed, `--prove`
+    was `proved`.
+  - **L2:** step-lint's allowlist is wider than its reason (12 forms of a bare `cmp` are green).
+  - **L2:** rule 5 (`exit status:` in lowercase, `Status 4:`, `# 7:`, `status=4`).
+  - **L2:** rule 9's quote strip applies to the whole tree and is greedy. Its reason holds for one WEIGH line.
+  - **L2:** the seed-decode exception's bounds are unchecked. A seed-audit that decodes into `$HEX0` and compares it
+    with itself passed lint and layout, and with byte 300 flipped it rewrote the seed in place, rc 0. Rule 7 also
+    misses `"${ROOT}/out/…"`, `./out/…`, `>|`, a Python `open()` and the `product=out` indirection.
+  - **L2:** `HEX0_DRIVER_TEST`'s marker is a forgeable constant. Stub `driver-test.sh` in the nested copies instead.
+  - **Holds (L3):**
+    - the `fail()`, `write_tool`, `write_stub` and `prove_tree` helper runes;
+    - DESIGN:82's exigere rune (exigere's own cast struck it on category and hidden deferral; the stricter reading
+      stands);
+    - `disasm-check`'s spelling rune (binutils is unpinned);
+    - the fast tier's skip;
+    - the rule-8 skips.
