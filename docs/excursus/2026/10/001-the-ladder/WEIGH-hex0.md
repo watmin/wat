@@ -137,3 +137,10 @@ and then the rung lands.
 - **R6, extended.** Rule 9 also forbids a bare numbered reference to an excursus. Outside `archived/`, a tracked file
   containing `excursus` or `arc` followed by a bare number (`excursus 001`, `arc 12`) is a red. A reference names
   `YYYY/MM/NNN-<slug>`. Add one mutant: a line reading "see excursus 001".
+
+## R6 received (2026-10-04) — the docs shape is gated; the bare-reference half is still open
+
+`SCORE-hex0.md` "R6 — the docs shape" adds four rule-9 mutants (a stray directory, a counter gap, a non-document in an
+excursus, a bad slug), and `verify: ok`. **The "R6, extended" item above crossed that score in flight and is not in
+`tools/layout.sh`**: no check forbids a bare numbered reference. Add it, with its mutant ("see excursus 001" in a
+tracked file outside `archived/`, which must be red naming rule 9).
