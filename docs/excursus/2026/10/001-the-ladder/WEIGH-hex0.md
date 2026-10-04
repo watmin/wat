@@ -1086,3 +1086,23 @@ Cast at checkpoint `9b334d1`, after round 5 and R34. The same 19 inward wards as
 signed text. Each derives its findings fresh and checks every round-5 claim rather than trusting it. peragrare adds
 a sixth instrument: verify's candidate and clone rows. circumspicere is cast last. Reports are recorded here as they
 arrive.
+- **exigere: 0 L1, 4 L2.** Every second-vigilia exigere item is confirmed fixed: `syscalls.tsv` is real and read; the
+  driver-test skip is announced; the target rows are bound; the routed items are closed.
+  - **L2:** RECOVERY:35 says green is "`verify: ok` with rc 0", but since R32 the last line is
+    `verify: working tree, committed in the sandbox and cloned`. It is the orchestrator's file, so I fixed it myself
+    in the commit that records this entry.
+  - **L2:** MACHINE describes tools for work that does not exist (C comparisons, perf reports, watc's output), and
+    omits gcc's real use: the fault injector and the argc and sigxfsz helpers.
+  - **L2:** DESIGN:122 "the invariant is checked by the gate as the rungs grow" is present tense for a check that does
+    not exist. Bind it to "the first rung with a `call` carries an alignment row in its EXPECTATIONS".
+  - **L2:** LAYOUT:65 "There is no CI yet". The "yet" came from R33's own wording. Write "There is no CI."
+  - **L3 (not counted):**
+    - watc is given two homes: LAYOUT's top-level `watc/` and DESIGN's `ladder/<n>-<name>/`;
+    - LAYOUT:77 omits RECOVERY;
+    - LAYOUT rule 5 claims more than layout.sh checks;
+    - DESIGN:80 "already designed" for watc's register partition;
+    - DESIGN:47 gives the TSV column order backwards;
+    - `.gitignore:9`;
+    - "wait status 153" against "shell status 153" (the wait status is 25 without a core);
+    - the dead `ALLOWED` list in syscalls-check;
+    - stale files in `out/`.

@@ -32,7 +32,8 @@ orientation, prune it.
 - `docs/excursus/YYYY/MM/NNN-<slug>/`: each piece of work. Its DESIGN, CRAWL, BRIEF and EXPECTATIONS are what was
   drawn; SCORE is what the executor reports; WEIGH is the orchestrator's verdict, round by round, and its newest
   section is the current state.
-- `tools/verify.sh`: the gate. `verify: ok` with rc 0, or it is red.
+- `tools/verify.sh`: the gate. Green is rc 0 with the last line `verify: working tree, committed in the sandbox and
+  cloned`; anything else is red.
 
 ## NOW (replace this section; never append to it)
 
