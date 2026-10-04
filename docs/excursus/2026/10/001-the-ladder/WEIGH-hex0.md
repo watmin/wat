@@ -1956,3 +1956,9 @@ Checkpointed. R47 makes the step cheap.
   never). I re-checked with a `ps` listing.
 
 Checkpointed. Next: vigilia 4, against this checkpoint.
+
+## The fourth vigilia (2026-10-04) — in flight
+
+Cast at checkpoint `8201e8d`, after round 6, R45, R46 and R47. The same 19 inward wards, each fetching its full signed
+text. CONVERGENCE means zero L1 and no un-runed L2. A rune counts only if its reason earns it, and the wards judge
+each rune's reason. circumspicere is cast last.
