@@ -67,6 +67,9 @@ orientation, prune it.
   committed copy. Fixtures are `-text`.
 - **Messages crossing in flight.** An addition made after a knock was missed by Grok's score. Check that every item
   landed before weighing a round.
+- **A mutant that never ran its row** (2026-10-04). The gate printed "mutant row 1 (byte): red", and it was credited.
+  The mutant ran its own comparator, so with row 1 deleted the gate stayed green. Credit a mutant only after breaking
+  the row it guards and watching the gate go red.
 - **Condensed ward texts** (2026-10-04). Each ward is cast from its full signed text, fetched by the agent itself.
 
 ---
