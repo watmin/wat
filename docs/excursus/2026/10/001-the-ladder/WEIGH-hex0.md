@@ -2221,3 +2221,52 @@ each rune's reason. circumspicere is cast last.
     - the trunc mutant uses its own assertions;
     - step-lint braids two checks;
     - a loop with no effect.
+- **conformare: 1 L1, 6 L2.** The seed's statuses and fault.c's codes conform.
+  - **L1:** a failing `step`, `die`, `fact`, `abs_req` or `under_tmp` inside `$(…)` exits only the subshell. The
+    module carries on, and the outer `step` deletes the captured stderr on success.
+    - **Row 12 cannot go red.** With the fuzz reference narrowed (`a-f` to `a-e`), the full verify was rc 0 with EMPTY
+      stderr, and `row 12: fuzz ok` was printed after a blank line.
+    - Layout rules 1 and 6 fail open the same way.
+    - **This is RECOVERY's first paid-for failure ("a gate that only ever said ok") again, at step level.** row-proof
+      cannot see it.
+    - Fix: a terminator kills the module (`kill -s TERM $$`, with the trap doing the cleanup), plus a lint and a
+      mutant.
+  - **L2:** `want_rc`, `rowN_same` and `same_file` + `die` print no got/want. `cmp -s` throws its output away.
+  - **L2:** layout rule 2 drops the crash cause.
+  - **L2:** mutant verdicts read text only. layout's exit status is unproven (`fail()` made `exit 0` is still green),
+    and `fail()`'s rune does not earn its exemption.
+  - **L2:** text-cr.py passes a CRLF file whose name is non-ASCII, because `check-attr` quotes it. Use `-z`.
+  - **L2:** step-lint reads only the first word of a line (`if cmp`, `! cmp`, `| rm`, `(rm)`, `"$cmd"`, `|| rm`,
+    `<(rm)` are all ok).
+  - **L2:** the index-copy leak (the second report).
+- **sequi: 3 L1, 8 L2.** The register thread holds on every path. **R37 holds:** from a linked worktree of a victim,
+  with `env -i`, `GIT_*` aimed at the victim, failing hooks (local and global) and no identity, verify is rc 0 and
+  every file under the victim's `.git` is byte-identical.
+  - **L1:** `HEX0_ROW_PROOF_ONLY` (undeclared and passed through) hollows `--prove`. With a one-function stub file,
+    row-proof neutered nothing, and verify still printed `proved`, rc 0. This breaks R46's "no environment variable
+    selects the tier".
+  - **L1:** "outer repository unchanged" in a linked worktree is the empty-input hash on both sides (as purgare
+    found). The sum also omits packed-refs, objects, hooks and worktrees.
+  - **L1:** seed-audit blames the seed for the caller's arguments. With a fresh SANDBOX it prints
+    `row 1: seed differs` on an identical seed, because a redirect is evaluated before the step creates the
+    directory. A relative TARGET cascades into the same message.
+  - **L2:** the index copies leak, and the caller's TMPDIR decides where. `TMPDIR=<repo>` left `hex0-index.*` in the
+    repo and turned layout red.
+  - **L2:** git-sandbox swallows a failed copy and runs against an empty index (every file listed as `D`), giving a
+    false rule-6 cause.
+  - **L2:** a caller's `HEX0_SCRATCH` is honoured unvalidated before verify sets it (`junk/` was created inside the
+    repo). MACHINE declares only two knobs.
+  - **L2:** a `die` inside `$(…)` does not stop the module (as conformare found), so R38's refusals print without
+    stopping anything.
+  - **L2:** a nested step escapes its parent's timer and escape scan, because each runs in its own group with its
+    own mark. An inner `sleep` outlived the outer timeout. So a module timeout or interrupt leaves its current step
+    running.
+  - **L2:** the interrupt proof depends on the inherited SIGINT disposition. Run as `… & wait` it goes red and leaves
+    orphans.
+  - **L2:** the root comes from `BASH_SOURCE`, which breaks `cd tools && ./verify.sh`.
+  - **L2:** the register table (the fourth report).
+  - **L3 (not counted):**
+    - step-lint passes `command`, `eval` and `exec <(…)`;
+    - rcx's scratch role is unnamed;
+    - layout-mutants mutates one shared tree in a chain;
+    - 302 s for the fast tier under load.
