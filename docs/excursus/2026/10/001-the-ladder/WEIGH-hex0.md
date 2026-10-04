@@ -2476,3 +2476,31 @@ each rune's reason. circumspicere is cast last.
     - `disasm-check`'s spelling rune (binutils is unpinned);
     - the fast tier's skip;
     - the rule-8 skips.
+- **peragrare: 2 L1, 10 L2.** The census scripts are under `/var/tmp/vigilia4-hex0/peragrare-census/`, with 12
+  hypotheses, all 12 confirmed by command.
+  - **L1:** the row-proof bookkeeping cell is hollow (the fourth independent report). With the comparisons in
+    `clone_layout`, `row4_bytes`, `fix_ok` and `assert_out` deleted, `--prove` printed each one `red`, then `proved`,
+    rc 0.
+  - **L1:** with a gitfile `.git`, `outer_sum` hashes nothing (the fourth report). Measured with an added
+    `update-ref refs/heads/evil` step: "outer repository unchanged", rc 0, and the ref exists. The control, with a
+    directory `.git`, goes red. The worktree row never runs the gate from one.
+  - **L2:** row-proof only enumerates functions: there are 41 decision lines inside functions and 184 outside. The
+    `/dev/null` mode, the seed hash after the fuzz, and `outer_before = outer_after` were all deleted with the gate
+    still green.
+  - **L2:** writes outside HEAD, index, config and refs are invisible (`.git/info/exclude` was changed, and the gate
+    said "unchanged").
+  - **L2:** the index-copy leak (31,699 copies).
+  - **L2:** the needle-miss branches of `expect text:` and `capture_red` are never driven. Both were neutered, and
+    `--prove` was `proved` with 69 "red" lines. Every layout rule's proof is then inert.
+  - **L2:** rule 5 (`Status 4:`, "exits 4", a table row, lowercase `exit status:`).
+  - **L2:** rule 9's greedy strip.
+  - **L2:** rule 7 misses `"${ROOT}/out/…"`.
+  - **L2:** row 10's filesz/memsz branch is never visited.
+  - **L2:** the `+0078` literal.
+  - **L2:** the `driver-test.sh:4` rune is void: `stub` is not a peragrare category, and the cell is constructible.
+  - **L3 (not counted):**
+    - the interrupt proof is not anchored;
+    - the CRLF fixtures pass stripped;
+    - syscalls-check's `missing` branch is never red;
+    - an outside SIGKILL of verify leaves module groups running;
+    - `function name {` is invisible to row-proof and step-lint.
