@@ -37,20 +37,14 @@ orientation, prune it.
 
 ## NOW (replace this section; never append to it)
 
-- **Freshness probe:** written at the commit that adds this line (after `76855c9`). The tree may hold uncommitted strike files only while Grok is mid-round.
+- **Freshness probe:** written at the commit that adds this line (after `7f3898f`). The tree may hold uncommitted strike files only while Grok is mid-round.
 - **Live excursus:** `docs/excursus/2026/10/001-the-ladder/`, rung 0, hex0. It is the 537-byte seed at
   `ladder/0-hex0/x86_64-linux/`; the contract is `ladder/0-hex0/README.md` and `tests/`.
-- **State:** the third vigilia is complete, cast at `9b334d1`, and it DIVERGES. The seed itself has converged; the gate
-  has not. The builder ruled that L2s may be runed with reasons, and that tooling (guardrails) comes first, until it
-  is sufficient. "Sufficient" means each paid-for failure mode below has a wall, and the gate has converged.
-- **Next:** draw round 6 as consolidation:
-  - shrink the seed header to a pointer;
-  - give the gate a trust core, with mutants that invoke their rows;
-  - class-level fixes: git isolation, one step helper, per-target facts in `gate.tsv`;
-  - a failure-mode → wall table;
-  - rune or fix the L2s.
-
-  Then re-run and break it, checkpoint, and cast vigilia 4.
+- **State:** round 6 is checkpointed (`7f3898f`), weighed by a break battery (`/var/tmp/r6-weigh/battery.sh`): every
+  named row function was made `return 0`, and the gate must go red. Four rows had no mutant, and one proof was
+  hollow. R45 was knocked to Grok: a `row-proof` module turns that battery into a row of the gate.
+- **Next:** read Grok's SCORE, re-run the battery, checkpoint, then cast vigilia 4. **The seed lands only when vigilia
+  converges** (zero L1, and every L2 fixed or runed).
 - **Open for the builder:** syntax questions Q1–Q5 (`CRAWL-the-subset.md`), needed before wat0's brief. Also open: what sequences the rungs (bash given, or a seed-built shell);
   the GitHub description and homepage overclaim (circumspicere C3-5).
 
