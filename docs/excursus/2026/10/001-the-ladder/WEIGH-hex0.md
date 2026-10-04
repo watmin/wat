@@ -298,3 +298,18 @@ after "The brand arrives".
 
 After round 3: the orchestrator re-runs everything, casts `circumspicere` (last), and then `vigilia` with every ward's
 full text. Then the seed lands.
+
+## Round 3 received; my re-run on the 514-byte seed (2026-10-04)
+
+`SCORE-hex0.md` "Round 3" covers R7–R12 and the brand gate. On my own runs:
+- `tools/verify.sh`: ok, rc 0. It covers 16 layout mutants, rows 1–13 including the 7 fault rows with controls, and a
+  byte mutant with 1,395 disagreements.
+- My decode is identical to the seed; two generations are identical; `LOAD` is `0x202` (514 bytes).
+- `sub $0x90,%rsp` at `+00c2` reserves exactly the 144 bytes `fstat` writes.
+- My fuzz, generator seed 3, 20,000 cases: 0 disagreements.
+
+**Row 10's ceiling moved from 512 to the measured 514, for the stated reason:** a `struct stat` buffer that fits needs
+the imm32 form of `sub`. Correctness came first; the number was mine.
+
+Next: `vigilia`, the full watch, on the rung. Every ward musters by the target's kind, each with its COMPLETE signed
+text, and `circumspicere` comes last.
