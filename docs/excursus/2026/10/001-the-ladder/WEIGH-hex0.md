@@ -1389,3 +1389,32 @@ arrive.
     - x86 mutant facts in shared tools;
     - nothing checks hex0's stdout or stderr;
     - unguarded heredocs.
+- **cernere: 1 L1, 6 L2.** Everything traces:
+  - the syscall numbers, 0x841, `struct stat` (144 bytes, +0/+8/+24) and S_IFMT/S_IFREG, against the uapi headers;
+  - the ELF, against readelf;
+  - 156 of 156 instructions;
+  - the trunc mutant's re-derived displacements;
+  - the timeout, git and objdump forms;
+  - the `.gitattributes` ordering.
+
+  Findings:
+  - **L1:** the header restates the contract (fifth report). Measured: header status 7 rewritten and a `status 9`
+    added, and full verify rc 0.
+  - **L2:** the "argc 0" row is a phantom. Since Linux 5.18 an empty argv becomes `{""}`, argc 1; measured argc=1
+    on 7.2.5. The row prints a case that was never run.
+  - **L2:** `HEX0_TIME_SCALE`: 0 disables the timers; a leading zero is read as octal (`010` gives 8x); a bad value
+    surfaces as rc 125. Require `^[1-9][0-9]*$` and validate once.
+  - **L2:** fuzz deletes the hung input it names.
+  - **L2:** disasm-check documents 99 but exits 1 on a traceback, and so does syscalls-check.
+  - **L2:** the row-1 mutant does not run row 1.
+  - **L2:** the O_NOCTTY reason is wrong. O_NOCTTY only affects acquiring a controlling tty (for a session leader
+    without one); driver side effects such as DTR or tape rewind happen regardless. State the side effect without the
+    false cause.
+  - **L3 (not counted):**
+    - fault.c closes fds only below 256 when NOFILE is 65536 or more (measured: fd 300 survives); `close_range` would
+      fix it;
+    - "only without CAP_DAC_OVERRIDE" (EROFS, immutable);
+    - the seccomp filter does not check `arch`;
+    - the FIFO-reader race;
+    - "depends on nothing outside the repository" against MACHINE;
+    - rule 7 greps ignored files.
