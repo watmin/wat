@@ -1418,3 +1418,33 @@ arrive.
     - the FIFO-reader race;
     - "depends on nothing outside the repository" against MACHINE;
     - rule 7 greps ignored files.
+- **excusare: 2 L1, 9 L2.** 26 exemptions weighed and 17 hold. Its summary line says "7 L2" but it lists nine, so the
+  nine are recorded.
+  - **L1:** the rule-5 "pointer" allowance is a stale guard (the header restates the contract, the sixth report).
+    Measured green: a header `status 9:`, a one-line `Exit status: … 9`, a blank comment line after the heading, and a
+    lowercase `exit status:`.
+  - **L1:** the non-host skip lands a contract-violating seed green. An `x86_64-freebsd` target whose close-failure
+    status is 9 printed "not executed on this host", and verify was rc 0. Under the gate's own injector it gives
+    rc 9, a status in no README. The skip is keyed on the name, not on whether the host can execute it; its only
+    reachable case is a binary this host can run.
+  - **L2:** brand/ is checked by extension and byte-0 magic only. `logo-16.png` with the seed appended, `'P'` plus the
+    seed, and a shell script named `.svg` are all green.
+  - **L2:** the live `out/` holds a stale ELF (`fault`) and other old files. Rule 7's "holds only what a rung
+    produces" is unchecked, and nothing empties `out/`.
+  - **L2:** the `tests/` skip lets `BRIEF-hex1.md` and nested directories into a rung.
+  - **L2:** hidden names are skipped (`.BRIEF.md` in a rung, a hidden rung `ladder/.1-hex1` that verify also never
+    visits, a hidden excursus directory, `..stray`).
+  - **L2:** `HEX0_DRIVER_TEST=1` is honoured at top level, so a user run skips the driver proof and still prints the
+    full success line.
+  - **L2:** the non-host and second-target proofs hold only with the modules stubbed. A real `aarch64-linux/hex0.hex0`
+    makes verify red (layout-mutants' `mkdir -p` collides with it, and seed-audit dies next).
+  - **L2:** the seed-decode exception's bounds are unchecked. A tools script that re-decodes the seed in place
+    (making row 1 tautological), or writes `"$o/h9"`, is green.
+  - **L2:** syscalls-check adds `execve` without bound. An appended `execve("/bin/sh")` passes row 8. Require exactly
+    one, on the first line.
+  - **L2:** `HEX0_TIME_SCALE=0` (fourth report).
+  - **L3 (not counted):**
+    - the shellcheck directives hold, and they are not suppressions;
+    - `__pycache__`;
+    - `--size` is a per-target fact;
+    - rule 9's regex is case-sensitive.
