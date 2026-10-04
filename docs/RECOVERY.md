@@ -43,11 +43,12 @@ orientation, prune it.
 - **State:** round 7 is checkpointed (`1df1074`): the gate is one Python program (`tools/verify`, `tools/gate/`), 8 s,
   one tier. Green is rc 0 and the last line `verify: judged, outer repository unchanged`. Two classes remain: verdicts
   laundered through `_static`, and missing `GIT_OPTIONAL_LOCKS=0`. R55 was knocked to Grok.
-- **Next:** read the SCORE; break a comparison inside each judge myself; run on a `cp -a` copy; checkpoint; cast
-  vigilia 5.
+- **Next:** read R55's SCORE, then weigh it myself (break a comparison inside each judge; run on a `cp -a` copy).
+  Then checkpoint and LAND hex0, with no vigilia (the builder's ruling). Then hex1: crawl stage0-posix's hex1, then
+  draw DESIGN, BRIEF and EXPECTATIONS. Bash is the sequencer until M0.
 - **Open for the builder:**
   - the five dilemmas at the end of `CRAWL-the-subset.md` (Q1–Q5 themselves are ruled), needed before wat0's brief;
-  - what sequences the rungs (bash given, or a seed-built shell), needed before hex1's brief;
+  - the sequencer is ruled (bash until M0's brief);
   - none on the public face: the description is set and the homepage is ruled (WEIGH, after round 7's draw).
 
 ## How work moves

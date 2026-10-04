@@ -2850,3 +2850,13 @@ Checkpointed. R55 removes both classes.
 - **README:10 says "Being built from a seed you can read."** This is the builder's ruling recorded above.
 
 After R55: my weigh breaks a comparison inside each judge, then checkpoint, then vigilia 5.
+
+**The builder's rulings (2026-10-04), after round 7:**
+- **No fifth vigilia.** After R55, the orchestrator weighs it itself: it breaks a comparison inside each judge and
+  runs on a fresh copy. Then it checkpoints and lands hex0. Tokens go to hex1 and onward.
+  - Basis: the seed's behaviour has converged across four vigilias.
+  - The gate keeps evolving with each rung. A vigilia is cast when a rung is "done for good" (WARDS), not after every
+    round.
+- **The sequencer is bash.** For hex1, bash issues `hex0 hex1.hex0 hex1` and the gate checks the result. DESIGN's
+  "What is given" lists bash as the sequencer. The question returns at M0's brief, where a seed-built shell becomes
+  cheap.
