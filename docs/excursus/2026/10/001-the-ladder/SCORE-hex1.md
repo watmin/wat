@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0 does not run wat-rs, at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0's first program is at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -468,5 +468,17 @@ A wat-rs stage 0 run was started to measure peak memory and was stopped. No numb
 `BRIEF-wat0.md` now gives wat0 an arena that never frees. The gate is wat0's own fixpoint: wat0 writes a native compiler, and that compiler, run on its own source, writes a byte-identical compiler. The translation still turns the retired spelling into the spelling wat0 runs. The interpreter is not started.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.834822683 seconds. The log is `/var/tmp/wat0-verify-nowatrs.log`, and the stderr is `/var/tmp/wat0-verify-nowatrs.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## wat0 — the first program (2026-10-05)
+
+`ladder/4-wat0/tests/forty-two.wat` binds `x` to 40 and adds 2. wat0 writes `42` and a newline. `seven.wat` is the literal 7. `bad.wat` has no body: status 4, OUT empty. `dup.wat` defines `u/main` twice: status 9, OUT empty.
+
+wat0 is M0 source. Hex2 emits the binary. The heap is an arena that never frees. This increment reads `wat.core/defn`, an empty parameter list, an optional `:-` and a type name, one body expression, integer literals, names, `wat.core/let`, and `wat.core/+`. Records, enums, `match`, parameters, and the rest of the operation table stay asked.
+
+`./build` exited 0. `out/wat0` and `out/wat0-self` are 2034 bytes, mode 755. `gate.tsv` names `size` 2034.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 59 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 10.668003135 seconds. The log is `/var/tmp/wat0-verify-first.log`, and the stderr is `/var/tmp/wat0-verify-first.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

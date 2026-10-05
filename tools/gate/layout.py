@@ -171,6 +171,7 @@ def rule5(root):
     hex1_readme(root)
     hex2_readme(root)
     m0_readme(root)
+    wat0_readme(root)
 
 
 def hex1_readme(root):
@@ -198,6 +199,15 @@ def m0_readme(root):
     text = open(path, encoding="utf-8").read()
     if "| 0 |" not in text or "| 9 |" not in text:
         fail(5, "readme has no exit statuses: 3-m0")
+
+
+def wat0_readme(root):
+    path = os.path.join(root, "ladder/4-wat0/README.md")
+    if not os.path.isfile(path):
+        return
+    text = open(path, encoding="utf-8").read()
+    if "| 0 |" not in text or "| 9 |" not in text:
+        fail(5, "readme has no exit statuses: 4-wat0")
 
 
 def rule6(root, git):
@@ -331,6 +341,7 @@ def prove_mutants(scratch):
     one(scratch, "rule 5 hex1", "readme has no exit statuses: 1-hex1", _mut_hex1_readme)
     one(scratch, "rule 5 hex2", "readme has no exit statuses: 2-hex2", _mut_hex2_readme)
     one(scratch, "rule 5 m0", "readme has no exit statuses: 3-m0", _mut_m0_readme)
+    one(scratch, "rule 5 wat0", "readme has no exit statuses: 4-wat0", _mut_wat0_readme)
     one(scratch, "rule 8 colon", "colon-path token in", _mut_colon)
     one(scratch, "rule 8 arrow", "bare type arrow in", _mut_arrow)
     one(scratch, "rule 9", "badly formed excursus slug:", _mut_slug)
@@ -406,6 +417,12 @@ def _mut_m0_readme(path):
     os.makedirs(os.path.join(path, "ladder", "3-m0"))
     open(os.path.join(path, "ladder", "3-m0", "README.md"), "w", encoding="utf-8").write("| 0 |\n")
     m0_readme(path)
+
+
+def _mut_wat0_readme(path):
+    os.makedirs(os.path.join(path, "ladder", "4-wat0"))
+    open(os.path.join(path, "ladder", "4-wat0", "README.md"), "w", encoding="utf-8").write("| 0 |\n")
+    wat0_readme(path)
 
 
 def _mut_status(path, text):

@@ -34,7 +34,10 @@ The gate checks artifacts. It does not build a rung and it does not sequence the
   `out/hex2` on `ladder/2-hex2/x86_64-linux/hex2.hex2`, writing `out/hex2-self`, then runs
   `out/hex2` on `ladder/3-m0/x86_64-linux/m0.hex2`, writing `out/m0`, then runs
   `out/m0` on `ladder/3-m0/x86_64-linux/m0.m0`, writing `out/m0.hex2`, then runs
-  `out/hex2` on `out/m0.hex2`, writing `out/m0-self`. The gate checks those products.
+  `out/hex2` on `out/m0.hex2`, writing `out/m0-self`, then runs
+  `out/m0` on `ladder/4-wat0/x86_64-linux/wat0.m0`, writing `out/wat0.hex2`, then runs
+  `out/hex2` on `out/wat0.hex2`, writing `out/wat0`, then runs
+  `out/hex2` on `ladder/4-wat0/x86_64-linux/wat0.hex2`, writing `out/wat0-self`. The gate checks those products.
   It does not call `build`. M0's brief, a seed-built shell, is not this file.
 - **Not given:**
   - no libc;

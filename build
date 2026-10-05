@@ -24,3 +24,12 @@ mkdir -p "$root/out"
 "$root/out/hex2" \
   "$root/out/m0.hex2" \
   "$root/out/m0-self"
+"$root/out/m0" \
+  "$root/ladder/4-wat0/x86_64-linux/wat0.m0" \
+  "$root/out/wat0.hex2"
+"$root/out/hex2" \
+  "$root/out/wat0.hex2" \
+  "$root/out/wat0"
+"$root/out/hex2" \
+  "$root/ladder/4-wat0/x86_64-linux/wat0.hex2" \
+  "$root/out/wat0-self"

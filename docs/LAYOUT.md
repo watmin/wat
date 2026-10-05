@@ -18,6 +18,7 @@ wat/
     1-hex1/             each rung: README.md · tests/ · one <arch>-<os>/ per target, holding its source
     2-hex2/             README.md · tests/ · x86_64-linux/ (hex2.hex1, hex2.hex2, the tables)
     3-m0/               README.md · tests/ · x86_64-linux/ (m0.hex2, m0.m0, the tables)
+    4-wat0/             README.md · tests/ · x86_64-linux/ (wat0.hex2, wat0.m0, the tables)
   tools/                CHECKS only, never builds a rung (one declared exception: the seed, below): verify, gate/, check/
   docs/                 standing documents at the top (LAYOUT, WARDS, MACHINE, RECOVERY); everything else in an excursus
     excursus/YYYY/MM/NNN-<slug>/   one excursus: its design, crawls, briefs, expectations, scores, weighs
@@ -29,7 +30,7 @@ wat/
 ## The rules `tools/verify` enforces
 
 1. **The top level is exactly the list above.** Every name on disk at the top, except `.git`. `README.md`, `LICENSE`, `NOTICE`, `.gitignore`, `.gitattributes`,
-   `build`, `ladder/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. `build` is bash. It runs the seed on hex1's hex0-language source, then that product on hex1's label-using source, then hex1 on hex2's hex1-language source, then that product on hex2's label-using source, then hex2 on M0's hex2-language source, then that product on M0's macro source, then hex2 on the hex2 text that product writes. The gate does not call it. The compiler's home is its rung, when that rung exists. A
+   `build`, `ladder/`, `tools/`, `docs/`, `brand/` and `archived/` are allowed; `out/` may exist but is never tracked. `build` is bash. It runs the seed on hex1's hex0-language source, then that product on hex1's label-using source, then hex1 on hex2's hex1-language source, then that product on hex2's label-using source, then hex2 on M0's hex2-language source, then that product on M0's macro source, then hex2 on the hex2 text that product writes, then M0 on wat0's macro source, then hex2 on the hex2 text that product writes, and hex2 again on wat0's hex2 source. The gate does not call it. The compiler's home is its rung, when that rung exists. A
    tracked path under `out/` is a red. Any other top-level name is a red. The image-only check on `brand/` is
    part of this rule: a file there must be a PNG, ICO or SVG by its bytes, and no file there may contain ELF magic.
 2. **One committed binary per target: `ladder/0-hex0/<arch>-<os>/hex0`.** The scope is every file on disk except the
