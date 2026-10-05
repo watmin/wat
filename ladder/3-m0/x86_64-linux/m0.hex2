@@ -1,7 +1,7 @@
 # M0. Rung 3. The rung README is ladder/3-m0/README.md. This file does not restate it.
 # Built by hex2. x86-64 Linux. Syscalls only. No libc.
-# DEFINE name body. The body is one token. The output is hex2 text.
-# p_filesz is 1033.
+# (define name ...) expands to hex2 text. A list is the step above the bytes.
+# p_filesz is 1170.
 # ## ELF header (64 bytes)
 7F 45 4C 46  # magic
 02 01 01 00
@@ -23,15 +23,15 @@
 00 00 00 00 00 00 00 00
 00 00 40 00 00 00 00 00
 00 00 40 00 00 00 00 00
-09 04 00 00 00 00 00 00  # p_filesz: 1033
-09 04 00 00 00 00 00 00  # p_memsz: 1033
+92 04 00 00 00 00 00 00  # p_filesz: 1170
+92 04 00 00 00 00 00 00  # p_memsz: 1170
 00 10 00 00 00 00 00 00
 
 # ## Code, at file offset 0x78
 48 83 3C 24 03  # +0078 cmpq $0x3,(%rsp)
 74 07  # +007d je 0x86
 6A 01  # +007f push $0x1
-E9 D4 02 00 00  # +0081 jmp 0x35a
+E9 43 03 00 00  # +0081 jmp 0x3c9
 48 8B 7C 24 10  # +0086 mov 0x10(%rsp),%rdi
 31 F6  # +008b xor %esi,%esi
 6A 02  # +008d push $0x2
@@ -40,7 +40,7 @@ E9 D4 02 00 00  # +0081 jmp 0x35a
 85 C0  # +0092 test %eax,%eax
 79 07  # +0094 jns 0x9d
 6A 02  # +0096 push $0x2
-E9 BD 02 00 00  # +0098 jmp 0x35a
+E9 2C 03 00 00  # +0098 jmp 0x3c9
 41 89 C4  # +009d mov %eax,%r12d
 48 8B 7C 24 18  # +00a0 mov 0x18(%rsp),%rdi
 BE 41 08 00 00  # +00a5 mov $0x841,%esi
@@ -51,7 +51,7 @@ BA ED 01 00 00  # +00aa mov $0x1ed,%edx
 85 C0  # +00b4 test %eax,%eax
 79 07  # +00b6 jns 0xbf
 6A 03  # +00b8 push $0x3
-E9 9B 02 00 00  # +00ba jmp 0x35a
+E9 0A 03 00 00  # +00ba jmp 0x3c9
 41 89 C5  # +00bf mov %eax,%r13d
 48 81 EC 90 00 00 00  # +00c2 sub $0x90,%rsp
 48 89 E6  # +00c9 mov %rsp,%rsi
@@ -62,7 +62,7 @@ E9 9B 02 00 00  # +00ba jmp 0x35a
 85 C0  # +00d4 test %eax,%eax
 79 07  # +00d6 jns 0xdf
 6A 02  # +00d8 push $0x2
-E9 7B 02 00 00  # +00da jmp 0x35a
+E9 EA 02 00 00  # +00da jmp 0x3c9
 48 8B 2C 24  # +00df mov (%rsp),%rbp
 4C 8B 44 24 08  # +00e3 mov 0x8(%rsp),%r8
 6A 05  # +00e8 push $0x5
@@ -72,19 +72,19 @@ E9 7B 02 00 00  # +00da jmp 0x35a
 85 C0  # +00f0 test %eax,%eax
 79 07  # +00f2 jns 0xfb
 6A 03  # +00f4 push $0x3
-E9 5F 02 00 00  # +00f6 jmp 0x35a
+E9 CE 02 00 00  # +00f6 jmp 0x3c9
 48 3B 2C 24  # +00fb cmp (%rsp),%rbp
 75 0E  # +00ff jne 0x10f
 4C 3B 44 24 08  # +0101 cmp 0x8(%rsp),%r8
 75 07  # +0106 jne 0x10f
 6A 07  # +0108 push $0x7
-E9 4B 02 00 00  # +010a jmp 0x35a
+E9 BA 02 00 00  # +010a jmp 0x3c9
 8B 44 24 18  # +010f mov 0x18(%rsp),%eax
 25 00 F0 00 00  # +0113 and $0xf000,%eax
 3D 00 80 00 00  # +0118 cmp $0x8000,%eax
 74 07  # +011d je 0x126
 6A 03  # +011f push $0x3
-E9 34 02 00 00  # +0121 jmp 0x35a
+E9 A3 02 00 00  # +0121 jmp 0x3c9
 6A 5B  # +0126 push $0x5b
 58  # +0128 pop %rax
 44 89 EF  # +0129 mov %r13d,%edi
@@ -93,7 +93,7 @@ BE ED 01 00 00  # +012c mov $0x1ed,%esi
 85 C0  # +0133 test %eax,%eax
 79 07  # +0135 jns 0x13e
 6A 03  # +0137 push $0x3
-E9 1C 02 00 00  # +0139 jmp 0x35a
+E9 8B 02 00 00  # +0139 jmp 0x3c9
 6A 4D  # +013e push $0x4d
 58  # +0140 pop %rax
 44 89 EF  # +0141 mov %r13d,%edi
@@ -102,14 +102,14 @@ E9 1C 02 00 00  # +0139 jmp 0x35a
 85 C0  # +0148 test %eax,%eax
 79 07  # +014a jns 0x153
 6A 06  # +014c push $0x6
-E9 07 02 00 00  # +014e jmp 0x35a
+E9 76 02 00 00  # +014e jmp 0x3c9
 48 81 EC 00 18 01 00  # +0153 sub $0x11800,%rsp
 48 89 E5  # +015a mov %rsp,%rbp
 31 DB  # +015d xor %ebx,%ebx
 45 31 F6  # +015f xor %r14d,%r14d
 45 31 FF  # +0162 xor %r15d,%r15d
 41 81 FE 00 00 01 00  # +0165 cmp $0x10000,%r14d
-74 29  # +016c je 0x197
+74 26  # +016c je 0x194
 4C 89 F0  # +016e mov %r14,%rax
 48 8D 74 05 00  # +0171 lea 0x0(%rbp,%rax,1),%rsi
 BA 00 00 01 00  # +0176 mov $0x10000,%edx
@@ -118,228 +118,255 @@ BA 00 00 01 00  # +0176 mov $0x10000,%edx
 44 89 E7  # +0180 mov %r12d,%edi
 0F 05  # +0183 syscall
 85 C0  # +0185 test %eax,%eax
-78 07  # +0187 js 0x190
-74 2C  # +0189 je 0x1b7
-41 01 C6  # +018b add %eax,%r14d
-EB D5  # +018e jmp 0x165
-6A 06  # +0190 push $0x6
-E9 C3 01 00 00  # +0192 jmp 0x35a
-48 8D B5 00 18 01 00  # +0197 lea 0x11800(%rbp),%rsi
-BA 01 00 00 00  # +019e mov $0x1,%edx
-31 C0  # +01a3 xor %eax,%eax
-44 89 E7  # +01a5 mov %r12d,%edi
-0F 05  # +01a8 syscall
-85 C0  # +01aa test %eax,%eax
-78 E2  # +01ac js 0x190
-83 F8 01  # +01ae cmp $0x1,%eax
-0F 84 9F 01 00 00  # +01b1 je 0x356
-E8 A4 01 00 00  # +01b7 call 0x360
-4D 85 C9  # +01bc test %r9,%r9
-0F 84 7B 01 00 00  # +01bf je 0x340
-49 83 F9 06  # +01c5 cmp $0x6,%r9
-0F 85 0A 01 00 00  # +01c9 jne 0x2d9
-4A 8D 74 05 00  # +01cf lea 0x0(%rbp,%r8,1),%rsi
-81 3E 44 45 46 49  # +01d4 cmpl $0x49464544,(%rsi)
-0F 85 F9 00 00 00  # +01da jne 0x2d9
-66 81 7E 04 4E 45  # +01e0 cmpw $0x454e,0x4(%rsi)
-0F 85 ED 00 00 00  # +01e6 jne 0x2d9
-E8 6F 01 00 00  # +01ec call 0x360
-4D 85 C9  # +01f1 test %r9,%r9
-0F 84 5C 01 00 00  # +01f4 je 0x356
-49 83 F9 10  # +01fa cmp $0x10,%r9
-0F 87 52 01 00 00  # +01fe ja 0x356
-4C 89 C2  # +0204 mov %r8,%rdx
-4C 89 C8  # +0207 mov %r9,%rax
-52  # +020a push %rdx
-50  # +020b push %rax
-E8 4F 01 00 00  # +020c call 0x360
-4D 85 C9  # +0211 test %r9,%r9
-0F 84 3A 01 00 00  # +0214 je 0x354
-49 83 F9 40  # +021a cmp $0x40,%r9
-0F 87 30 01 00 00  # +021e ja 0x354
-4C 89 C6  # +0224 mov %r8,%rsi
-4C 89 CF  # +0227 mov %r9,%rdi
-58  # +022a pop %rax
-5A  # +022b pop %rdx
-49 89 C2  # +022c mov %rax,%r10
-49 89 D3  # +022f mov %rdx,%r11
-56  # +0232 push %rsi
-57  # +0233 push %rdi
-31 C9  # +0234 xor %ecx,%ecx
-48 39 D9  # +0236 cmp %rbx,%rcx
-73 3E  # +0239 jae 0x279
-89 C8  # +023b mov %ecx,%eax
-6B C0 60  # +023d imul $0x60,%eax,%eax
-48 8D 94 05 00 00 01 00  # +0240 lea 0x10000(%rbp,%rax,1),%rdx
-0F B6 02  # +0248 movzbl (%rdx),%eax
-44 39 D0  # +024b cmp %r10d,%eax
-75 25  # +024e jne 0x275
-31 F6  # +0250 xor %esi,%esi
-44 39 D6  # +0252 cmp %r10d,%esi
-74 17  # +0255 je 0x26e
-0F B6 44 32 01  # +0257 movzbl 0x1(%rdx,%rsi,1),%eax
-51  # +025c push %rcx
-4C 89 D9  # +025d mov %r11,%rcx
-48 01 F1  # +0260 add %rsi,%rcx
-3A 44 0D 00  # +0263 cmp 0x0(%rbp,%rcx,1),%al
-59  # +0267 pop %rcx
-75 0B  # +0268 jne 0x275
-FF C6  # +026a inc %esi
-EB E4  # +026c jmp 0x252
-6A 09  # +026e push $0x9
-E9 E5 00 00 00  # +0270 jmp 0x35a
-FF C1  # +0275 inc %ecx
-EB BD  # +0277 jmp 0x236
-5F  # +0279 pop %rdi
-5E  # +027a pop %rsi
-48 83 FB 40  # +027b cmp $0x40,%rbx
-0F 83 D1 00 00 00  # +027f jae 0x356
-89 D8  # +0285 mov %ebx,%eax
-6B C0 60  # +0287 imul $0x60,%eax,%eax
-48 8D 94 05 00 00 01 00  # +028a lea 0x10000(%rbp,%rax,1),%rdx
-44 88 12  # +0292 mov %r10b,(%rdx)
-31 C9  # +0295 xor %ecx,%ecx
-4C 39 D1  # +0297 cmp %r10,%rcx
-74 15  # +029a je 0x2b1
-56  # +029c push %rsi
-4C 89 DE  # +029d mov %r11,%rsi
-48 01 CE  # +02a0 add %rcx,%rsi
-8A 44 35 00  # +02a3 mov 0x0(%rbp,%rsi,1),%al
-5E  # +02a7 pop %rsi
-88 44 0A 01  # +02a8 mov %al,0x1(%rdx,%rcx,1)
-48 FF C1  # +02ac inc %rcx
-EB E6  # +02af jmp 0x297
-40 88 7A 14  # +02b1 mov %dil,0x14(%rdx)
+0F 88 36 02 00 00  # +0187 js 0x3c3
+74 29  # +018d je 0x1b8
+41 01 C6  # +018f add %eax,%r14d
+EB D1  # +0192 jmp 0x165
+48 8D B5 00 18 01 00  # +0194 lea 0x11800(%rbp),%rsi
+BA 01 00 00 00  # +019b mov $0x1,%edx
+31 C0  # +01a0 xor %eax,%eax
+44 89 E7  # +01a2 mov %r12d,%edi
+0F 05  # +01a5 syscall
+85 C0  # +01a7 test %eax,%eax
+0F 88 14 02 00 00  # +01a9 js 0x3c3
+83 F8 01  # +01af cmp $0x1,%eax
+0F 84 0F 02 00 00  # +01b2 je 0x3c7
+E8 12 02 00 00  # +01b8 call 0x3cf
+4D 85 C9  # +01bd test %r9,%r9
+0F 84 ED 01 00 00  # +01c0 je 0x3b3
+49 83 F9 01  # +01c6 cmp $0x1,%r9
+0F 85 7D 01 00 00  # +01ca jne 0x34d
+42 0F B6 44 05 00  # +01d0 movzbl 0x0(%rbp,%r8,1),%eax
+3C 28  # +01d6 cmp $0x28,%al
+74 0D  # +01d8 je 0x1e7
+3C 29  # +01da cmp $0x29,%al
+0F 84 E5 01 00 00  # +01dc je 0x3c7
+E9 66 01 00 00  # +01e2 jmp 0x34d
+E8 E3 01 00 00  # +01e7 call 0x3cf
+4D 85 C9  # +01ec test %r9,%r9
+0F 84 D2 01 00 00  # +01ef je 0x3c7
+49 83 F9 06  # +01f5 cmp $0x6,%r9
+0F 85 C8 01 00 00  # +01f9 jne 0x3c7
+4A 8D 74 05 00  # +01ff lea 0x0(%rbp,%r8,1),%rsi
+81 3E 64 65 66 69  # +0204 cmpl $0x69666564,(%rsi)
+0F 85 B7 01 00 00  # +020a jne 0x3c7
+66 81 7E 04 6E 65  # +0210 cmpw $0x656e,0x4(%rsi)
+0F 85 AB 01 00 00  # +0216 jne 0x3c7
+E8 AE 01 00 00  # +021c call 0x3cf
+4D 85 C9  # +0221 test %r9,%r9
+0F 84 9D 01 00 00  # +0224 je 0x3c7
+49 83 F9 10  # +022a cmp $0x10,%r9
+0F 87 93 01 00 00  # +022e ja 0x3c7
+49 83 F9 01  # +0234 cmp $0x1,%r9
+75 16  # +0238 jne 0x250
+42 0F B6 44 05 00  # +023a movzbl 0x0(%rbp,%r8,1),%eax
+3C 28  # +0240 cmp $0x28,%al
+0F 84 7F 01 00 00  # +0242 je 0x3c7
+3C 29  # +0248 cmp $0x29,%al
+0F 84 77 01 00 00  # +024a je 0x3c7
+4D 89 CA  # +0250 mov %r9,%r10
+4D 89 C3  # +0253 mov %r8,%r11
+31 C9  # +0256 xor %ecx,%ecx
+48 39 D9  # +0258 cmp %rbx,%rcx
+73 3E  # +025b jae 0x29b
+89 C8  # +025d mov %ecx,%eax
+6B C0 60  # +025f imul $0x60,%eax,%eax
+48 8D 94 05 00 00 01 00  # +0262 lea 0x10000(%rbp,%rax,1),%rdx
+0F B6 02  # +026a movzbl (%rdx),%eax
+44 39 D0  # +026d cmp %r10d,%eax
+75 25  # +0270 jne 0x297
+31 F6  # +0272 xor %esi,%esi
+44 39 D6  # +0274 cmp %r10d,%esi
+74 17  # +0277 je 0x290
+0F B6 44 32 01  # +0279 movzbl 0x1(%rdx,%rsi,1),%eax
+51  # +027e push %rcx
+4C 89 D9  # +027f mov %r11,%rcx
+48 01 F1  # +0282 add %rsi,%rcx
+3A 44 0D 00  # +0285 cmp 0x0(%rbp,%rcx,1),%al
+59  # +0289 pop %rcx
+75 0B  # +028a jne 0x297
+FF C6  # +028c inc %esi
+EB E4  # +028e jmp 0x274
+6A 09  # +0290 push $0x9
+E9 32 01 00 00  # +0292 jmp 0x3c9
+FF C1  # +0297 inc %ecx
+EB BD  # +0299 jmp 0x258
+48 83 FB 40  # +029b cmp $0x40,%rbx
+0F 83 22 01 00 00  # +029f jae 0x3c7
+89 D8  # +02a5 mov %ebx,%eax
+6B C0 60  # +02a7 imul $0x60,%eax,%eax
+48 8D 94 05 00 00 01 00  # +02aa lea 0x10000(%rbp,%rax,1),%rdx
+44 88 12  # +02b2 mov %r10b,(%rdx)
 31 C9  # +02b5 xor %ecx,%ecx
-48 39 F9  # +02b7 cmp %rdi,%rcx
-74 15  # +02ba je 0x2d1
-52  # +02bc push %rdx
-48 89 F2  # +02bd mov %rsi,%rdx
-48 01 CA  # +02c0 add %rcx,%rdx
-8A 44 15 00  # +02c3 mov 0x0(%rbp,%rdx,1),%al
-5A  # +02c7 pop %rdx
-88 44 0A 15  # +02c8 mov %al,0x15(%rdx,%rcx,1)
-48 FF C1  # +02cc inc %rcx
-EB E6  # +02cf jmp 0x2b7
-48 FF C3  # +02d1 inc %rbx
-E9 DE FE FF FF  # +02d4 jmp 0x1b7
-31 C9  # +02d9 xor %ecx,%ecx
-48 39 D9  # +02db cmp %rbx,%rcx
-73 44  # +02de jae 0x324
-89 C8  # +02e0 mov %ecx,%eax
-6B C0 60  # +02e2 imul $0x60,%eax,%eax
-48 8D 94 05 00 00 01 00  # +02e5 lea 0x10000(%rbp,%rax,1),%rdx
-0F B6 02  # +02ed movzbl (%rdx),%eax
-44 39 C8  # +02f0 cmp %r9d,%eax
-75 46  # +02f3 jne 0x33b
-31 F6  # +02f5 xor %esi,%esi
-44 39 CE  # +02f7 cmp %r9d,%esi
-74 17  # +02fa je 0x313
-0F B6 44 32 01  # +02fc movzbl 0x1(%rdx,%rsi,1),%eax
-51  # +0301 push %rcx
-4C 89 C1  # +0302 mov %r8,%rcx
-48 01 F1  # +0305 add %rsi,%rcx
-3A 44 0D 00  # +0308 cmp 0x0(%rbp,%rcx,1),%al
-59  # +030c pop %rcx
-75 2C  # +030d jne 0x33b
-FF C6  # +030f inc %esi
-EB E4  # +0311 jmp 0x2f7
-0F B6 42 14  # +0313 movzbl 0x14(%rdx),%eax
-48 8D 72 15  # +0317 lea 0x15(%rdx),%rsi
-89 C2  # +031b mov %eax,%edx
-E8 AD 00 00 00  # +031d call 0x3cf
-EB 0D  # +0322 jmp 0x331
-4A 8D 74 05 00  # +0324 lea 0x0(%rbp,%r8,1),%rsi
-44 89 CA  # +0329 mov %r9d,%edx
-E8 9E 00 00 00  # +032c call 0x3cf
-E8 B6 00 00 00  # +0331 call 0x3ec
-E9 7C FE FF FF  # +0336 jmp 0x1b7
-FF C1  # +033b inc %ecx
-EB 9C  # +033d jmp 0x2db
-90  # +033f nop
-44 89 EF  # +0340 mov %r13d,%edi
-6A 03  # +0343 push $0x3
-58  # +0345 pop %rax
-0F 05  # +0346 syscall
-85 C0  # +0348 test %eax,%eax
-0F 88 40 FE FF FF  # +034a js 0x190
-31 FF  # +0350 xor %edi,%edi
-EB 07  # +0352 jmp 0x35b
-58  # +0354 pop %rax
-5A  # +0355 pop %rdx
-6A 04  # +0356 push $0x4
-EB 00  # +0358 jmp 0x35a
-5F  # +035a pop %rdi
-6A 3C  # +035b push $0x3c
-58  # +035d pop %rax
-0F 05  # +035e syscall
-4D 39 F7  # +0360 cmp %r14,%r15
-73 66  # +0363 jae 0x3cb
-42 0F B6 44 3D 00  # +0365 movzbl 0x0(%rbp,%r15,1),%eax
-3C 20  # +036b cmp $0x20,%al
-74 16  # +036d je 0x385
-3C 09  # +036f cmp $0x9,%al
-74 12  # +0371 je 0x385
-3C 0A  # +0373 cmp $0xa,%al
-74 0E  # +0375 je 0x385
-3C 0D  # +0377 cmp $0xd,%al
-74 0A  # +0379 je 0x385
-3C 23  # +037b cmp $0x23,%al
-74 0B  # +037d je 0x38a
-3C 3B  # +037f cmp $0x3b,%al
-74 07  # +0381 je 0x38a
-EB 1C  # +0383 jmp 0x3a1
-49 FF C7  # +0385 inc %r15
-EB D6  # +0388 jmp 0x360
-49 FF C7  # +038a inc %r15
-4D 39 F7  # +038d cmp %r14,%r15
-73 39  # +0390 jae 0x3cb
-42 0F B6 44 3D 00  # +0392 movzbl 0x0(%rbp,%r15,1),%eax
-3C 0A  # +0398 cmp $0xa,%al
-75 EE  # +039a jne 0x38a
-49 FF C7  # +039c inc %r15
-EB BF  # +039f jmp 0x360
-4D 89 F8  # +03a1 mov %r15,%r8
-49 FF C7  # +03a4 inc %r15
-4D 39 F7  # +03a7 cmp %r14,%r15
-73 18  # +03aa jae 0x3c4
-42 0F B6 44 3D 00  # +03ac movzbl 0x0(%rbp,%r15,1),%eax
-3C 20  # +03b2 cmp $0x20,%al
-74 0E  # +03b4 je 0x3c4
-3C 09  # +03b6 cmp $0x9,%al
-74 0A  # +03b8 je 0x3c4
-3C 0A  # +03ba cmp $0xa,%al
-74 06  # +03bc je 0x3c4
-3C 0D  # +03be cmp $0xd,%al
-74 02  # +03c0 je 0x3c4
-EB E0  # +03c2 jmp 0x3a4
-4D 89 F9  # +03c4 mov %r15,%r9
-4D 29 C1  # +03c7 sub %r8,%r9
-C3  # +03ca ret
-4D 31 C9  # +03cb xor %r9,%r9
-C3  # +03ce ret
-85 D2  # +03cf test %edx,%edx
-74 11  # +03d1 je 0x3e4
-41 89 D2  # +03d3 mov %edx,%r10d
-44 89 EF  # +03d6 mov %r13d,%edi
-90  # +03d9 nop
-6A 01  # +03da push $0x1
-58  # +03dc pop %rax
-0F 05  # +03dd syscall
-44 39 D0  # +03df cmp %r10d,%eax
-75 01  # +03e2 jne 0x3e5
-C3  # +03e4 ret
-6A 06  # +03e5 push $0x6
-E9 6E FF FF FF  # +03e7 jmp 0x35a
-6A 0A  # +03ec push $0xa
-48 89 E6  # +03ee mov %rsp,%rsi
-BA 01 00 00 00  # +03f1 mov $0x1,%edx
-44 89 EF  # +03f6 mov %r13d,%edi
-6A 01  # +03f9 push $0x1
-58  # +03fb pop %rax
-0F 05  # +03fc syscall
-41 89 C2  # +03fe mov %eax,%r10d
-58  # +0401 pop %rax
-41 83 FA 01  # +0402 cmp $0x1,%r10d
-75 DD  # +0406 jne 0x3e5
-C3  # +0408 ret
+4C 39 D1  # +02b7 cmp %r10,%rcx
+73 13  # +02ba jae 0x2cf
+4C 89 DE  # +02bc mov %r11,%rsi
+48 01 CE  # +02bf add %rcx,%rsi
+8A 44 35 00  # +02c2 mov 0x0(%rbp,%rsi,1),%al
+88 44 0A 01  # +02c6 mov %al,0x1(%rdx,%rcx,1)
+48 FF C1  # +02ca inc %rcx
+EB E8  # +02cd jmp 0x2b7
+31 FF  # +02cf xor %edi,%edi
+E8 F9 00 00 00  # +02d1 call 0x3cf
+4D 85 C9  # +02d6 test %r9,%r9
+0F 84 E8 00 00 00  # +02d9 je 0x3c7
+49 83 F9 01  # +02df cmp $0x1,%r9
+75 12  # +02e3 jne 0x2f7
+42 0F B6 44 05 00  # +02e5 movzbl 0x0(%rbp,%r8,1),%eax
+3C 29  # +02eb cmp $0x29,%al
+74 49  # +02ed je 0x338
+3C 28  # +02ef cmp $0x28,%al
+0F 84 D0 00 00 00  # +02f1 je 0x3c7
+85 FF  # +02f7 test %edi,%edi
+74 07  # +02f9 je 0x302
+C6 44 3A 15 0A  # +02fb movb $0xa,0x15(%rdx,%rdi,1)
+FF C7  # +0300 inc %edi
+89 F8  # +0302 mov %edi,%eax
+44 01 C8  # +0304 add %r9d,%eax
+83 F8 40  # +0307 cmp $0x40,%eax
+0F 87 B7 00 00 00  # +030a ja 0x3c7
+31 C9  # +0310 xor %ecx,%ecx
+4C 39 C9  # +0312 cmp %r9,%rcx
+73 1C  # +0315 jae 0x333
+4D 89 C3  # +0317 mov %r8,%r11
+49 01 CB  # +031a add %rcx,%r11
+42 0F B6 44 1D 00  # +031d movzbl 0x0(%rbp,%r11,1),%eax
+49 89 FB  # +0323 mov %rdi,%r11
+49 01 CB  # +0326 add %rcx,%r11
+42 88 44 1A 15  # +0329 mov %al,0x15(%rdx,%r11,1)
+48 FF C1  # +032e inc %rcx
+EB DF  # +0331 jmp 0x312
+4C 01 CF  # +0333 add %r9,%rdi
+EB 99  # +0336 jmp 0x2d1
+48 85 FF  # +0338 test %rdi,%rdi
+0F 84 86 00 00 00  # +033b je 0x3c7
+40 88 7A 14  # +0341 mov %dil,0x14(%rdx)
+48 FF C3  # +0345 inc %rbx
+E9 6B FE FF FF  # +0348 jmp 0x1b8
+31 C9  # +034d xor %ecx,%ecx
+48 39 D9  # +034f cmp %rbx,%rcx
+73 44  # +0352 jae 0x398
+89 C8  # +0354 mov %ecx,%eax
+6B C0 60  # +0356 imul $0x60,%eax,%eax
+48 8D 94 05 00 00 01 00  # +0359 lea 0x10000(%rbp,%rax,1),%rdx
+0F B6 02  # +0361 movzbl (%rdx),%eax
+44 39 C8  # +0364 cmp %r9d,%eax
+75 46  # +0367 jne 0x3af
+31 F6  # +0369 xor %esi,%esi
+44 39 CE  # +036b cmp %r9d,%esi
+74 17  # +036e je 0x387
+0F B6 44 32 01  # +0370 movzbl 0x1(%rdx,%rsi,1),%eax
+51  # +0375 push %rcx
+4C 89 C1  # +0376 mov %r8,%rcx
+48 01 F1  # +0379 add %rsi,%rcx
+3A 44 0D 00  # +037c cmp 0x0(%rbp,%rcx,1),%al
+59  # +0380 pop %rcx
+75 2C  # +0381 jne 0x3af
+FF C6  # +0383 inc %esi
+EB E4  # +0385 jmp 0x36b
+0F B6 42 14  # +0387 movzbl 0x14(%rdx),%eax
+48 8D 72 15  # +038b lea 0x15(%rdx),%rsi
+89 C2  # +038f mov %eax,%edx
+E8 C1 00 00 00  # +0391 call 0x457
+EB 0D  # +0396 jmp 0x3a5
+4A 8D 74 05 00  # +0398 lea 0x0(%rbp,%r8,1),%rsi
+44 89 CA  # +039d mov %r9d,%edx
+E8 B2 00 00 00  # +03a0 call 0x457
+E8 C7 00 00 00  # +03a5 call 0x471
+E9 09 FE FF FF  # +03aa jmp 0x1b8
+FF C1  # +03af inc %ecx
+EB 9C  # +03b1 jmp 0x34f
+44 89 EF  # +03b3 mov %r13d,%edi
+6A 03  # +03b6 push $0x3
+58  # +03b8 pop %rax
+0F 05  # +03b9 syscall
+85 C0  # +03bb test %eax,%eax
+78 04  # +03bd js 0x3c3
+31 FF  # +03bf xor %edi,%edi
+EB 07  # +03c1 jmp 0x3ca
+6A 06  # +03c3 push $0x6
+EB 02  # +03c5 jmp 0x3c9
+6A 04  # +03c7 push $0x4
+5F  # +03c9 pop %rdi
+6A 3C  # +03ca push $0x3c
+58  # +03cc pop %rax
+0F 05  # +03cd syscall
+4D 39 F7  # +03cf cmp %r14,%r15
+73 7F  # +03d2 jae 0x453
+42 0F B6 44 3D 00  # +03d4 movzbl 0x0(%rbp,%r15,1),%eax
+3C 20  # +03da cmp $0x20,%al
+74 16  # +03dc je 0x3f4
+3C 09  # +03de cmp $0x9,%al
+74 12  # +03e0 je 0x3f4
+3C 0A  # +03e2 cmp $0xa,%al
+74 0E  # +03e4 je 0x3f4
+3C 0D  # +03e6 cmp $0xd,%al
+74 0A  # +03e8 je 0x3f4
+3C 23  # +03ea cmp $0x23,%al
+74 0B  # +03ec je 0x3f9
+3C 3B  # +03ee cmp $0x3b,%al
+74 07  # +03f0 je 0x3f9
+EB 1C  # +03f2 jmp 0x410
+49 FF C7  # +03f4 inc %r15
+EB D6  # +03f7 jmp 0x3cf
+49 FF C7  # +03f9 inc %r15
+4D 39 F7  # +03fc cmp %r14,%r15
+73 52  # +03ff jae 0x453
+42 0F B6 44 3D 00  # +0401 movzbl 0x0(%rbp,%r15,1),%eax
+3C 0A  # +0407 cmp $0xa,%al
+75 EE  # +0409 jne 0x3f9
+49 FF C7  # +040b inc %r15
+EB BF  # +040e jmp 0x3cf
+3C 28  # +0410 cmp $0x28,%al
+74 32  # +0412 je 0x446
+3C 29  # +0414 cmp $0x29,%al
+74 2E  # +0416 je 0x446
+4D 89 F8  # +0418 mov %r15,%r8
+49 FF C7  # +041b inc %r15
+4D 39 F7  # +041e cmp %r14,%r15
+73 29  # +0421 jae 0x44c
+42 0F B6 44 3D 00  # +0423 movzbl 0x0(%rbp,%r15,1),%eax
+3C 20  # +0429 cmp $0x20,%al
+74 1F  # +042b je 0x44c
+3C 09  # +042d cmp $0x9,%al
+74 1B  # +042f je 0x44c
+3C 0A  # +0431 cmp $0xa,%al
+74 17  # +0433 je 0x44c
+3C 0D  # +0435 cmp $0xd,%al
+74 13  # +0437 je 0x44c
+3C 28  # +0439 cmp $0x28,%al
+74 0F  # +043b je 0x44c
+3C 29  # +043d cmp $0x29,%al
+74 0B  # +043f je 0x44c
+49 FF C7  # +0441 inc %r15
+EB D8  # +0444 jmp 0x41e
+4D 89 F8  # +0446 mov %r15,%r8
+49 FF C7  # +0449 inc %r15
+4D 89 F9  # +044c mov %r15,%r9
+4D 29 C1  # +044f sub %r8,%r9
+C3  # +0452 ret
+4D 31 C9  # +0453 xor %r9,%r9
+C3  # +0456 ret
+85 D2  # +0457 test %edx,%edx
+74 15  # +0459 je 0x470
+41 89 D2  # +045b mov %edx,%r10d
+44 89 EF  # +045e mov %r13d,%edi
+90  # +0461 nop
+6A 01  # +0462 push $0x1
+58  # +0464 pop %rax
+0F 05  # +0465 syscall
+44 39 D0  # +0467 cmp %r10d,%eax
+0F 85 53 FF FF FF  # +046a jne 0x3c3
+C3  # +0470 ret
+6A 0A  # +0471 push $0xa
+48 89 E6  # +0473 mov %rsp,%rsi
+BA 01 00 00 00  # +0476 mov $0x1,%edx
+44 89 EF  # +047b mov %r13d,%edi
+6A 01  # +047e push $0x1
+58  # +0480 pop %rax
+0F 05  # +0481 syscall
+41 89 C2  # +0483 mov %eax,%r10d
+58  # +0486 pop %rax
+41 83 FA 01  # +0487 cmp $0x1,%r10d
+0F 85 32 FF FF FF  # +048b jne 0x3c3
+C3  # +0491 ret

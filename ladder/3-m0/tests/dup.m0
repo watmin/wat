@@ -1,2 +1,2 @@
-DEFINE ten 0A
-DEFINE ten 0B
+(define ten 0A)
+(define ten 0B)

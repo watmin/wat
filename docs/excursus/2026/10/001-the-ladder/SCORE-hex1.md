@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. M0's first program, `DEFINE` writing hex2 text, is at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. M0's list form, `(define name ...)`, is at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -380,5 +380,21 @@ A quoted string, a decimal immediate, and expansion of a name inside another def
 The first `tools/verify` exited 1. Stderr was `verify: row 49 disasm`. Stdout was 50 lines and ended at `row 48: syscalls`. One source line held five instructions, so the comment bytes were the whole sequence. That line is now five lines. The bytes are the same. The log is `/var/tmp/m0-verify-build.log`, and the stderr is `/var/tmp/m0-verify-build.err`.
 
 The second `tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. The new lines were `row 45: text`, `row 46: refusals`, `row 47: self-build`, `row 48: syscalls`, `row 49: disasm`, and `row 50: size`. `python3`'s `time.perf_counter` around that one process read 13.675320774 seconds. The log is `/var/tmp/m0-verify-build-2.log`, and the stderr is `/var/tmp/m0-verify-build-2.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## M0 — define is a list (2026-10-04)
+
+A definition is `(define name ...)`. The name is the second word. The words until `)` are the body. `(` and `)` are tokens even when they touch the next word. M0 writes each body token on its own line, then hex2 assembles that text. `(define SYSCALL 0F 05)` writes `0F` and `05` on their own lines. The program is syscalls only. Bash is still the sequencer.
+
+The stored body, counting a newline between tokens, is at most 64 bytes. A list that is not `(define name ...)`, a missing `)`, a nested `(`, and a stray `)` are status 4. A second definition of the same name is status 9. A use before its definition is copied through.
+
+`define-ten.m0` is `(define ten 0A)` and then the name. `dup.m0` defines `ten` twice. `missing.m0` is `(define ten)` with no body.
+
+A quoted string, a decimal immediate, and expansion of a name inside another definition's body stay asked.
+
+`./build` exited 0. `out/m0` and `out/m0-self` are 1170 bytes, mode 755. `gate.tsv` names `size` 1170.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.337234530 seconds. The log is `/var/tmp/m0-verify-list.log`, and the stderr is `/var/tmp/m0-verify-list.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

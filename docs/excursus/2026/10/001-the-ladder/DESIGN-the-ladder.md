@@ -13,7 +13,7 @@ repository, until watc exists. From there watc compiles itself, as it does today
 ladder/0-hex0     the seed: hand-auditable; turns commented hex into bytes ← rung 0 (x86_64-linux first)
   hex1            hex plus labels                                        ← rung 1
   hex2            hex plus labels and relative addresses                 ← rung 2
-  M0              a macro assembler: mnemonics are DEFINEs that expand to bytes
+  M0              a macro assembler: (define name ...) expands to hex2 text
   (translation)   watc's source restated in the Clojure/EDN-compliant syntax, checked by wat-rs reading both
   wat0            an interpreter for the subset watc is written in        ← CRAWL-the-subset.md
   watc            wat0 runs watc's source once → stage 1; stage 1 == stage 2

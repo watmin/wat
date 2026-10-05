@@ -12,9 +12,9 @@ out/hex2 out/m0.hex2 out/m0-self
 
 `out/m0.hex2` is hex2 text. The gate checks the products. It does not call `build`.
 
-M0 reads hex2's language plus one form, and it writes hex2 text. It does not assemble. Hex2 does that. A name is expanded only after its `DEFINE` has been read. A use before that is copied through.
+M0 reads hex2's tokens plus lists, and it writes hex2 text. It does not assemble. Hex2 does that. A `(` and a `)` are tokens even when they touch the next word, so `(define ten 0A)` is five tokens. A name is expanded only after its list has been read. A use before that is copied through.
 
-`DEFINE` is followed by a name and one body token. The name is at most 16 bytes. The body is at most 64 bytes. The table holds 64 definitions. The input is read into 65536 bytes. A longer input is a bad byte.
+A list has the shape `(define name ...)`. The name is the second word. The words until the closing parenthesis are the body, one or more hex2 tokens. M0 writes each body token on its own line. `(define SYSCALL 0F 05)` then a use of `SYSCALL` writes `0F` and `05` on their own lines. The name is at most 16 bytes. The stored body, counting a newline between tokens, is at most 64 bytes. The table holds 64 definitions. The input is read into 65536 bytes. A longer input is a bad byte.
 
 ## Exit status
 
@@ -24,7 +24,7 @@ M0 reads hex2's language plus one form, and it writes hex2 text. It does not ass
 | 1 | wrong argument count. OUT was not created |
 | 2 | IN cannot be opened, or fstat on IN failed |
 | 3 | OUT cannot be opened, or is not a regular file, or fchmod failed, or fstat on OUT failed |
-| 4 | a bad token: `DEFINE` without a name or a body, a name longer than 16 bytes, a body longer than 64 bytes, a 65th definition, or an input longer than 65536 bytes. OUT holds the text already written, mode 0755 |
+| 4 | a bad token: a list that is not `(define name ...)`, a missing `)`, a nested `(`, a stray `)`, a name longer than 16 bytes, a stored body longer than 64 bytes, a 65th definition, or an input longer than 65536 bytes. OUT holds the text already written, mode 0755 |
 | 6 | a read, write, close, or truncate failed |
 | 7 | IN and OUT are the same file |
 | 9 | a name defined twice. OUT holds the text already written, mode 0755 |
@@ -35,9 +35,9 @@ Statuses 5, 8, 10, and 11 are not produced by this program. Hex2 still owns them
 
 `plain.m0` is `41 42` and a newline. The text is `41`, a newline, `42`, and a newline. Hex2 assembles either spelling to the bytes `41 42`.
 
-`define-ten.m0` defines `ten` as `0A` and then uses it. The text is `0A` and a newline. Hex2 assembles that to one byte, `0A`.
+`define-ten.m0` is `(define ten 0A)` and then the name. The text is `0A` and a newline. Hex2 assembles that to one byte, `0A`.
 
-`dup.m0` defines `ten` twice. The status is 9 and OUT is empty. `missing.m0` is `DEFINE` and a name with no body. The status is 4 and OUT is empty.
+`dup.m0` defines `ten` twice. The status is 9 and OUT is empty. `missing.m0` is `(define ten)` with no body. The status is 4 and OUT is empty.
 
 ## Asked
 
