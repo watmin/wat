@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. The starting operation names for wat0 are at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0 does not run wat-rs, at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -458,5 +458,15 @@ The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, 
 The builder accepted the operation table in `BRIEF-wat0.md` as the starting spellings. They can change as the language matures. A change is written in the brief before the interpreter grows a second spelling. `wat.io/read-file` stays the read that returns a string. The interpreter is not started. The heap measurement is still not in SCORE.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.106334022 seconds. The log is `/var/tmp/wat0-verify-ops.log`, and the stderr is `/var/tmp/wat0-verify-ops.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## wat0 — the ladder does not run wat-rs (2026-10-05)
+
+A wat-rs stage 0 run was started to measure peak memory and was stopped. No number was recorded. The builder ruled that the ladder does not run wat-rs. wat-rs is not a rung.
+
+`BRIEF-wat0.md` now gives wat0 an arena that never frees. The gate is wat0's own fixpoint: wat0 writes a native compiler, and that compiler, run on its own source, writes a byte-identical compiler. The translation still turns the retired spelling into the spelling wat0 runs. The interpreter is not started.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.834822683 seconds. The log is `/var/tmp/wat0-verify-nowatrs.log`, and the stderr is `/var/tmp/wat0-verify-nowatrs.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

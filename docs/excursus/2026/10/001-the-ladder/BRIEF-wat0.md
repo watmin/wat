@@ -31,17 +31,17 @@ wat0's own source is one file in `x86_64-linux/`, the same shape as M0. A reason
 
 ## Acceptance
 
-wat0 runs the translated compiler once. The native compiler that run produces is byte-identical to the compiler wat-rs's stage 0 produces from the same source. That comparison is the gate for this rung. The operations match wat-rs where the compiler's source exercises them, including `length` and `byte-length`, `quot`, `rem`, and `/` on negatives, and the conversion of an i64 to a string.
+wat0 runs the translated compiler once and writes a native compiler. That compiler, run on its own source, writes a byte-identical compiler. The fixpoint is the gate. The operations are the ones this brief names, as the compiler's source exercises them, including `length` and `byte-length`, `quot`, `rem`, and `/` on negatives, and the conversion of an i64 to a string.
 
-The bootstrap needs that one compilation. It does not need the interpreter to compile the other programs wat-rs's stage 0 compiles.
+The bootstrap needs that one compilation.
 
-## The heap row
+## The heap
 
-wat0 runs once, so an arena that never frees is the simple heap, and counts are the other candidate. The census does not choose. This brief does not choose either. Before the interpreter is written, SCORE records one measurement: the peak resident memory of wat-rs's stage 0 compiling the compiler. The heap is chosen from that number. The native compiler's own peak, about 446 MB before freeing existed, is the scale the census already names. It is not a substitute for the measurement.
+wat0 runs once. The heap is an arena that never frees. The ladder does not run wat-rs to choose it, and wat-rs is not a rung.
 
 ## The translation
 
-The compiler's source in the-little-wat is still the retired spelling. wat0 runs only the compliant spelling. The translation is the ladder step before this rung runs the compiler. A tool reads the old form and prints the new one. wat-rs reads both and checks that they are the same program. That tool is not this brief, and it is not wat0.
+The compiler's source in the-little-wat is still the retired spelling. wat0 runs only the compliant spelling. The translation is the ladder step before this rung runs the compiler. A tool reads the old form and prints the new one. That tool is not this brief, and it is not wat0.
 
 ## Ruled 2026-10-04
 
@@ -103,6 +103,5 @@ A quoted string and a decimal immediate stay asked on M0. wat0 does not need eit
 
 ## Stop
 
-- The heap measurement is not in SCORE. Do not pick an arena or counts.
-- The translated compiler and the wat-rs reading of both spellings do not agree. Do not point wat0 at the retired source.
+- The compiler source wat0 is given is still the retired spelling. Do not point wat0 at it.
 - wat0's source would need a language M0 does not have. Say what, and why. M0 stays the macro step. wat0 stays the interpreter.

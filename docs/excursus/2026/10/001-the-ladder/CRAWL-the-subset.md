@@ -174,7 +174,7 @@ floats. The interpreter wat0 has to be is a small, strict Scheme with records an
 2. **Memory.** wat0 runs once, so an arena that never frees is the simplest heap. But an interpreter allocates far
    more than compiled code does: watc compiling itself natively peaked at ~446 MB before freeing existed. Measure
    before choosing between an arena and counts. wat-rs's stage-0 peak RSS is a first, rough reference. This crawl
-   does not decide it: wat0's brief carries the measurement as a row.
+   does not decide it: wat0's brief carries the measurement as a row. On 2026-10-05 the builder ruled that the ladder does not run wat-rs. The brief gives wat0 an arena that never frees, and the fixpoint is wat0's own.
 3. **Recursion depth.** watc's source is written for a compiler that turns SELF tail calls into loops (F-211: mutual
    ones are not). So wat0 needs self tail calls as loops, and a native stack deep enough for its non-tail recursion.
 4. **Time.** Today's stage 0 interprets watc compiling 103 programs (~31–48 min on wat-rs). The bootstrap needs only
