@@ -8,5 +8,6 @@ ladder/0-hex0/*/hex0 binary
 ladder/*/*/*.hex0 text eol=lf
 ladder/*/*/*.hex1 text eol=lf
 ladder/*/*/*.hex2 text eol=lf
+ladder/*/*/*.m0 text eol=lf
 # fixtures are stored byte for byte: a CR in a test is the thing under test (crlf.hex0), so git never converts them
 ladder/*/tests/* -text diff

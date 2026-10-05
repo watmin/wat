@@ -1,27 +1,44 @@
 # M0
 
-Rung 3 of the ladder. Hex2 builds it. This file is the contract shell. The crawl is
-`docs/excursus/2026/10/001-the-ladder/CRAWL-M0.md`. The machine code belongs to `x86_64-linux`. Bash, the
-top-level `build`, is the sequencer until this rung's brief. `build` does not run this rung yet. The gate does
-not call `build`.
+Usage: `m0 IN OUT`.
 
-No source is in the tree. No fixture is in the tree.
+Rung 3 of the ladder. Hex2 builds it. This file is the contract. The fixtures in `tests/` are part of it. The machine code belongs to `x86_64-linux`. Bash, the top-level `build`, is the sequencer. It runs hex2's lines, then:
 
-## The shape the crawl recommends
+```
+out/hex2 ladder/3-m0/x86_64-linux/m0.hex2 out/m0
+out/m0 ladder/3-m0/x86_64-linux/m0.m0 out/m0.hex2
+out/hex2 out/m0.hex2 out/m0-self
+```
 
-M0 reads hex2's language plus a macro, and it writes hex2 text. A mnemonic is a name defined to expand to hex2
-text. `build` then runs hex2 on that text to get the binary. M0 does not reimplement names, `%`, `%1`, `%2`, or
-`&`. That shape passes the four questions in the crawl. It is not a builder ruling yet.
+`out/m0.hex2` is hex2 text. The gate checks the products. It does not call `build`.
 
-Statuses 0–11 stay hex2's until a macro failure needs a new number. A number past 11 is unruled. The words for
-0–11 are in `ladder/2-hex2/README.md`.
+M0 reads hex2's language plus one form, and it writes hex2 text. It does not assemble. Hex2 does that. A name is expanded only after its `DEFINE` has been read. A use before that is copied through.
+
+`DEFINE` is followed by a name and one body token. The name is at most 16 bytes. The body is at most 64 bytes. The table holds 64 definitions. The input is read into 65536 bytes. A longer input is a bad byte.
+
+## Exit status
+
+| exit | meaning |
+|---|---|
+| 0 | done. OUT holds the hex2 text, mode 0755 |
+| 1 | wrong argument count. OUT was not created |
+| 2 | IN cannot be opened, or fstat on IN failed |
+| 3 | OUT cannot be opened, or is not a regular file, or fchmod failed, or fstat on OUT failed |
+| 4 | a bad token: `DEFINE` without a name or a body, a name longer than 16 bytes, a body longer than 64 bytes, a 65th definition, or an input longer than 65536 bytes. OUT holds the text already written, mode 0755 |
+| 6 | a read, write, close, or truncate failed |
+| 7 | IN and OUT are the same file |
+| 9 | a name defined twice. OUT holds the text already written, mode 0755 |
+
+Statuses 5, 8, 10, and 11 are not produced by this program. Hex2 still owns them.
+
+## Fixtures
+
+`plain.m0` is `41 42` and a newline. The text is `41`, a newline, `42`, and a newline. Hex2 assembles either spelling to the bytes `41 42`.
+
+`define-ten.m0` defines `ten` as `0A` and then uses it. The text is `0A` and a newline. Hex2 assembles that to one byte, `0A`.
+
+`dup.m0` defines `ten` twice. The status is 9 and OUT is empty. `missing.m0` is `DEFINE` and a name with no body. The status is 4 and OUT is empty.
 
 ## Asked
 
-- The keyword that introduces a definition.
-- Whether the body is one token or a quoted run of hex2 text.
-- Whether a quoted string is in this rung, and which quote.
-- Whether a decimal immediate exists, and how wide it is. The stage0 prototype prints four hex digits.
-- What status a second definition, a definition with no name, and a use of an undefined name take.
-- Whether a name is expanded inside another definition's body.
-- The filenames and the build lines.
+A quoted string, a decimal immediate, and expansion of a name inside another definition's body are not in this increment.

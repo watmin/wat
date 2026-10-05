@@ -1,6 +1,6 @@
 """The row module. It names each row. Comparisons live in the judges."""
 
-from tools.gate import drive, hex1rows, hex2rows
+from tools.gate import drive, hex1rows, hex2rows, m0rows
 
 
 def all_rows(gate):
@@ -48,4 +48,10 @@ def all_rows(gate):
     hex2rows.row_hex2_disasm(gate)
     hex2rows.row_hex2_size(gate)
     hex2rows.row_hex2_lseek(gate)
+    m0rows.row_m0_text(gate)
+    m0rows.row_m0_refusals(gate)
+    m0rows.row_m0_self(gate)
+    m0rows.row_m0_syscalls(gate)
+    m0rows.row_m0_disasm(gate)
+    m0rows.row_m0_size(gate)
     drive.finish(gate)

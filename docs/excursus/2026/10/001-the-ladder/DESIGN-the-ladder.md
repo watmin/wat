@@ -21,7 +21,7 @@ ladder/0-hex0     the seed: hand-auditable; turns commented hex into bytes ← r
 
 The rung shapes are the ones bootstrappable-builds (stage0-posix, live-bootstrap) proved. The code is our own.
 
-The gate checks artifacts. It does not build a rung and it does not sequence the ladder. Running the seed on a fixture is an observation. For hex1, the top-level `build` produces hex1 and the gate checks it. Bash issues that build until M0's brief.
+The gate checks artifacts. It does not build a rung and it does not sequence the ladder. Running the seed on a fixture is an observation. The top-level `build` produces each rung and the gate checks it. Bash issues that build until M0's brief.
 
 ## What is given, and what is not
 
@@ -31,8 +31,11 @@ The gate checks artifacts. It does not build a rung and it does not sequence the
   `ladder/0-hex0/x86_64-linux/hex0` on `ladder/1-hex1/x86_64-linux/hex1.hex0`, writing `out/hex1`, then runs
   `out/hex1` on `ladder/1-hex1/x86_64-linux/hex1.hex1`, writing `out/hex1-self`, then runs
   `out/hex1` on `ladder/2-hex2/x86_64-linux/hex2.hex1`, writing `out/hex2`, then runs
-  `out/hex2` on `ladder/2-hex2/x86_64-linux/hex2.hex2`, writing `out/hex2-self`. The gate checks those products.
-  It does not call `build`.
+  `out/hex2` on `ladder/2-hex2/x86_64-linux/hex2.hex2`, writing `out/hex2-self`, then runs
+  `out/hex2` on `ladder/3-m0/x86_64-linux/m0.hex2`, writing `out/m0`, then runs
+  `out/m0` on `ladder/3-m0/x86_64-linux/m0.m0`, writing `out/m0.hex2`, then runs
+  `out/hex2` on `out/m0.hex2`, writing `out/m0-self`. The gate checks those products.
+  It does not call `build`. M0's brief, a seed-built shell, is not this file.
 - **Not given:**
   - no libc;
   - no dynamic loader;

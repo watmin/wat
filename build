@@ -15,3 +15,12 @@ mkdir -p "$root/out"
 "$root/out/hex2" \
   "$root/ladder/2-hex2/x86_64-linux/hex2.hex2" \
   "$root/out/hex2-self"
+"$root/out/hex2" \
+  "$root/ladder/3-m0/x86_64-linux/m0.hex2" \
+  "$root/out/m0"
+"$root/out/m0" \
+  "$root/ladder/3-m0/x86_64-linux/m0.m0" \
+  "$root/out/m0.hex2"
+"$root/out/hex2" \
+  "$root/out/m0.hex2" \
+  "$root/out/m0-self"
