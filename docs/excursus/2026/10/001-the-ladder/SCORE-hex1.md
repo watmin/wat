@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0's brief is at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. The value spellings for wat0 are at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -440,5 +440,15 @@ The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, 
 The rung directory is not created.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.704269185 seconds. The log is `/var/tmp/wat0-verify-brief.log`, and the stderr is `/var/tmp/wat0-verify-brief.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## wat0 — value spellings (2026-10-04)
+
+The builder ruled the value spellings. An enum requires `wat.enum/Pure`. Variants are names, built from a map: `(wat.core/Option.Some {:value 42})`. A record is built from a map. One field is `(u/SomeRec/some-field r)`. Several fields bind with `{:keys [some-field another-field]}` in a `wat.core/let`. The bytes namespace is `wat.bytes/`. Uppercase names are a convention.
+
+The operation names are proposed in `BRIEF-wat0.md` and are not ruled. The interpreter is not started.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 12.525458143 seconds. The log is `/var/tmp/wat0-verify-spellings.log`, and the stderr is `/var/tmp/wat0-verify-spellings.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

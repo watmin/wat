@@ -157,6 +157,8 @@ rule (`src/edn/render.rs`), with no symbol-spelled use in any `.wat` yet.
    the `the-little-wat` branch, in keyword spelling. The mirror has no spelling for them yet.
 5. **Not yet settled on origin/main itself:** the enum marker's name (`SEAM.md` "D"), and the `wat.bytes/` namespace.
 
+The builder ruled dilemmas 1, 2, 3, and 5 on 2026-10-04. The spellings are in `BRIEF-wat0.md`. Dilemma 4 is proposed there and is not ruled.
+
 **Types:** `wat.type/i64`, `wat.type/String`, `wat.type/bool`, `nil`, the Vector type, records, the three enums, and
 `Option` (one `Some`, one `None`).
 

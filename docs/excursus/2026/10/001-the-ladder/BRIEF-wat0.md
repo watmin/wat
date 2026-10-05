@@ -43,21 +43,67 @@ wat0 runs once, so an arena that never frees is the simple heap, and counts are 
 
 The compiler's source in the-little-wat is still the retired spelling. wat0 runs only the compliant spelling. The translation is the ladder step before this rung runs the compiler. A tool reads the old form and prints the new one. wat-rs reads both and checks that they are the same program. That tool is not this brief, and it is not wat0.
 
-## Still asked
+## Ruled 2026-10-04
 
-These are the five dilemmas in the census. The interpreter's reader follows the builder's ruling on each. Until then the first line of wat0 is not written.
+The builder ruled the value spellings. Uppercase names are a convention. Nothing requires them.
 
-1. **Enum spelling.** origin/main requires a purity marker and keyword variant names. The ruled Q2 example has neither.
-2. **Record construction.** origin/main builds a record with keyword arguments, or positionally. The ruled Q2 shape builds a record from a map, as an enum variant is built.
-3. **Field spelling.** The corpus writes the type folded into the namespace. Q1's spelling is the record name, a slash, and the field. One of them is the spelling wat0 reads.
-4. **Missing operations.** The compiler's source uses `byte-length`, `byte-subs`, `byte-at`, `bit-and`, `bit-or`, `bit-shift-left`, `bit-shift-right`, `assoc` on a vector, and a one-shot read of a file as bytes. origin/main has no spelling for them yet.
-5. **Two names on origin/main.** The enum marker's name, and the `wat.bytes/` namespace, are not settled there.
+An enum requires a purity marker. Variants are names, and a variant is built from a map. `wat.core/Option` is the core spelling:
+
+```clojure
+(wat.core/defenum wat.core/Option :- [T] wat.enum/Pure
+  Some [value :- T]
+  None [])
+
+(wat.core/let
+  [some (wat.core/Option.Some {:value 42})
+   none (wat.core/Option.None {})]
+  (wat.core/match some
+    [wat.core/Option.Some {:value value} (wat.kernel/println value)]
+    [wat.core/Option.None {}             (wat.kernel/println nil)]))
+```
+
+A name in another namespace uses the same shape. `(wat.core/defenum u/box :- [T] wat.enum/Pure full [x :- T] empty [])` builds `(u/box.full {:x 42})`.
+
+A record is built from a map. One field is the record name, a slash, and the field. Several fields can be bound at once with `:keys` in a `wat.core/let` binding:
+
+```clojure
+(wat.core/defrecord u/SomeRec
+  [some-field :- wat.type/i64
+   another-field :- wat.type/keyword])
+
+(wat.core/let
+  [r (u/SomeRec {:some-field 42 :another-field :some-value})
+   {:keys [some-field another-field]} r]
+  (wat.core/do
+    (wat.kernel/println some-field)
+    (wat.kernel/println (u/SomeRec/some-field r))))
+```
+
+The bytes namespace is `wat.bytes/`.
+
+## Proposed, not ruled
+
+These are the operation names the compiler's own source already matches, in the compliant spelling. The builder will confirm or correct them.
+
+| operation | proposed spelling |
+|---|---|
+| byte length of a string | `wat.string/byte-length` |
+| byte slice of a string | `wat.string/byte-subs` |
+| byte at an index | `wat.string/byte-at` |
+| bitwise and, or | `wat.i64/bit-and`, `wat.i64/bit-or` |
+| shift left, arithmetic shift right | `wat.i64/bit-shift-left`, `wat.i64/bit-shift-right` |
+| logical shift right | `wat.i64/unsigned-bit-shift-right` |
+| replace a vector index | `wat.core/assoc` |
+| hex of bytes, bytes of hex | `wat.bytes/to-hex`, `wat.bytes/from-hex` |
+| read a whole file as bytes | `wat.io/read-bytes` |
+
+`wat.io/read-file` stays the read that returns a string. The compiler's primitive today opens a file and then reads all of it. `wat.io/read-bytes` is the one-shot proposed beside that. `wat.i64/unsigned-bit-shift-right` is in the compiler and was not in the census list.
 
 A quoted string and a decimal immediate stay asked on M0. wat0 does not need either to be specified.
 
 ## Stop
 
-- A spelling in the five dilemmas is required and is not yet ruled. Ask. Do not guess.
+- An operation spelling above is used and the builder has not confirmed it.
 - The heap measurement is not in SCORE. Do not pick an arena or counts.
 - The translated compiler and the wat-rs reading of both spellings do not agree. Do not point wat0 at the retired source.
 - wat0's source would need a language M0 does not have. Say what, and why. M0 stays the macro step. wat0 stays the interpreter.
