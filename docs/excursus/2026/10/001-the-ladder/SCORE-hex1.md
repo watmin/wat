@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's first increment and its self-weigh are at the end. Long names and the absolute address stay asked. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's relatives, its self-weigh, and `&` are at the end. A longer name stays asked. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -276,3 +276,15 @@ Row 43 went green on the first copy. Replacing `obs.length != self.want` with `F
 Stale index, no `git status` before the gate: exit 0 in 13.848416230 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `dcab1aec1e7b88dd35d7c35d13c7de8f9abffee667a7e867d439784b79dab056` (116 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 14.256461908 seconds, stderr empty, same last line, same `.git` listing.
 
 Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 9.441402897 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
+
+## Hex2 — `&` (2026-10-04)
+
+`&` followed by a label emits the virtual address: the file offset plus `0x400000`, four unsigned bytes, little-endian. A sum that does not fit in four bytes is status 10. An output shorter than 4290772992 bytes does not reach that refusal, so the gate does not run it. `&` remains a legal label name. A longer name stays asked.
+
+`hex2.hex2` writes the low 4 bytes of `e_entry` as `&~`, the label on the first instruction. The high 4 bytes stay zero. That is file offset `0x78` plus the load address, the bytes `78 00 40 00`.
+
+`./build` exited 0. `out/hex2` and `out/hex2-self` are 1238 bytes, mode 755. `gate.tsv` names `size` 1238.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 12.957846675 seconds. The log is `/var/tmp/hex2-verify-abs.log`, and the stderr is `/var/tmp/hex2-verify-abs.err`. Rows 37 through 44 printed, and row 38 now includes `abs-four.hex2`, `abs-base.hex2`, `abs-undef.hex2`, and `label-amp.hex2`. Row 39 includes `bad-amp.hex2`. The judge for those rows is the one the self-weigh already broke.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

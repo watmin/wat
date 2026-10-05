@@ -28,6 +28,10 @@ WIDTHS = (
     ("rel1-over.hex2", 10, b""),
     ("rel1-under.hex2", 10, b"\x00" * 128),
     ("rel2-zero.hex2", 0, b"\x00\x00A"),
+    ("abs-four.hex2", 0, b"\x04\x00\x40\x00A"),
+    ("abs-base.hex2", 0, b"\x00\x00\x40\x00"),
+    ("abs-undef.hex2", 8, b""),
+    ("label-amp.hex2", 0, b"\xfc\xff\xff\xffA"),
 )
 
 BAD = (
@@ -36,6 +40,7 @@ BAD = (
     ("bad-width-a.hex2", b""),
     ("bad-width-A.hex2", b""),
     ("bad-width-after.hex2", b"A"),
+    ("bad-amp.hex2", b""),
 )
 
 

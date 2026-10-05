@@ -17,7 +17,9 @@ Hex2 accepts hex1's language. A label is still one byte, the same bytes hex1 all
 
 `%1` followed by a label emits that same difference as one signed byte, from −128 through 127. `%2` followed by a label emits it as two signed bytes, from −32768 through 32767. The difference is `target − (the offset after the field)`. A digit after `%` other than `1` or `2` is a bad byte, the same OUT handling as any other bad byte.
 
-A displacement outside the field just opened is status 10. On this rung the field is one byte, two bytes, or four. The gate reaches the one-byte ends with the fixtures below. It reaches the two-byte ends by building an input whose output is 32768 bytes or one past that. An output shorter than 2147483648 bytes still does not reach the four-byte ends.
+`&` followed by a label emits the virtual address of that label: the file offset plus `0x400000`, four unsigned bytes, little-endian. `&` is still a legal label name. It is this form only when it is the introducer.
+
+A displacement outside the field just opened is status 10, and so is a virtual address that does not fit in four unsigned bytes. On this rung a relative field is one byte, two bytes, or four. The gate reaches the one-byte ends with the fixtures below. It reaches the two-byte ends by building an input whose output is 32768 bytes or one past that. An output shorter than 2147483648 bytes does not reach the four-byte relative ends. An output shorter than 4290772992 bytes does not reach status 10 for `&`.
 
 ## Exit status
 
@@ -46,12 +48,14 @@ fchmod and ftruncate run before either pass. A refusal after that point leaves m
 
 `rel2-zero.hex2` is `%2L` then `:L` then the byte `41`. The bytes are `00 00 41`.
 
-`bad-width-0.hex2`, `bad-width-3.hex2`, `bad-width-a.hex2`, and `bad-width-A.hex2` are a digit after `%` with no byte before it. `bad-width-after.hex2` is the byte `41` and then `%3G`.
+`abs-four.hex2` is `&L` then `:L` then the byte `41`. The label is at offset 4. The bytes are `04 00 40 00 41`. `abs-base.hex2` defines `L` at offset 0 and then takes its address. The bytes are `00 00 40 00`. `abs-undef.hex2` is `&Z` with no definition, status 8.
+
+`bad-width-0.hex2`, `bad-width-3.hex2`, `bad-width-a.hex2`, and `bad-width-A.hex2` are a digit after `%` with no byte before it. `bad-width-after.hex2` is the byte `41` and then `%3G`. `bad-amp.hex2` is `&3`. `label-amp.hex2` defines the label `&` and takes the 4-byte relative of it.
 
 ## Asked
 
-A label longer than one byte, and an absolute address, are not in this increment. The spelling of each is unruled. An absolute address is unruled because the stored number is unruled: the file offset, or that offset plus the load address `0x400000`.
+A label longer than one byte is unruled. A name that keeps `:G` followed by a hex digit as label `G` and then that digit cannot also contain `a` through `f`, and no switch that preserves hex1 has passed the four questions.
 
 ## The target
 
-`x86_64-linux/hex2.hex1` is the program in hex1's language, with the displacements written out. `x86_64-linux/hex2.hex2` is the same program with labels. A one-byte relative there is `%1`. A four-byte relative is `%`. `x86_64-linux/syscalls.tsv` is hex1's call list. `x86_64-linux/gate.tsv` names `objdump_machine`, `insn_width`, `code_base`, `size`, and `lseek_nth`.
+`x86_64-linux/hex2.hex1` is the program in hex1's language, with the displacements written out. `x86_64-linux/hex2.hex2` is the same program with labels. A one-byte relative there is `%1`. A four-byte relative is `%`. The low 4 bytes of `e_entry` are `&` of the label on the first instruction. The high 4 bytes stay zero. `x86_64-linux/syscalls.tsv` is hex1's call list. `x86_64-linux/gate.tsv` names `objdump_machine`, `insn_width`, `code_base`, `size`, and `lseek_nth`.
