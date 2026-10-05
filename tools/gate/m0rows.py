@@ -62,12 +62,24 @@ def row_m0_text(gate):
     gate.require(prove(Expect(
         "row 45 define", status=0, out_exists=True, out_bytes=b"0A\n", out_mode=0o755,
     ), obs), obs)
+    compose = os.path.join(gate.root, "ladder/3-m0/tests/compose.m0")
+    out = os.path.join(gate.sandbox, "m0-compose.hex2")
+    obs = run_m0(gate, [compose, out], out)
+    gate.require(prove(Expect(
+        "row 45 compose", status=0, out_exists=True, out_bytes=b"0F\n05\n", out_mode=0o755,
+    ), obs), obs)
+    early = os.path.join(gate.root, "ladder/3-m0/tests/early.m0")
+    out = os.path.join(gate.sandbox, "m0-early.hex2")
+    obs = run_m0(gate, [early, out], out)
+    gate.require(prove(Expect(
+        "row 45 early", status=0, out_exists=True, out_bytes=b"SYSCALL\n", out_mode=0o755,
+    ), obs), obs)
     print("row 45: text")
 
 
 def row_m0_refusals(gate):
     base = os.path.join(gate.root, "ladder/3-m0/tests")
-    for name, status in (("dup.m0", 9), ("missing.m0", 4)):
+    for name, status in (("dup.m0", 9), ("missing.m0", 4), ("cycle.m0", 4)):
         src = os.path.join(base, name)
         out = os.path.join(gate.sandbox, "m0-" + name)
         obs = run_m0(gate, [src, out], out)

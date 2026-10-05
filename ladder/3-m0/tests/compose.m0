@@ -1,0 +1,3 @@
+(define SYSCALL 0F 05)
+(define EXIT SYSCALL)
+EXIT

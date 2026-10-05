@@ -1,0 +1,2 @@
+(define EXIT SYSCALL)
+EXIT

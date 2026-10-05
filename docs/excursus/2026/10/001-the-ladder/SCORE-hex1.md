@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The self-weigh of the M0 rows is at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. A name inside a definition's body expands, at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -418,3 +418,17 @@ Row 50 went green on the first copy. Replacing `obs.length != self.want` with `F
 Stale index, no `git status` before the gate: exit 0 in 15.359294079 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `a2175a565d31c9f718bc2fb85ec3aca86dd37ae3620636d51692f3828eb429aa` (117 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 16.292990866 seconds, stderr empty, same last line, same `.git` listing.
 
 Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 9.185983315 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
+
+## M0 — a name in a body expands (2026-10-04)
+
+A body word that is already defined expands to that definition's body. A word that is not defined yet is copied through. A cycle, where a name expands back into the definition being read, is status 4. The output is still hex2 text.
+
+`compose.m0` defines `SYSCALL` as `0F 05`, defines `EXIT` as `SYSCALL`, and uses `EXIT`. The text is `0F`, a newline, `05`, and a newline. `early.m0` uses `EXIT` before `SYSCALL` exists. The text is the word `SYSCALL` and a newline. `cycle.m0` defines `a` as `b` and `b` as `a`. The status is 4 and OUT is empty.
+
+A quoted string and a decimal immediate stay asked.
+
+`./build` exited 0. `out/m0` and `out/m0-self` are 1355 bytes, mode 755. `gate.tsv` names `size` 1355.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 12.262961245 seconds. The log is `/var/tmp/m0-verify-expand.log`, and the stderr is `/var/tmp/m0-verify-expand.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
