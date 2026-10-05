@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's first increment is recorded at the end: `%1` and `%2`, with long names and the absolute address still asked. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's first increment and its self-weigh are at the end. Long names and the absolute address stay asked. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -254,3 +254,25 @@ verify: judged, outer repository unchanged
 Row 37 matched hex2 against hex1 on every hex0 fixture and every hex1 fixture. Row 38 ran the one-byte ends from `tests/` and the two-byte ends from an input the row wrote: a backward displacement of −32768, and one past it at status 10. Row 40 is `out/hex2` and `out/hex2-self` hashing equal.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## Hex2 — self-weigh (2026-10-04)
+
+The live `tools/verify` exited 0 in 14.391374263 seconds. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. The log is `/var/tmp/hex2-verify-weigh.log`. The sha256 of the sorted `.git` listing, 116 files, was `dcab1aec1e7b88dd35d7c35d13c7de8f9abffee667a7e867d439784b79dab056` before and after. The two listings are `/var/tmp/hex2-weigh-live-before.txt` and `/var/tmp/hex2-weigh-live-after.txt`, and they match. The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+Each broken run is a `cp -a` copy under `/var/tmp`. One comparison inside that row's judge was replaced with `False` for that row's reason. Earlier rows still judged. The function was left in place.
+
+| Row | Judge | Red line |
+| --- | --- | --- |
+| 37 parity | Expect | `verify: row 37 bad-g.hex0: mutant status stayed green` |
+| 38 widths | Expect | `verify: row 38 rel1-zero.hex2: mutant status stayed green` |
+| 39 bad width | Expect | `verify: row 39 bad-width-0.hex2: mutant status stayed green` |
+| 40 self-build | SameHash | `verify: row 40 self: mutant changed stayed green` |
+| 41 syscalls | Hex2Calls | `verify: row 41 syscalls: mutant extra stayed green` |
+| 42 disasm | CommentDisasm | `verify: row 42 disasm: mutant offset stayed green` |
+| 44 lseek | Expect | `verify: row 44 lseek absent: mutant status stayed green` |
+
+Row 43 went green on the first copy. Replacing `obs.length != self.want` with `False` left `tools/verify` at exit 0 in 13.312021127 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The length mutant still failed `filesz != length` and `memsz != length`. The second copy replaced all three comparisons with `False`. That gate exited 1 in 11.760067749 seconds. Stderr's first line was `verify: row 43 size: mutant length stayed green`. Stdout's last line was `row 42: disasm`.
+
+Stale index, no `git status` before the gate: exit 0 in 13.848416230 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `dcab1aec1e7b88dd35d7c35d13c7de8f9abffee667a7e867d439784b79dab056` (116 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 14.256461908 seconds, stderr empty, same last line, same `.git` listing.
+
+Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 9.441402897 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
