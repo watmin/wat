@@ -1,2 +1,2 @@
-(wat.core/defn u/main [] :- wat.type/i64
-  7)
+(wat.core/defn user/main [] :- wat.type/nil
+  (wat.kernel/println 7))

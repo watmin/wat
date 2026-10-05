@@ -8,7 +8,7 @@ The census is `CRAWL-the-subset.md`. The ladder is `DESIGN-the-ladder.md`. Q1 th
 
 wat0 is a static x86-64 Linux ELF. It is written as M0 source: hex2 text plus `(define name ...)` lists. Hex2 emits the binary. The program uses syscalls only. It does not link libc.
 
-It interprets the subset the compiler is written in, once, and that run produces the first native compiler. From there the compiler rebuilds itself. wat0 does not have to run wat. The directory is `ladder/4-wat0/`. Rule 4 requires the lowercase name. The contract is that rung's README. The first program is `ladder/4-wat0/tests/forty-two.wat`.
+It interprets the subset the compiler is written in, once, and that run produces the first native compiler. From there the compiler rebuilds itself. wat0 does not have to run wat. The directory is `ladder/4-wat0/`. Rule 4 requires the lowercase name. The contract is that rung's README. The first program is `ladder/4-wat0/tests/forty-two.wat`. wat0 invokes `user/main`, whose signature is `[] :- wat.type/nil`. A program may define any namespace except `wat` and `wat.*`. Any `user/*` name is definable. wat may later claim another `user/*` name as a rendezvous.
 
 ## What it runs
 

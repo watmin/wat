@@ -1,1 +1,1 @@
-(wat.core/defn u/main [] :- wat.type/i64)
+(wat.core/defn user/main [] :- wat.type/nil)

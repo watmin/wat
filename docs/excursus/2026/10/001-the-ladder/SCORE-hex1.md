@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0's first program is at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0 invokes `user/main`, at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -480,5 +480,19 @@ wat0 is M0 source. Hex2 emits the binary. The heap is an arena that never frees.
 `./build` exited 0. `out/wat0` and `out/wat0-self` are 2034 bytes, mode 755. `gate.tsv` names `size` 2034.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 59 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 10.668003135 seconds. The log is `/var/tmp/wat0-verify-first.log`, and the stderr is `/var/tmp/wat0-verify-first.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## wat0 — user/main (2026-10-05)
+
+The builder ruled the entry. A program defines `user/main` with the signature `[] :- wat.type/nil`. wat0 invokes it. The result is nil. The line a person sees comes from `wat.kernel/println`.
+
+A defined name may use any namespace except `wat` and `wat.*`. `user/helper` is definable. wat may later claim another `user/*` name as a rendezvous.
+
+`forty-two.wat` prints `42`. `seven.wat` prints `7`. `helper.wat` defines `user/helper` and prints `42` from `user/main`. `bad.wat` is status 4. `watns.wat` defines `wat.core/nope` and is status 4. `dup.wat` defines `user/main` twice and is status 9.
+
+`./build` exited 0. `out/wat0` and `out/wat0-self` are 2654 bytes, mode 755. `gate.tsv` names `size` 2654.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 59 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.273060249 seconds. The log is `/var/tmp/wat0-verify-entry.log`, and the stderr is `/var/tmp/wat0-verify-entry.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

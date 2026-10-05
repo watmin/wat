@@ -39,7 +39,7 @@ def file_sha(path):
 
 def row_wat0_text(gate):
     root = os.path.join(gate.root, "ladder/4-wat0/tests")
-    for name, text in (("forty-two.wat", b"42\n"), ("seven.wat", b"7\n")):
+    for name, text in (("forty-two.wat", b"42\n"), ("seven.wat", b"7\n"), ("helper.wat", b"42\n")):
         src = os.path.join(root, name)
         out = os.path.join(gate.sandbox, "wat0-" + name)
         obs = run_wat0(gate, [src, out], out)
@@ -51,7 +51,7 @@ def row_wat0_text(gate):
 
 def row_wat0_refusals(gate):
     root = os.path.join(gate.root, "ladder/4-wat0/tests")
-    for name, status in (("bad.wat", 4), ("dup.wat", 9)):
+    for name, status in (("bad.wat", 4), ("watns.wat", 4), ("dup.wat", 9)):
         src = os.path.join(root, name)
         out = os.path.join(gate.sandbox, "wat0-" + name)
         obs = run_wat0(gate, [src, out], out)
