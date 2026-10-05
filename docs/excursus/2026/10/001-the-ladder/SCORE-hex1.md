@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0 invokes `user/main`, at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0's builtin table is at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -494,5 +494,15 @@ A defined name may use any namespace except `wat` and `wat.*`. `user/helper` is 
 `./build` exited 0. `out/wat0` and `out/wat0-self` are 2654 bytes, mode 755. `gate.tsv` names `size` 2654.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 59 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.273060249 seconds. The log is `/var/tmp/wat0-verify-entry.log`, and the stderr is `/var/tmp/wat0-verify-entry.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## wat0 — builtin table (2026-10-05)
+
+The built-in names are a table after the code. A row is the length, the name's bytes, a class, and the address of its code. Class 1 is an expression. Class 2 is a top-level form. The rows are `wat.core/defn`, `wat.core/+`, `wat.core/let`, and `wat.kernel/println`. A new built-in is a row plus the code it names.
+
+`./build` exited 0. `out/wat0` and `out/wat0-self` are 2165 bytes, mode 755. `gate.tsv` names `code_end` 2071 and `size` 2165. The disassembly check stops at `code_end`. The table is data.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 59 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 14.773556987 seconds. The log is `/var/tmp/wat0-verify-table.log`, and the stderr is `/var/tmp/wat0-verify-table.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

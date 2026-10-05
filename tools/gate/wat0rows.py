@@ -110,7 +110,7 @@ def disasm_observation(gate):
     proc = gate.run([
         "objdump", "-D", "-b", "binary", "-m", facts["objdump_machine"],
         "--start-address", hex(int(facts["code_base"])),
-        "--stop-address", hex(int(facts["size"])),
+        "--stop-address", hex(int(facts["code_end"])),
         "--insn-width", facts["insn_width"], program,
     ], timeout=drive.LONG)
     return Observation(

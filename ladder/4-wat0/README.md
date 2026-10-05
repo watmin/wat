@@ -23,6 +23,8 @@ A program defines it. wat calls it. The result is nil, so the line a person sees
 
 This increment reads these forms: `wat.core/defn`, the signature `[] :- wat.type/nil`, one body expression, integer literals, names, `wat.core/let`, `wat.core/+`, and `wat.kernel/println` of an integer. A `;` comment runs to the next newline.
 
+The built-ins are the table after the code in `wat0.hex2`. A row is the length, the name's bytes, a class, and the address of its code. Class 1 is an expression. Class 2 is a top-level form. A new built-in is a row plus the code it names.
+
 A defined name may use any namespace except `wat` and `wat.*`. `user/main` is the rendezvous. Any other `user/*` name is definable. wat may later claim another `user/*` name for a rendezvous, so a program should leave those names alone. A definition in `wat` or `wat.*` is a bad form.
 
 ## Exit status
