@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. `ladder/2-hex2/README.md` is the next rung's contract. Its spellings are unruled, and its source is not in the tree. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's first increment is recorded at the end: `%1` and `%2`, with long names and the absolute address still asked. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -190,5 +190,67 @@ Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made 
 `ladder/2-hex2/README.md` is the contract. Hex2 accepts hex1's language and is the rung for an 8-bit relative, a 16-bit relative, an absolute address, and a label longer than one byte. The spelling of each form is unruled. No fixture and no target source are in the tree. `build` does not run this rung. Statuses 0–11 stay hex1's. A number past 11 is unruled.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 39 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 11.598681197 seconds. The log is `/var/tmp/hex2-verify-files.log`, and the stderr is `/var/tmp/hex2-verify-files.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## Hex2 — `%1` and `%2` (2026-10-04)
+
+This increment is hex1 plus two relatives. `%` stays the 4-byte field. `%1` is one signed byte, from −128 through 127. `%2` is two signed bytes, from −32768 through 32767. Any other digit after `%` is a bad byte. A displacement outside the field just opened is status 10. One-byte labels are unchanged. A longer name, and an absolute address, stay asked.
+
+`./build` exited 0. `out/hex2` and `out/hex2-self` are 1154 bytes, mode 755. `gate.tsv` names `size` 1154.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 14.290250287 seconds. The log is `/var/tmp/hex2-verify-inc.log`, and the stderr is `/var/tmp/hex2-verify-inc.err`.
+
+```
+row 0: prover refuses an always-accept judge
+row 1: hex-check identical
+row 2: sed|xxd identical
+row 3: fixpoint
+row 4: exit 42
+row 5: 755
+row 6: formats
+row 7: refusals
+row 8: syscalls
+row 9: 156 instructions
+row 10: 537 bytes
+row 11: lint
+row 12: fuzz 2000
+row 13: faults
+row 14: SIGXFSZ default
+row 15: SIGXFSZ ignored
+row 16: capability 7
+row 17: empty argv
+row 18: fd 300
+row 19: sha256
+row 20: layout
+layout mutants: red
+row 21: outer repository unchanged
+row 22: clone
+row 23: hostile startup is red
+row 24: signals
+row 25: out/ lock
+row 26: ast lint
+row 27: tree unchanged
+row 28: hex1 parity
+row 29: labels
+row 30: bad label
+row 31: refusals
+row 32: self-build
+row 33: syscalls
+row 34: disasm
+row 35: size
+row 36: lseek fault
+row 37: hex2 parity
+row 38: widths
+row 39: bad width
+row 40: self-build
+row 41: syscalls
+row 42: disasm
+row 43: size
+row 44: lseek fault
+verify: judged, outer repository unchanged
+```
+
+Row 37 matched hex2 against hex1 on every hex0 fixture and every hex1 fixture. Row 38 ran the one-byte ends from `tests/` and the two-byte ends from an input the row wrote: a backward displacement of −32768, and one past it at status 10. Row 40 is `out/hex2` and `out/hex2-self` hashing equal.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.

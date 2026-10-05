@@ -169,6 +169,7 @@ def rule5(root):
         fail(5, "readme has no exit statuses: 0-hex0")
     source_status(os.path.join(root, "ladder/0-hex0/x86_64-linux/hex0.hex0"))
     hex1_readme(root)
+    hex2_readme(root)
 
 
 def hex1_readme(root):
@@ -178,6 +179,15 @@ def hex1_readme(root):
     text = open(path, encoding="utf-8").read()
     if "| 0 |" not in text or "| 11 |" not in text:
         fail(5, "readme has no exit statuses: 1-hex1")
+
+
+def hex2_readme(root):
+    path = os.path.join(root, "ladder/2-hex2/README.md")
+    if not os.path.isfile(path):
+        return
+    text = open(path, encoding="utf-8").read()
+    if "| 0 |" not in text or "| 11 |" not in text:
+        fail(5, "readme has no exit statuses: 2-hex2")
 
 
 def rule6(root, git):
@@ -309,6 +319,7 @@ def prove_mutants(scratch):
     one(scratch, "rule 5 eq", "target source states a status meaning:", lambda d: _mut_status(d, "status=4\n"))
     one(scratch, "rule 5 table", "target source states a status meaning:", lambda d: _mut_status(d, "| 4 |\n"))
     one(scratch, "rule 5 hex1", "readme has no exit statuses: 1-hex1", _mut_hex1_readme)
+    one(scratch, "rule 5 hex2", "readme has no exit statuses: 2-hex2", _mut_hex2_readme)
     one(scratch, "rule 8 colon", "colon-path token in", _mut_colon)
     one(scratch, "rule 8 arrow", "bare type arrow in", _mut_arrow)
     one(scratch, "rule 9", "badly formed excursus slug:", _mut_slug)
@@ -372,6 +383,12 @@ def _mut_hex1_readme(path):
     os.makedirs(os.path.join(path, "ladder", "1-hex1"))
     open(os.path.join(path, "ladder", "1-hex1", "README.md"), "w", encoding="utf-8").write("| 0 |\n")
     hex1_readme(path)
+
+
+def _mut_hex2_readme(path):
+    os.makedirs(os.path.join(path, "ladder", "2-hex2"))
+    open(os.path.join(path, "ladder", "2-hex2", "README.md"), "w", encoding="utf-8").write("| 0 |\n")
+    hex2_readme(path)
 
 
 def _mut_status(path, text):

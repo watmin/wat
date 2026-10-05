@@ -9,3 +9,9 @@ mkdir -p "$root/out"
 "$root/out/hex1" \
   "$root/ladder/1-hex1/x86_64-linux/hex1.hex1" \
   "$root/out/hex1-self"
+"$root/out/hex1" \
+  "$root/ladder/2-hex2/x86_64-linux/hex2.hex1" \
+  "$root/out/hex2"
+"$root/out/hex2" \
+  "$root/ladder/2-hex2/x86_64-linux/hex2.hex2" \
+  "$root/out/hex2-self"

@@ -29,7 +29,9 @@ The gate checks artifacts. It does not build a rung and it does not sequence the
   syscalls. wat is a Linux language, so the kernel is the platform, not a dependency.
 - **The sequencer, until M0's brief, is bash.** The top-level `build` runs
   `ladder/0-hex0/x86_64-linux/hex0` on `ladder/1-hex1/x86_64-linux/hex1.hex0`, writing `out/hex1`, then runs
-  `out/hex1` on `ladder/1-hex1/x86_64-linux/hex1.hex1`, writing `out/hex1-self`. The gate checks those products.
+  `out/hex1` on `ladder/1-hex1/x86_64-linux/hex1.hex1`, writing `out/hex1-self`, then runs
+  `out/hex1` on `ladder/2-hex2/x86_64-linux/hex2.hex1`, writing `out/hex2`, then runs
+  `out/hex2` on `ladder/2-hex2/x86_64-linux/hex2.hex2`, writing `out/hex2-self`. The gate checks those products.
   It does not call `build`.
 - **Not given:**
   - no libc;

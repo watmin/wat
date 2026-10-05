@@ -7,5 +7,6 @@ ladder/0-hex0/*/hex0 binary
 # a rung's source keeps LF line ends whatever a clone's autocrlf says: a CR changes what the rung decodes
 ladder/*/*/*.hex0 text eol=lf
 ladder/*/*/*.hex1 text eol=lf
+ladder/*/*/*.hex2 text eol=lf
 # fixtures are stored byte for byte: a CR in a test is the thing under test (crlf.hex0), so git never converts them
 ladder/*/tests/* -text diff
