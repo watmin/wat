@@ -15,7 +15,7 @@ ladder/0-hex0     the seed: hand-auditable; turns commented hex into bytes ← r
   hex2            hex plus labels and relative addresses                 ← rung 2
   M0              a macro assembler: (define name ...) expands to hex2 text
   (translation)   watc's source restated in the Clojure/EDN-compliant syntax, checked by wat-rs reading both
-  wat0            an interpreter for the subset watc is written in        ← CRAWL-the-subset.md
+  wat0            an interpreter for the subset watc is written in        ← BRIEF-wat0.md, CRAWL-the-subset.md
   watc            wat0 runs watc's source once → stage 1; stage 1 == stage 2
 ```
 

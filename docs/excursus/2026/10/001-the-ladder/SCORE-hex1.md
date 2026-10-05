@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. A name inside a definition's body expands, at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 self-weigh is recorded below. wat0's brief is at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -430,5 +430,15 @@ A quoted string and a decimal immediate stay asked.
 `./build` exited 0. `out/m0` and `out/m0-self` are 1355 bytes, mode 755. `gate.tsv` names `size` 1355.
 
 `tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 12.262961245 seconds. The log is `/var/tmp/m0-verify-expand.log`, and the stderr is `/var/tmp/m0-verify-expand.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## wat0 — the brief (2026-10-04)
+
+`docs/excursus/2026/10/001-the-ladder/BRIEF-wat0.md` is the brief. wat0 interprets the subset the compiler is written in. Its source will be M0 lists, and hex2 will emit the binary. A self tail call is a loop. The heap is an arena or counts, chosen after SCORE records the peak resident memory of wat-rs's stage 0 compiling the compiler. The translation of the compiler's source is the step before wat0 runs it. The five dilemmas in `CRAWL-the-subset.md` stay asked, and the interpreter is not started while they are open. This file is not M0's brief. Bash remains the sequencer.
+
+The rung directory is not created.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.704269185 seconds. The log is `/var/tmp/wat0-verify-brief.log`, and the stderr is `/var/tmp/wat0-verify-brief.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
