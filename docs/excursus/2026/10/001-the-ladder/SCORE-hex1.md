@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's names and the self-weigh of that tree are at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The M0 crawl and the `3-m0` contract shell are at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -354,3 +354,13 @@ Row 43 went green on the first copy. Replacing `obs.length != self.want` with `F
 Stale index, no `git status` before the gate: exit 0 in 12.127104329 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `c73541a06112edbf9e4a70305be4fb3a4789236075107e5b203e405543955366` (47 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 12.402310387 seconds, stderr empty, same last line, same `.git` listing.
 
 Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 8.510040200 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
+
+## M0 — the crawl and the contract shell (2026-10-04)
+
+`docs/excursus/2026/10/001-the-ladder/CRAWL-M0.md` records the stage0 C prototype. It tokenizes on whitespace, treats `DEFINE` as a macro, and prints hex text. It links libc and always succeeds. `ladder/3-m0/README.md` is the contract shell. No source and no fixture are in the tree. `build` does not run this rung.
+
+The crawl's recommendation, not a ruling: M0 writes hex2 text, and hex2 emits the binary. The keyword, the body, strings, immediates, the new statuses, and the filenames stay asked.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.975783586 seconds. The log is `/var/tmp/m0-verify-docs.log`, and the stderr is `/var/tmp/m0-verify-docs.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
