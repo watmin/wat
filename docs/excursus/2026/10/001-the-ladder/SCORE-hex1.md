@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's relatives, its self-weigh, and `&` are at the end. A longer name stays asked. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's relatives, `&`, and the self-weigh of that tree are at the end. A longer name stays asked. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -288,3 +288,29 @@ Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made 
 `tools/verify` exited 0. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 12.957846675 seconds. The log is `/var/tmp/hex2-verify-abs.log`, and the stderr is `/var/tmp/hex2-verify-abs.err`. Rows 37 through 44 printed, and row 38 now includes `abs-four.hex2`, `abs-base.hex2`, `abs-undef.hex2`, and `label-amp.hex2`. Row 39 includes `bad-amp.hex2`. The judge for those rows is the one the self-weigh already broke.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## Hex2 — self-weigh after `&` (2026-10-04)
+
+The live `tools/verify` exited 0 in 14.661466060 seconds. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. The log is `/var/tmp/hex2-verify-weigh-amp.log`. The sha256 of the sorted `.git` listing, 148 files, was `77036cc794dc7a3d25f3cc22ac20fc40ae33bd2ab97eb320214beae4d43ec51a` before and after. The two listings are `/var/tmp/hex2-weigh-amp-before.txt` and `/var/tmp/hex2-weigh-amp-after.txt`, and they match. The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+Each broken run is a `cp -a` copy under `/var/tmp`. One comparison inside that row's judge was replaced with `False` for that row's reason. Earlier rows still judged. The function was left in place.
+
+| Row | Judge | Red line |
+| --- | --- | --- |
+| 37 parity | Expect | `verify: row 37 bad-g.hex0: mutant status stayed green` |
+| 38 widths | Expect | `verify: row 38 rel1-zero.hex2: mutant status stayed green` |
+| 38 absolute | Expect | `verify: row 38 abs-four.hex2: mutant status stayed green` |
+| 39 bad width | Expect | `verify: row 39 bad-width-0.hex2: mutant status stayed green` |
+| 39 ampersand | Expect | `verify: row 39 bad-amp.hex2: mutant status stayed green` |
+| 40 self-build | SameHash | `verify: row 40 self: mutant changed stayed green` |
+| 41 syscalls | Hex2Calls | `verify: row 41 syscalls: mutant extra stayed green` |
+| 42 disasm | CommentDisasm | `verify: row 42 disasm: mutant offset stayed green` |
+| 44 lseek | Expect | `verify: row 44 lseek absent: mutant status stayed green` |
+
+The absolute row and the ampersand row are the same judges as 38 and 39, with the comparison replaced only for reasons that start with `row 38 abs` and `row 39 bad-amp`. The earlier fixtures in those rows still judged. `abs-four.hex2` is the output `04 00 40 00 41`.
+
+Row 43 went green on the first copy. Replacing `obs.length != self.want` with `False` left `tools/verify` at exit 0 in 12.185172790 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The length mutant still failed `filesz != length` and `memsz != length`. The second copy replaced all three comparisons with `False`. That gate exited 1 in 11.769732237 seconds. Stderr's first line was `verify: row 43 size: mutant length stayed green`. Stdout's last line was `row 42: disasm`.
+
+Stale index, no `git status` before the gate: exit 0 in 11.065043036 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `77036cc794dc7a3d25f3cc22ac20fc40ae33bd2ab97eb320214beae4d43ec51a` (148 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 11.391638964 seconds, stderr empty, same last line, same `.git` listing.
+
+Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 7.917573759 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
