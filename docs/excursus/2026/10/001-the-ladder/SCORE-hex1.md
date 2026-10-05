@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. M0's list form, `(define name ...)`, is at the end. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2 is weighed. The self-weigh of the M0 rows is at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -398,3 +398,23 @@ A quoted string, a decimal immediate, and expansion of a name inside another def
 `tools/verify` exited 0. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.337234530 seconds. The log is `/var/tmp/m0-verify-list.log`, and the stderr is `/var/tmp/m0-verify-list.err`.
 
 The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+## M0 — self-weigh of rows 45–50 (2026-10-04)
+
+The live `tools/verify` exited 0 in 13.557300375 seconds. Stderr was empty. Stdout was 53 lines. The last line was `verify: judged, outer repository unchanged`. The log is `/var/tmp/m0-verify-weigh-list.log`. The sha256 of the sorted `.git` listing, 117 files, was `a2175a565d31c9f718bc2fb85ec3aca86dd37ae3620636d51692f3828eb429aa` before and after. The two listings are `/var/tmp/m0-weigh-list-before.txt` and `/var/tmp/m0-weigh-list-after.txt`, and they match. The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
+
+Each broken run is a `cp -a` copy under `/var/tmp`. One comparison inside that row's judge was replaced with `False` for that row's reason. Earlier rows still judged. The function was left in place.
+
+| Row | Judge | Red line |
+| --- | --- | --- |
+| 45 text | Expect | `verify: row 45 plain: mutant status stayed green` |
+| 46 refusals | Expect | `verify: row 46 dup.m0: mutant status stayed green` |
+| 47 self-build | SameHash | `verify: row 47 self: mutant changed stayed green` |
+| 48 syscalls | M0Calls | `verify: row 48 syscalls: mutant extra stayed green` |
+| 49 disasm | CommentDisasm | `verify: row 49 disasm: mutant offset stayed green` |
+
+Row 50 went green on the first copy. Replacing `obs.length != self.want` with `False` left `tools/verify` at exit 0 in 12.540255313 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The length mutant still failed `filesz != length` and `memsz != length`. The second copy replaced all three comparisons with `False`. That gate exited 1 in 11.048815632 seconds. Stderr's first line was `verify: row 50 size: mutant length stayed green`. Stdout's last line was `row 49: disasm`.
+
+Stale index, no `git status` before the gate: exit 0 in 15.359294079 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `a2175a565d31c9f718bc2fb85ec3aca86dd37ae3620636d51692f3828eb429aa` (117 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 16.292990866 seconds, stderr empty, same last line, same `.git` listing.
+
+Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 9.185983315 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
