@@ -21,6 +21,18 @@ class Hex2Size(Hex1Size):
         self.reason = "row 43 size"
 
 
+# Hex1 rejected these bytes as labels. A name now ends at whitespace, so each
+# of them is a name and the two programs disagree on purpose.
+CHANGED = {
+    "label-colon.hex1",
+    "label-digit-after.hex1",
+    "label-digit.hex1",
+    "label-hash.hex1",
+    "label-low.hex1",
+    "label-percent.hex1",
+    "label-semi.hex1",
+}
+
 WIDTHS = (
     ("rel1-zero.hex2", 0, b"\x00A"),
     ("rel1-max.hex2", 0, bytes([0x7F]) + b"\x00" * 127),
@@ -32,6 +44,11 @@ WIDTHS = (
     ("abs-base.hex2", 0, b"\x00\x00\x40\x00"),
     ("abs-undef.hex2", 8, b""),
     ("label-amp.hex2", 0, b"\xfc\xff\xff\xffA"),
+    ("name-glued.hex2", 0, b"A\xfb\xff\xff\xff"),
+    ("name-split.hex2", 0, b"\x48"),
+    ("name-word.hex2", 0, b"\xffA"),
+    ("name-twice.hex2", 9, b""),
+    ("name-undef.hex2", 8, b""),
 )
 
 BAD = (
@@ -69,7 +86,7 @@ def file_sha(path):
 def names_under(root, suffix):
     names = []
     for name in os.listdir(root):
-        if name.endswith(suffix):
+        if name.endswith(suffix) and name not in CHANGED:
             names.append(name)
     names.sort()
     return names

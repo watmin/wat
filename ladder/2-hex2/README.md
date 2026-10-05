@@ -13,7 +13,7 @@ The gate checks the products. It does not call `build`. Statuses 0–11 are hex1
 
 ## The language
 
-Hex2 accepts hex1's language. A label is still one byte, the same bytes hex1 allows. `:` defines it. `%` followed by a label emits the 4-byte relative hex1 emits, signed, from −2147483648 through 2147483647.
+Hex2 accepts hex1's language except one form. `:` defines a name. `%` followed by a name emits the 4-byte relative hex1 emits, signed, from −2147483648 through 2147483647. A name is the bytes after the introducer, and it ends at the next space, tab, CR, or LF. A name may contain digits, including `a` through `f`. A name of one byte at the end of a line is the hex1 label. `:G48` on one line is the name `G48`. `:G` and then `48` on the next line is label `G` and the byte `0x48`. A name is at most 16 bytes. The table holds 64 names. An empty name, a 17th byte, and a 65th name are bad bytes.
 
 `%1` followed by a label emits that same difference as one signed byte, from −128 through 127. `%2` followed by a label emits it as two signed bytes, from −32768 through 32767. The difference is `target − (the offset after the field)`. A digit after `%` other than `1` or `2` is a bad byte, the same OUT handling as any other bad byte.
 
@@ -29,7 +29,7 @@ A displacement outside the field just opened is status 10, and so is a virtual a
 | 1 | wrong argument count. OUT was not created |
 | 2 | IN cannot be opened, or fstat on IN failed |
 | 3 | OUT cannot be opened, or is not a regular file, or fchmod failed, or fstat on OUT failed |
-| 4 | a bad byte, including a digit after `%` other than `1` or `2`, and a byte after `:` or `%` that is not a legal label. OUT holds the bytes emitted before that byte, mode 0755 |
+| 4 | a bad byte, including a digit after `%` other than `1` or `2`, an empty name, a name longer than 16 bytes, and a 65th name. OUT holds the bytes emitted before that byte, mode 0755 |
 | 5 | an odd number of digits at end of input |
 | 6 | a read, write, close, or truncate failed |
 | 7 | IN and OUT are the same file |
@@ -50,11 +50,11 @@ fchmod and ftruncate run before either pass. A refusal after that point leaves m
 
 `abs-four.hex2` is `&L` then `:L` then the byte `41`. The label is at offset 4. The bytes are `04 00 40 00 41`. `abs-base.hex2` defines `L` at offset 0 and then takes its address. The bytes are `00 00 40 00`. `abs-undef.hex2` is `&Z` with no definition, status 8.
 
-`bad-width-0.hex2`, `bad-width-3.hex2`, `bad-width-a.hex2`, and `bad-width-A.hex2` are a digit after `%` with no byte before it. `bad-width-after.hex2` is the byte `41` and then `%3G`. `bad-amp.hex2` is `&3`. `label-amp.hex2` defines the label `&` and takes the 4-byte relative of it.
+`name-glued.hex2` is `:G48`, then the byte `41`, then `%G48`. The name is `G48`. The bytes are `41 FB FF FF FF`. `name-split.hex2` is `:G` and then `48` on the next line. The bytes are `48`. `name-word.hex2` is `:main`, then `%1main`, then the byte `41`. The bytes are `FF 41`. `name-twice.hex2` defines `main` twice, status 9. `name-undef.hex2` is `%main`, status 8.
 
-## Asked
+Seven hex1 fixtures are names under this rule, so the parity row does not compare them: `label-colon.hex1`, `label-digit.hex1`, `label-digit-after.hex1`, `label-hash.hex1`, `label-low.hex1`, `label-percent.hex1`, and `label-semi.hex1`. `41:0` is the byte `41` and the name `0`.
 
-A label longer than one byte is unruled. A name that keeps `:G` followed by a hex digit as label `G` and then that digit cannot also contain `a` through `f`, and no switch that preserves hex1 has passed the four questions.
+`bad-width-0.hex2`, `bad-width-3.hex2`, `bad-width-a.hex2`, and `bad-width-A.hex2` are a digit after `%` with no byte before it. `bad-width-after.hex2` is the byte `41` and then `%3G`. `bad-amp.hex2` is `&` and then a newline, an empty name. `label-amp.hex2` defines the name `&` and takes the 4-byte relative of it.
 
 ## The target
 

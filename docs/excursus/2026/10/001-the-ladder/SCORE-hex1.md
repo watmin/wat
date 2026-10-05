@@ -1,6 +1,6 @@
 # SCORE — hex1
 
-Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's relatives, `&`, and the self-weigh of that tree are at the end. A longer name stays asked. Not landed. The seed is unchanged.
+Milestone 4, the self-weigh of the hex1 rows, is recorded below. Hex2's names, relatives, `&`, and the self-weighs are at the end. Not landed. The seed is unchanged.
 
 ## Milestone 1 — the contract is in the tree, and the gate is red (2026-10-04)
 
@@ -314,3 +314,17 @@ Row 43 went green on the first copy. Replacing `obs.length != self.want` with `F
 Stale index, no `git status` before the gate: exit 0 in 11.065043036 seconds, stderr empty, last line `verify: judged, outer repository unchanged`. The copy's `.git` listing stayed `77036cc794dc7a3d25f3cc22ac20fc40ae33bd2ab97eb320214beae4d43ec51a` (148 files). After `git ls-files` and `touch` of every tracked file, the same listing was unchanged and the gate exited 0 in 11.391638964 seconds, stderr empty, same last line, same `.git` listing.
 
 Adding `def row_weigh_static` with `_static(0 if a == b else 1)` to a copy made the gate exit 1 in 7.917573759 seconds. Stderr was `verify: row 26 ast`. Stdout was 27 lines and ended at `row 25: out/ lock`.
+
+## Hex2 — names end at whitespace (2026-10-04)
+
+A name is the bytes after `:`, `%`, `%1`, `%2`, or `&`, and it ends at space, tab, CR, or LF. It may contain digits. A name of one byte at the end of a line is the hex1 label. `:G48` on one line is the name `G48`. `:G` and then `48` on the next line is label `G` and the byte `0x48`. A name is at most 16 bytes. The table holds 64 names. An empty name, a 17th byte, and a 65th name are bad bytes.
+
+`name-glued.hex2` produces `41 FB FF FF FF`. `name-split.hex2` produces `48`. `name-word.hex2` is `:main`, then `%1main`, then `41`, and produces `FF 41`. `name-twice.hex2` exits 9. `name-undef.hex2` exits 8.
+
+Seven hex1 fixtures are names now, so row 37 does not compare them. `41:0` is the byte `41` and the name `0`.
+
+`./build` exited 0. `out/hex2` and `out/hex2-self` are 1486 bytes, mode 755. `gate.tsv` names `size` 1486.
+
+`tools/verify` exited 0. Stderr was empty. Stdout was 47 lines. The last line was `verify: judged, outer repository unchanged`. `python3`'s `time.perf_counter` around that one process read 13.308954403 seconds. The log is `/var/tmp/hex2-verify-names.log`, and the stderr is `/var/tmp/hex2-verify-names.err`.
+
+The seed at the run was `ladder/0-hex0/x86_64-linux/hex0`, 537 bytes, mode 755, sha256 `572f8ef350f98507fee94fdbc50a1dcfd25758debda24d036efab069e808ae72`.
