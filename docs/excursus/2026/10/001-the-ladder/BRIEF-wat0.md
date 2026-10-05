@@ -81,11 +81,11 @@ A record is built from a map. One field is the record name, a slash, and the fie
 
 The bytes namespace is `wat.bytes/`.
 
-## Proposed, not ruled
+## Operations, 2026-10-05
 
-These are the operation names the compiler's own source already matches, in the compliant spelling. The builder will confirm or correct them.
+The builder accepted these as the starting spellings. They can change as the language matures. A change is a ruling, written here, before the interpreter grows a second spelling.
 
-| operation | proposed spelling |
+| operation | spelling |
 |---|---|
 | byte length of a string | `wat.string/byte-length` |
 | byte slice of a string | `wat.string/byte-subs` |
@@ -97,13 +97,12 @@ These are the operation names the compiler's own source already matches, in the 
 | hex of bytes, bytes of hex | `wat.bytes/to-hex`, `wat.bytes/from-hex` |
 | read a whole file as bytes | `wat.io/read-bytes` |
 
-`wat.io/read-file` stays the read that returns a string. The compiler's primitive today opens a file and then reads all of it. `wat.io/read-bytes` is the one-shot proposed beside that. `wat.i64/unsigned-bit-shift-right` is in the compiler and was not in the census list.
+`wat.io/read-file` stays the read that returns a string.
 
 A quoted string and a decimal immediate stay asked on M0. wat0 does not need either to be specified.
 
 ## Stop
 
-- An operation spelling above is used and the builder has not confirmed it.
 - The heap measurement is not in SCORE. Do not pick an arena or counts.
 - The translated compiler and the wat-rs reading of both spellings do not agree. Do not point wat0 at the retired source.
 - wat0's source would need a language M0 does not have. Say what, and why. M0 stays the macro step. wat0 stays the interpreter.
